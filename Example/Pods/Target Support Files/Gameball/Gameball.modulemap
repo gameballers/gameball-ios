@@ -1,0 +1,6 @@
+framework module Gameball {
+  umbrella header "Gameball-umbrella.h"
+
+  export *
+  module * { export * }
+}

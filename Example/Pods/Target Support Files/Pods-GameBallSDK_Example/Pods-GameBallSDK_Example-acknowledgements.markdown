@@ -1035,7 +1035,7 @@ Copyright 2022 Google
    limitations under the License.
 
 
-## GameBallSDK
+## Gameball
 
 Copyright (c) 2019 Martin Sorsok <martin.sorsok@vodafone.com>
 

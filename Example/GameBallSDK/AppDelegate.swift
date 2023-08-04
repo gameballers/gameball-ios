@@ -8,7 +8,7 @@
 
 import UIKit
 import Firebase
-import GameBallSDK
+import Gameball
 import FirebaseMessaging
 
 @UIApplicationMain

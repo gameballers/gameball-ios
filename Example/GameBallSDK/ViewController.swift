@@ -6,12 +6,11 @@
 //
 
 import UIKit
-import GameBallSDK
+import Gameball
 
 class ViewController: UIViewController {
     
     var gameball: Gameball?
-//    let apiKey = "29c175e1776f40d18592f7537c863f57"
     
     @IBOutlet weak var launchWidgetBtn: UIButton!
     @IBOutlet weak var trackEventBtn: UIButton!
@@ -27,9 +26,6 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
      
-        apiKeyTextField.text = "29c175e1776f40d18592f7537c863f57"
-        playerIdTextField.text = "Mahmoud"
-        
     }
     
     @IBAction func didTapInitSDK(_ sender: UIButton) {
