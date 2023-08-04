@@ -6,13 +6,13 @@ Pod::Spec.new do |s|
   
   #1
   s.platform = :ios
-  s.name  = 'GameBallSDK'
+  s.name  = 'Gameball'
   s.ios.deployment_target = '11.0'
-  s.summary = 'Gameball SDK pod.'
+  s.summary = 'Gameball SDK for iOS.'
   s.requires_arc = true
 
   # 2
-  s.version    = '2.0.0'
+  s.version    = '2.0.1'
 
   #3
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
@@ -22,11 +22,11 @@ Pod::Spec.new do |s|
 
   
   # 5 - Replace this URL with your own GitHub page's URL (from the address bar)
-  s.homepage  = "https://github.com/MartinSorsok/GameBallSDK"
+  s.homepage  = "https://github.com/gameballers/gameball-ios"
   
   
   #7
-  s.source           = { :git => "https://github.com/MartinSorsok/GameBallSDK.git", :tag => s.version}
+  s.source           = { :git => "https://github.com/gameballers/gameball-ios.git", :tag => s.version}
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
 
