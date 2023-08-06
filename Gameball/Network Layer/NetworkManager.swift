@@ -235,7 +235,11 @@ class NetworkManager:NSObject {
     
     
     // Get playerCategoryId from shared preferences
-    func sendEvent(events: [Event], completion: @escaping ((_ response: PostActionResponse?, _ error: ServiceError?)->())) {
+    func sendEvent(
+        playerUniqueId: String,
+        events: [Event],
+        completion: @escaping ((_ response: PostActionResponse?, _ error: ServiceError?)->())
+    ) {
         
         guard Reachability.isConnectedToNetwork() else {
             //            completion(nil, ServiceError.noInternetConnection)
@@ -254,7 +258,7 @@ class NetworkManager:NSObject {
         
         params["events"] = paramsEvents
         
-        params["playerUniqueId"] = self.playerUniqueId
+        params["playerUniqueId"] = playerUniqueId
         
         Helpers().dPrint(params)
         

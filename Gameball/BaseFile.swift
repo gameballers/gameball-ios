@@ -51,7 +51,7 @@ open class Gameball {
     }
     
     // Returns player Gameball ID
-    public func registerPlayer (
+    public func registerPlayer(
         playerUniqueId: String,
         playerTypeId: String = "",
         deviceToken: String = "",
@@ -75,15 +75,11 @@ open class Gameball {
     }
     
     public func showProfile(
+        playerUniqueId: String,
         openDetail: String? = nil,
         hideNavigation: Bool? = nil,
         completion:  ((_ viewController: UIViewController?, _ errorMessage: String?)->())
     ) {
-        guard let playerUniqueId = playerUniqueId, !playerUniqueId.isEmpty else {
-            completion(nil, "Player has not been registered yet, use registerPlayer function first.")
-            return
-        }
-        
         let GB_ViewController = self.prepareGBVC(
             withAPIKEY: apiKey,
             withPlayerUniqueId: playerUniqueId,
@@ -155,8 +151,12 @@ open class Gameball {
     }
     
     
-    public func sendEvents(events: [Event], completion: ((_ success: String?, _ errorDescription: Any?)->())? = nil) {
-        NetworkManager.shared().sendEvent(events: events) { (responseObject, error) in
+    public func sendEvents(
+        playerUniqueId: String,
+        events: [Event],
+        completion: ((_ success: String?, _ errorDescription: Any?)->())? = nil
+    ) {
+        NetworkManager.shared().sendEvent(playerUniqueId: playerUniqueId, events: events) { (responseObject, error) in
             if error == nil {
                 Helpers().dPrint("done ..sendAction..")
                 completion?("Success", nil)

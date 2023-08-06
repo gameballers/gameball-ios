@@ -76,6 +76,7 @@ class ViewController: UIViewController {
 
     @IBAction func didTapLaunch(_ sender: UIButton) {
         gameball?.showProfile(
+            playerUniqueId: playerIdTextField.text ?? "",
             openDetail: openDetailTextField.text,
             hideNavigation: hideNavigationSwitch.isOn,
             completion: { viewController, errorMessage in
@@ -90,7 +91,10 @@ class ViewController: UIViewController {
             Event(eventName: "coin_purchase", params: ["price": "100", "currency": "EGP"]),
             Event(eventName: "click_X_screen", params: ["screen_name": "X_Y_Z", "source": "A_B_C"]),
         ]
-        gameball?.sendEvents(events: events)
+        gameball?.sendEvents(
+            playerUniqueId: playerIdTextField.text ?? "",
+            events: events
+        )
     }
     
     private func displaySimpleAlert(title: String, desc: String) {
