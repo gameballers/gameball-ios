@@ -43,8 +43,6 @@ class ViewController: UIViewController {
             lang: langTextField.text,
             shop: shopTextField.text,
             platform: platformTextField.text,
-            openDetail: openDetailTextField.text,
-            hideNavigation: hideNavigationSwitch.isOn,
             completion: { [weak self] in
                 guard let self = self else {return}
                 
@@ -77,7 +75,10 @@ class ViewController: UIViewController {
     }
 
     @IBAction func didTapLaunch(_ sender: UIButton) {
-        gameball?.showProfile(completion: { viewController, errorMessage in
+        gameball?.showProfile(
+            openDetail: openDetailTextField.text,
+            hideNavigation: hideNavigationSwitch.isOn,
+            completion: { viewController, errorMessage in
             guard let gameBallVC = viewController else {return}
             gameBallVC.modalPresentationStyle = .fullScreen
             self.present(gameBallVC, animated: true, completion: nil)

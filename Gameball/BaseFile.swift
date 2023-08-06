@@ -19,8 +19,6 @@ open class Gameball {
     private var lang: String?
     private var shop: String?
     private var platform: String?
-    private var openDetail: String?
-    private var hideNavigation: Bool?
     
     private var playerUniqueId: String?
     
@@ -29,15 +27,11 @@ open class Gameball {
         lang: String? = nil,
         shop: String? = nil,
         platform: String? = nil,
-        openDetail: String? = nil,
-        hideNavigation: Bool? = nil,
         completion: (() -> Void)? = nil) {
             self.apiKey = apiKey
             self.lang = lang
             self.shop = shop
             self.platform = platform
-            self.openDetail = openDetail
-            self.hideNavigation = hideNavigation
             
             NetworkManager.shared().registerAPIKey(APIKey: apiKey)
             
@@ -80,7 +74,11 @@ open class Gameball {
         )
     }
     
-    public func showProfile(completion:  ((_ viewController: UIViewController?, _ errorMessage: String?)->())) {
+    public func showProfile(
+        openDetail: String? = nil,
+        hideNavigation: Bool? = nil,
+        completion:  ((_ viewController: UIViewController?, _ errorMessage: String?)->())
+    ) {
         guard let playerUniqueId = playerUniqueId, !playerUniqueId.isEmpty else {
             completion(nil, "Player has not been registered yet, use registerPlayer function first.")
             return
