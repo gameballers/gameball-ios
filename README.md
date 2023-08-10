@@ -1,6 +1,5 @@
 # Gameball
 
-[![CI Status](https://img.shields.io/travis/Martin Sorsok/Gameball.svg?style=flat)](https://travis-ci.org/Martin Sorsok/Gameball)
 [![Version](https://img.shields.io/cocoapods/v/Gameball.svg?style=flat)](https://cocoapods.org/pods/Gameball)
 [![License](https://img.shields.io/cocoapods/l/Gameball.svg?style=flat)](https://cocoapods.org/pods/Gameball)
 [![Platform](https://img.shields.io/cocoapods/p/Gameball.svg?style=flat)](https://cocoapods.org/pods/Gameball)
@@ -22,8 +21,7 @@ pod 'Gameball'
 
 ## Authors
 
-Martin Sorsok, martin.sorsok@gmail.com
-Mahmoud Tarek, mahmoudtarek910@gmail.com
+Gameball, support@gameball.co
 
 ## License
 

@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
 
   #4
-  s.author           = { 'Martin Sorsok' => 'martin.sorsok@gmail.com' }
+  s.author           = { 'Gameball' => 'support@gameball.co' }
 
   
   # 5 - Replace this URL with your own GitHub page's URL (from the address bar)
@@ -28,6 +28,7 @@ Pod::Spec.new do |s|
   #7
   s.source           = { :git => "https://github.com/gameballers/gameball-ios.git", :tag => s.version}
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
+  s.readme = "https://github.com/gameballers/gameball-ios/blob/master/README.md"
 
 
   # 7
