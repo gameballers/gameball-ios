@@ -14,7 +14,7 @@ typealias JSON = [String: Any]
 class NetworkManager:NSObject {
     let userCache = UserProfileCache.get()
     
-    var sdkVersion = "2.0.1"
+    var sdkVersion = "2.0.2"
     let urlSession: URLSession
     let connectionScheme: String
     let host: String
