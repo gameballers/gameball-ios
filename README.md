@@ -19,6 +19,13 @@ it, simply add the following line to your Podfile:
 pod 'Gameball'
 ```
 
+Gameball is also available through [Swift Package Manager]. To install
+it, simply search for 'Gameball' or add the repo URL:
+
+```ruby
+https://github.com/gameballers/gameball-ios.git
+```
+
 ## Authors
 
 Gameball, support@gameball.co
