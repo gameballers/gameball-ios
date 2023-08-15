@@ -6,6 +6,9 @@ import PackageDescription
 let package = Package(
     name: "Gameball",
     defaultLocalization: "en",
+    platforms: [
+        .iOS(.v11) // Specify the desired iOS version here
+    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
@@ -25,5 +28,8 @@ let package = Package(
         .testTarget(
             name: "GameballTests",
             dependencies: ["Gameball"]),
+    ],
+    swiftLanguageVersions: [
+        .v4_2 // Specify the desired Swift version here
     ]
 )
