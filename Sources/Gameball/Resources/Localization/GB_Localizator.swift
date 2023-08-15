@@ -5,6 +5,8 @@
 //  Created by Martin Sorsok on 5/19/19.
 //
 
+import Foundation
+
 public class GB_Localizator {
     
     static let sharedInstance = GB_Localizator()

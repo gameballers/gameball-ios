@@ -94,8 +94,13 @@ open class Gameball {
     
     
     private func prepareGBVC(withAPIKEY: String,withPlayerUniqueId: String,withColor: String?, withLang:String?, openDetail: String? = nil, hideNavigation: Bool? = nil) -> UIViewController {
-        
-        let GB_ViewController = GB_WEBVIEWWIDGETViewController(nibName: String(describing: GB_WEBVIEWWIDGETViewController.self), bundle: nil)
+        var bundle: Bundle?
+        #if COCOAPODS
+            bundle = Bundle(for: GB_WEBVIEWWIDGETViewController.self)
+        #else
+            bundle = Bundle.module
+        #endif
+        let GB_ViewController = GB_WEBVIEWWIDGETViewController(nibName: String(describing: GB_WEBVIEWWIDGETViewController.self), bundle: bundle)
         GB_ViewController.APIKEY = withAPIKEY
         GB_ViewController.playerID = withPlayerUniqueId
         GB_ViewController.color = withColor
