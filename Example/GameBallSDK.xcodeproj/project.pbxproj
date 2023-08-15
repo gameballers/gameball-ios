@@ -7,15 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		059EC6BA39218235C6D108E0 /* Pods_GameBallSDK_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0C22D7F8CD6B490D6BB25E9A /* Pods_GameBallSDK_Tests.framework */; };
-		1EF08B6E14AFA6738E71445E /* Pods_GameBallSDK_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3585FBB426933F82B91FC959 /* Pods_GameBallSDK_Example.framework */; };
 		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
 		607FACD81AFB9204008FA782 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD71AFB9204008FA782 /* ViewController.swift */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
 		607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDE1AFB9204008FA782 /* LaunchScreen.xib */; };
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
-		C184E90D291155AA00896BF8 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C184E90C291155AA00896BF8 /* GoogleService-Info.plist */; };
+		B875DF5BA66A92EDFD4D6C6A /* Pods_GameBallSDK_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBA1775BC45A49403B6070C9 /* Pods_GameBallSDK_Tests.framework */; };
+		D56B718E81E3423099A947BE /* Pods_GameBallSDK_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C57525B9FFC6FFBA91EB2709 /* Pods_GameBallSDK_Example.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,11 +28,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0C22D7F8CD6B490D6BB25E9A /* Pods_GameBallSDK_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GameBallSDK_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		1AF4309CE974D347AC337DB5 /* Pods-GameBallSDK_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Tests.debug.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Tests/Pods-GameBallSDK_Tests.debug.xcconfig"; sourceTree = "<group>"; };
-		1DDA3260BC36DB7A87DBD33E /* Pods-GameBallSDK_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Example.release.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example.release.xcconfig"; sourceTree = "<group>"; };
-		3585FBB426933F82B91FC959 /* Pods_GameBallSDK_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GameBallSDK_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5CD8EE1AD85F542F917A8A7D /* GameBallSDK.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = GameBallSDK.podspec; path = ../GameBallSDK.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		607FACD01AFB9204008FA782 /* GameBallSDK_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GameBallSDK_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACD41AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		607FACD51AFB9204008FA782 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -44,11 +38,14 @@
 		607FACE51AFB9204008FA782 /* GameBallSDK_Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GameBallSDK_Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACEA1AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		607FACEB1AFB9204008FA782 /* Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests.swift; sourceTree = "<group>"; };
-		63679098FCE93B6A40A2264E /* Pods-GameBallSDK_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Tests.release.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Tests/Pods-GameBallSDK_Tests.release.xcconfig"; sourceTree = "<group>"; };
-		84F65D96AF5649E9DF303ABA /* Pods-GameBallSDK_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Example.debug.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example.debug.xcconfig"; sourceTree = "<group>"; };
+		6EC5D28B1C0F03D1A0734C8F /* Pods-GameBallSDK_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Tests.debug.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Tests/Pods-GameBallSDK_Tests.debug.xcconfig"; sourceTree = "<group>"; };
+		74365FF9F10B927C3DEA79D2 /* Pods-GameBallSDK_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Example.release.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example.release.xcconfig"; sourceTree = "<group>"; };
 		B2949A7CC3D911817E82A379 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		B88F5EED7A1E7B68F6A73AE8 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		C184E90C291155AA00896BF8 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		C57525B9FFC6FFBA91EB2709 /* Pods_GameBallSDK_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GameBallSDK_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DBA1775BC45A49403B6070C9 /* Pods_GameBallSDK_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GameBallSDK_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EB8ED3EC0D6BD4572C32C254 /* Pods-GameBallSDK_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Tests.release.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Tests/Pods-GameBallSDK_Tests.release.xcconfig"; sourceTree = "<group>"; };
+		F647CACE434225B403F1E271 /* Pods-GameBallSDK_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Example.debug.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,7 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1EF08B6E14AFA6738E71445E /* Pods_GameBallSDK_Example.framework in Frameworks */,
+				D56B718E81E3423099A947BE /* Pods_GameBallSDK_Example.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,7 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				059EC6BA39218235C6D108E0 /* Pods_GameBallSDK_Tests.framework in Frameworks */,
+				B875DF5BA66A92EDFD4D6C6A /* Pods_GameBallSDK_Tests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,7 +76,7 @@
 				607FACE81AFB9204008FA782 /* Tests */,
 				607FACD11AFB9204008FA782 /* Products */,
 				CD037DDD52D748C60D05E56E /* Pods */,
-				D680EDB1CF19A839B2EC4F07 /* Frameworks */,
+				E1262022DD68931684930995 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -95,7 +92,6 @@
 		607FACD21AFB9204008FA782 /* Example for GameBallSDK */ = {
 			isa = PBXGroup;
 			children = (
-				C184E90C291155AA00896BF8 /* GoogleService-Info.plist */,
 				607FACD51AFB9204008FA782 /* AppDelegate.swift */,
 				607FACD71AFB9204008FA782 /* ViewController.swift */,
 				607FACD91AFB9204008FA782 /* Main.storyboard */,
@@ -135,7 +131,6 @@
 		607FACF51AFB993E008FA782 /* Podspec Metadata */ = {
 			isa = PBXGroup;
 			children = (
-				5CD8EE1AD85F542F917A8A7D /* GameBallSDK.podspec */,
 				B88F5EED7A1E7B68F6A73AE8 /* README.md */,
 				B2949A7CC3D911817E82A379 /* LICENSE */,
 			);
@@ -145,19 +140,19 @@
 		CD037DDD52D748C60D05E56E /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				84F65D96AF5649E9DF303ABA /* Pods-GameBallSDK_Example.debug.xcconfig */,
-				1DDA3260BC36DB7A87DBD33E /* Pods-GameBallSDK_Example.release.xcconfig */,
-				1AF4309CE974D347AC337DB5 /* Pods-GameBallSDK_Tests.debug.xcconfig */,
-				63679098FCE93B6A40A2264E /* Pods-GameBallSDK_Tests.release.xcconfig */,
+				F647CACE434225B403F1E271 /* Pods-GameBallSDK_Example.debug.xcconfig */,
+				74365FF9F10B927C3DEA79D2 /* Pods-GameBallSDK_Example.release.xcconfig */,
+				6EC5D28B1C0F03D1A0734C8F /* Pods-GameBallSDK_Tests.debug.xcconfig */,
+				EB8ED3EC0D6BD4572C32C254 /* Pods-GameBallSDK_Tests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		D680EDB1CF19A839B2EC4F07 /* Frameworks */ = {
+		E1262022DD68931684930995 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				3585FBB426933F82B91FC959 /* Pods_GameBallSDK_Example.framework */,
-				0C22D7F8CD6B490D6BB25E9A /* Pods_GameBallSDK_Tests.framework */,
+				C57525B9FFC6FFBA91EB2709 /* Pods_GameBallSDK_Example.framework */,
+				DBA1775BC45A49403B6070C9 /* Pods_GameBallSDK_Tests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -169,12 +164,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 607FACEF1AFB9204008FA782 /* Build configuration list for PBXNativeTarget "GameBallSDK_Example" */;
 			buildPhases = (
-				630A20ACF34A94A38FFC5928 /* [CP] Check Pods Manifest.lock */,
+				7589E19B5E95AF681873B8A7 /* [CP] Check Pods Manifest.lock */,
 				607FACCC1AFB9204008FA782 /* Sources */,
 				607FACCD1AFB9204008FA782 /* Frameworks */,
 				607FACCE1AFB9204008FA782 /* Resources */,
-				D124AB0135F7DC31ADD7C60E /* [CP] Embed Pods Frameworks */,
-				DB672673C3BCF644F3CA2B97 /* [CP] Copy Pods Resources */,
+				E19AE1C1CF260E05552B1D3A /* [CP] Embed Pods Frameworks */,
+				78ED615377EB7357180D6898 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -189,7 +184,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 607FACF21AFB9204008FA782 /* Build configuration list for PBXNativeTarget "GameBallSDK_Tests" */;
 			buildPhases = (
-				8F808A3441272326E45E50C2 /* [CP] Check Pods Manifest.lock */,
+				08824B28BC2CAB8412A87849 /* [CP] Check Pods Manifest.lock */,
 				607FACE11AFB9204008FA782 /* Sources */,
 				607FACE21AFB9204008FA782 /* Frameworks */,
 				607FACE31AFB9204008FA782 /* Resources */,
@@ -254,7 +249,6 @@
 			files = (
 				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
 				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
-				C184E90D291155AA00896BF8 /* GoogleService-Info.plist in Resources */,
 				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -269,29 +263,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		630A20ACF34A94A38FFC5928 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-GameBallSDK_Example-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		8F808A3441272326E45E50C2 /* [CP] Check Pods Manifest.lock */ = {
+		08824B28BC2CAB8412A87849 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -313,123 +285,113 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D124AB0135F7DC31ADD7C60E /* [CP] Embed Pods Frameworks */ = {
+		7589E19B5E95AF681873B8A7 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/FirebaseCore/FirebaseCore.framework",
-				"${BUILT_PRODUCTS_DIR}/FirebaseCoreInternal/FirebaseCoreInternal.framework",
-				"${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework",
-				"${BUILT_PRODUCTS_DIR}/FirebaseMessaging/FirebaseMessaging.framework",
-				"${BUILT_PRODUCTS_DIR}/GoogleDataTransport/GoogleDataTransport.framework",
-				"${BUILT_PRODUCTS_DIR}/GoogleUtilities/GoogleUtilities.framework",
-				"${BUILT_PRODUCTS_DIR}/PromisesObjC/FBLPromises.framework",
-				"${BUILT_PRODUCTS_DIR}/nanopb/nanopb.framework",
+			inputFileListPaths = (
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
 			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCore.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCoreInternal.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseInstallations.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseMessaging.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleDataTransport.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleUtilities.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FBLPromises.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/nanopb.framework",
+				"$(DERIVED_FILE_DIR)/Pods-GameBallSDK_Example-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		DB672673C3BCF644F3CA2B97 /* [CP] Copy Pods Resources */ = {
+		78ED615377EB7357180D6898 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-resources.sh",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/BackButton/back.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/BackButton/back@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeAchievedImage/innerchallengeAchieved.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeAchievedImage/innerchallengeAchieved@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeInProgressImage/innerchallengeInProgress.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeInProgressImage/innerchallengeInProgress@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeLockedImage/innerchallengeLocked.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ChallengeLockedImage/innerchallengeLocked@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/CloseBTN/close_new.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/CloseBTN/iclose_new@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/CloseBTN/icon_outline_14px_close.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/CloseBTN/icon_outline_14px_close@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DownArrow/dropArrow.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DownArrow/dropArrow@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/DownArrow/dropArrow@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/FriendsReferal/Referral.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/FriendsReferal/Referral@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/FriendsReferal/Referral@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gameballIcon/Gameball-Grey-Icon.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gift/giftNew.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gift/giftNew@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/gift/giftNew@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/unCheckMark.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/unCheckMark@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/GreenTick/unCheckMark@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIcon/LockIcon.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIcon/LockIcon@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIcon/LockIcon@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/MaskedImage/MaskedImage.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/No Network/No-Internet.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/No Network/No-Internet@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/No Network/No-Internet@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/rankpoints.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/rankpoints@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/walletpoints.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/ProfileHeaderiCons/walletpoints@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Achievements.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Achievements@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Achievements@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard@3x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Notification.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Notification@2x.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Assets/Images/profilePlaceholder/Profile.png",
-				"${PODS_ROOT}/../../Gameball/Resources/Fonts/Cairo-Bold.ttf",
-				"${PODS_ROOT}/../../Gameball/Resources/Fonts/Cairo-Regular.ttf",
-				"${PODS_ROOT}/../../Gameball/Resources/Fonts/Montserrat-Light.otf",
-				"${PODS_ROOT}/../../Gameball/Resources/Fonts/Montserrat-SemiBold.otf",
-				"${PODS_ROOT}/../../Gameball/Resources/Localization/en.lproj/GB_Localizable.strings",
-				"${PODS_ROOT}/../../Gameball/Resources/Localization/GB_LocalizableArabic.strings",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/BackButton/back.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/BackButton/back@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeAchievedImage/innerchallengeAchieved.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeAchievedImage/innerchallengeAchieved@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeInProgressImage/innerchallengeInProgress.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeInProgressImage/innerchallengeInProgress@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeLockedImage/innerchallengeLocked.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ChallengeLockedImage/innerchallengeLocked@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/CloseBTN/close_new.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/CloseBTN/iclose_new@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/CloseBTN/icon_outline_14px_close.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/CloseBTN/icon_outline_14px_close@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DefaultFriendReferal/gbReferralDefaultimage@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DownArrow/dropArrow.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DownArrow/dropArrow@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/DownArrow/dropArrow@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/FriendsReferal/Referral.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/FriendsReferal/Referral@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/FriendsReferal/Referral@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gameballIcon/Gameball-Grey-Icon.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gameBallLogo/gameballIcon@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gift/giftNew.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gift/giftNew@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/gift/giftNew@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/CheckmarkNew@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/unCheckMark.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/unCheckMark@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/GreenTick/unCheckMark@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LeaderBoardEmptyState/gb-leaderboard-emptystate@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIcon/LockIcon.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIcon/LockIcon@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIcon/LockIcon@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/LockIconLarge/LockIconLarge@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/MaskedImage/MaskedImage.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/nextChallengeDownArrow/sequenceArrow@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/No Network/No-Internet.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/No Network/No-Internet@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/No Network/No-Internet@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/NotificationsEmpty/gb-notifications-emptystate@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/frubiesIcon@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/pointsIcon@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/rankpoints.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/rankpoints@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/walletpoints.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/ProfileHeaderiCons/walletpoints@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Achievements.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Achievements@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Achievements@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Leaderboard@3x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Notification.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Notification@2x.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/profilePlaceholder/Profile.png",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Fonts/Cairo-Bold.ttf",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Fonts/Cairo-Regular.ttf",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Fonts/Montserrat-Light.otf",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Fonts/Montserrat-SemiBold.otf",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Localization/en.lproj/GB_Localizable.strings",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/Localization/GB_LocalizableArabic.strings",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ChallengeDetailsHeaderCell.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ChallengeDetailsViewController.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/HighScoreTableViewCell.nib",
@@ -460,6 +422,7 @@
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ParentViewController.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/MainTableViewCell.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ProfileHeaderView.nib",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/GoogleService-Info.plist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -571,10 +534,43 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ParentViewController.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MainTableViewCell.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProfileHeaderView.nib",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E19AE1C1CF260E05552B1D3A /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/FirebaseCore/FirebaseCore.framework",
+				"${BUILT_PRODUCTS_DIR}/FirebaseCoreInternal/FirebaseCoreInternal.framework",
+				"${BUILT_PRODUCTS_DIR}/FirebaseInstallations/FirebaseInstallations.framework",
+				"${BUILT_PRODUCTS_DIR}/FirebaseMessaging/FirebaseMessaging.framework",
+				"${BUILT_PRODUCTS_DIR}/GoogleDataTransport/GoogleDataTransport.framework",
+				"${BUILT_PRODUCTS_DIR}/GoogleUtilities/GoogleUtilities.framework",
+				"${BUILT_PRODUCTS_DIR}/PromisesObjC/FBLPromises.framework",
+				"${BUILT_PRODUCTS_DIR}/nanopb/nanopb.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCore.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseCoreInternal.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseInstallations.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FirebaseMessaging.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleDataTransport.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleUtilities.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FBLPromises.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/nanopb.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -728,7 +724,7 @@
 		};
 		607FACF01AFB9204008FA782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 84F65D96AF5649E9DF303ABA /* Pods-GameBallSDK_Example.debug.xcconfig */;
+			baseConfigurationReference = F647CACE434225B403F1E271 /* Pods-GameBallSDK_Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -748,7 +744,7 @@
 		};
 		607FACF11AFB9204008FA782 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1DDA3260BC36DB7A87DBD33E /* Pods-GameBallSDK_Example.release.xcconfig */;
+			baseConfigurationReference = 74365FF9F10B927C3DEA79D2 /* Pods-GameBallSDK_Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -768,7 +764,7 @@
 		};
 		607FACF31AFB9204008FA782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1AF4309CE974D347AC337DB5 /* Pods-GameBallSDK_Tests.debug.xcconfig */;
+			baseConfigurationReference = 6EC5D28B1C0F03D1A0734C8F /* Pods-GameBallSDK_Tests.debug.xcconfig */;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",
@@ -790,7 +786,7 @@
 		};
 		607FACF41AFB9204008FA782 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 63679098FCE93B6A40A2264E /* Pods-GameBallSDK_Tests.release.xcconfig */;
+			baseConfigurationReference = EB8ED3EC0D6BD4572C32C254 /* Pods-GameBallSDK_Tests.release.xcconfig */;
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PLATFORM_DIR)/Developer/Library/Frameworks",

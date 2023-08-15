@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   # 2
-  s.version    = '2.0.2'
+  s.version    = '2.0.3'
 
   #3
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
@@ -48,10 +48,10 @@ Pod::Spec.new do |s|
   
   
   #8
-  s.source_files = 'Gameball/**/*.{swift}'
+  s.source_files = 'Sources/Gameball/**/*.{swift}'
 
   # 9
-  s.resources = 'Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}', 'Resources/GoogleService-Info.plist'
+  s.resources = 'Sources/Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}', 'Sources/Gameball/Resources/GoogleService-Info.plist'
   
   # 10
   s.swift_version = '4.2'

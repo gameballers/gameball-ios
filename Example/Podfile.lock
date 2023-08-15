@@ -49,7 +49,7 @@ PODS:
     - GoogleUtilities/Reachability (~> 7.8)
     - GoogleUtilities/UserDefaults (~> 7.8)
     - nanopb (< 2.30910.0, >= 2.30908.0)
-  - Gameball (2.0.0):
+  - Gameball (2.0.2):
     - Firebase
     - Firebase/Analytics
     - Firebase/Core
@@ -132,7 +132,7 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: b342e37cd4f5b4454ec34308f073420e7920858e
   FirebaseInstallations: b28af1b9f997f1a799efe818c94695a3728c352f
   FirebaseMessaging: c2b782a6af3058b6e53ac2a6eaab84c5786200c8
-  Gameball: 7c90e153cc5f487f2385e5f0a012079bf3218177
+  Gameball: c0dd9c67d9f7ec09bfb0b18c5e49e8c68e5622a8
   GoogleAppMeasurement: 3ae505b44174bcc0775f5c86cecc5826259fbb1e
   GoogleDataTransport: 54dee9d48d14580407f8f5fbf2f496e92437a2f2
   GoogleUtilities: 13e2c67ede716b8741c7989e26893d151b2b2084
