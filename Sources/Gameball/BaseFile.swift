@@ -11,7 +11,7 @@ import UIKit
 import UserNotifications
 
 open class Gameball {
-        
+    
     static var clientBotStyle: ClientBotStyle?
     var holdReference: String?
     
@@ -38,7 +38,7 @@ open class Gameball {
             if let completion = completion {
                 loadBotSettings(completion: completion)
             }
-    }
+        }
     
     private func loadBotSettings(completion: @escaping (() -> Void)) {
         NetworkManager.shared().load(path: APIEndPoints.getBotStyle, method: RequestMethod.GET, params: [:], modelType: GetClientBotStyleResponse.self) { (data, error) in
@@ -109,30 +109,7 @@ open class Gameball {
         GB_ViewController.hideNavigation = hideNavigation
         return GB_ViewController
     }
-
-    public func notificationPopUP(notification: UNNotification)  {
-//        print(notification.request.content.userInfo["type"])
-        if notification.request.content.userInfo["type"] as? String == "Small Toast" {
-              guard let myView = Bundle.main.loadNibNamed("NotificationtSmallToast", owner: self, options: nil)?[0] as? GB_NotificationtSmallToast else {return}
-            
-            myView.notificationData = notification
-            UIApplication.shared.keyWindow?.rootViewController?.view.GB_showToast(myView, position: .top)
-            
-            
-        }
-        else if notification.request.content.userInfo["type"] as? String == "Large Toast"{
-            guard let myVC = Bundle.main.loadNibNamed("NotificationPopUPView", owner: self, options: nil)?[0] as? NotificationPopUPViewController else {return}
-            myVC.notificationData = notification
-        UIApplication.shared.keyWindow?.rootViewController?.present(myVC , animated: true, completion: nil)
-            
-        }  else {
-            guard let myVC = Bundle.main.loadNibNamed("NotificationPopUpFullScreenViewController", owner: self, options: nil)?[0] as? NotificationPopUpFullScreenViewController else {return}
-            myVC.notificationData = notification
-            UIApplication.shared.keyWindow?.rootViewController?.present(myVC , animated: true, completion: nil)
-            
-        }
-    }
-
+    
     public func recievedDynamicLink(url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false), let queryItems = components.queryItems else { return }
         for queryItem in queryItems{
@@ -147,7 +124,7 @@ open class Gameball {
     public func friendReferral(playerUniqueId: String,playerAttributes: [String:Any] = [:], completion: @escaping (String) -> Void)  {
         return NetworkManager.shared().friendReferral(playerUniqueId: playerUniqueId,playerAttributes: playerAttributes, completion: completion)
     }
-
+    
     
     public func registerDevice(withToken: String) {
         // ToDo: send token to gameball servers

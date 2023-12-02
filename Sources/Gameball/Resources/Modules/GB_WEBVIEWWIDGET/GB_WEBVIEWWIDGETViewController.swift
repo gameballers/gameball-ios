@@ -7,8 +7,8 @@
 
 import UIKit
 import WebKit
-class GB_WEBVIEWWIDGETViewController: BaseViewController, WKNavigationDelegate {
-
+class GB_WEBVIEWWIDGETViewController: BaseViewController {
+    
     @IBOutlet weak var webView: WKWebView!
     var playerID = ""
     var color: String? = ""
@@ -28,17 +28,11 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController, WKNavigationDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        /*
-         let url = "https://m.gameball.app?main=\(color)&playerid=\(playerID)&lang=\(lang)&apiKey=\(APIKEY)"
-         let GB_url = URL(string: url.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) ?? "" )
-         webView.load(URLRequest(url: GB_url! ))
-         */
-        
         let baseURL = "https://m.gameball.app"
-
+        
         var urlComponents = URLComponents(string: baseURL)
         var queryItems = [URLQueryItem]()
-
+        
         if var color = color {
             if (color.first == "#") {
                 color.remove(at: color.startIndex)
@@ -57,7 +51,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController, WKNavigationDelegate {
         if let hideNavigation = hideNavigation {
             queryItems.append(URLQueryItem(name: "hideNavigation", value: hideNavigation ? "true" : "false"))
         }
-
+        
         urlComponents?.queryItems = queryItems
         
         
@@ -65,21 +59,39 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController, WKNavigationDelegate {
             print("Invalid URL")
             return
         }
-
+        
         guard let encodedURL = URL(string: url) else {
             print("Invalid encoded URL")
             return
         }
         
+        webView.navigationDelegate = self
+        
         webView.load(URLRequest(url: encodedURL))
         
         webView.allowsBackForwardNavigationGestures = true
     }
-
-
-
+    
     @IBAction func closeBtnAction(_ sender: Any) {
         self.dismiss(animated: true, completion: nil)
     }
+}
+
+extension GB_WEBVIEWWIDGETViewController: WKNavigationDelegate {
     
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        
+        if let url = navigationAction.request.url,
+           let urlComponents = URLComponents(string: url.absoluteString),
+           let openExternal = urlComponents.queryItems?.first(where: { $0.name == "openInExternalBrowser" })?.value,
+           openExternal == "true",
+           UIApplication.shared.canOpenURL(url) {
+            
+            UIApplication.shared.open(url)
+            
+            return decisionHandler(.cancel)
+        }
+        
+        decisionHandler(.allow)
+    }
 }
