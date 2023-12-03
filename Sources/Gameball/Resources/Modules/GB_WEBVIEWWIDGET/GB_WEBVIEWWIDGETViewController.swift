@@ -19,10 +19,13 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     
     @IBOutlet weak var closeBtn: UIButton! {
         didSet {
-            let origImage = UIImage(named: "icon_outline_14px_close@2x.png")
-            let tintedImage = origImage?.withRenderingMode(.alwaysTemplate)
-            closeBtn.setImage(tintedImage, for: .normal)
-            closeBtn.tintColor = UIColor.white.withAlphaComponent(0.5)
+            var origImage: UIImage?
+#if COCOAPODS
+            origImage = UIImage(named: "icon_outline_14px_close@2x.png")
+#else
+            origImage = UIImage(named: "icon_outline_14px_close@2x.png", in: Bundle.module, compatibleWith: nil)
+#endif
+            closeBtn.setImage(origImage, for: .normal)
         }
     }
     override func viewDidLoad() {
