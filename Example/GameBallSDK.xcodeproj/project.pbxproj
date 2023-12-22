@@ -15,6 +15,7 @@
 		607FACEC1AFB9204008FA782 /* Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* Tests.swift */; };
 		B875DF5BA66A92EDFD4D6C6A /* Pods_GameBallSDK_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBA1775BC45A49403B6070C9 /* Pods_GameBallSDK_Tests.framework */; };
 		D56B718E81E3423099A947BE /* Pods_GameBallSDK_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C57525B9FFC6FFBA91EB2709 /* Pods_GameBallSDK_Example.framework */; };
+		F708A1722B356A3D00F21DAA /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F708A1712B356A3D00F21DAA /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,7 @@
 		DBA1775BC45A49403B6070C9 /* Pods_GameBallSDK_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_GameBallSDK_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB8ED3EC0D6BD4572C32C254 /* Pods-GameBallSDK_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Tests.release.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Tests/Pods-GameBallSDK_Tests.release.xcconfig"; sourceTree = "<group>"; };
 		F647CACE434225B403F1E271 /* Pods-GameBallSDK_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GameBallSDK_Example.debug.xcconfig"; path = "Target Support Files/Pods-GameBallSDK_Example/Pods-GameBallSDK_Example.debug.xcconfig"; sourceTree = "<group>"; };
+		F708A1712B356A3D00F21DAA /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +94,7 @@
 		607FACD21AFB9204008FA782 /* Example for GameBallSDK */ = {
 			isa = PBXGroup;
 			children = (
+				F708A1712B356A3D00F21DAA /* GoogleService-Info.plist */,
 				607FACD51AFB9204008FA782 /* AppDelegate.swift */,
 				607FACD71AFB9204008FA782 /* ViewController.swift */,
 				607FACD91AFB9204008FA782 /* Main.storyboard */,
@@ -248,6 +251,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
+				F708A1722B356A3D00F21DAA /* GoogleService-Info.plist in Resources */,
 				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
 				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
 			);
@@ -373,7 +377,7 @@
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ParentViewController.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/MainTableViewCell.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ProfileHeaderView.nib",
-				"${PODS_ROOT}/../../Sources/Gameball/Resources/GoogleService-Info.plist",
+				"${PODS_ROOT}/../../Sources/Gameball/Resources/GBGoogleService-Info.plist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -480,7 +484,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ParentViewController.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MainTableViewCell.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProfileHeaderView.nib",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GBGoogleService-Info.plist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

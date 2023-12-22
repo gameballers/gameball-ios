@@ -21,6 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         
         FirebaseApp.configure()
         gameballApp = Gameball(apiKey: "API_KEY_HERE")
+        gameballApp?.configureFireBase()
         registerForPushNotifications()
         return true
     }
