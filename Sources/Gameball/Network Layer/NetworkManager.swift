@@ -16,8 +16,8 @@ class NetworkManager:NSObject {
     
     var sdkVersion = "2.0.8"
     let urlSession: URLSession
-    let connectionScheme: String
-    let host: String
+    var baseUrl: String
+    var widgetUrl: String
     var APIKey: String
     var currentLanguage: Languages
     var referalCode = ""
@@ -33,28 +33,36 @@ class NetworkManager:NSObject {
             // Fallback on earlier versions
         }
         let urlSession = URLSession(configuration: sessionConfiguration)
-        let baseURL = APIEndPoints.base_URL
-        //        let baseURL = TestingServer.shared.base_URL
         
-        let scheme = "https"
-        let host = APIEndPoints.base_URL
-        //        let host = TestingServer.shared.base_URL
-        
-        
-        //        let port = APIEndPoints.appPort
         let APIKey = ""
         let playerUniqueId = ""
         let categoryId = ""
         let currentLanguage = Languages.english
-        let networkManager = NetworkManager.init(urlSession: urlSession, connectionScheme: scheme, host: host, APIKey: APIKey, playerUniqueId: playerUniqueId, categoryId: categoryId,currentLanguage: currentLanguage)
+        let networkManager = NetworkManager.init(
+            urlSession: urlSession,
+            baseUrl: APIEndPoints.base_URL,
+            widgetUrl: APIEndPoints.widget_URL,
+            APIKey: APIKey,
+            playerUniqueId: playerUniqueId,
+            categoryId: categoryId,
+            currentLanguage: currentLanguage
+        )
         return networkManager
     }()
     
     
-    private init(urlSession: URLSession, connectionScheme: String, host: String, APIKey: String, playerUniqueId: String, categoryId: String , currentLanguage: Languages) {
+    private init(
+        urlSession: URLSession,
+        baseUrl: String,
+        widgetUrl: String,
+        APIKey: String,
+        playerUniqueId: String,
+        categoryId: String,
+        currentLanguage: Languages
+    ) {
         self.urlSession = urlSession
-        self.connectionScheme = connectionScheme
-        self.host = host
+        self.baseUrl = baseUrl
+        self.widgetUrl = widgetUrl
         self.APIKey = APIKey
         self.playerUniqueId = playerUniqueId
         self.categoryId = categoryId
@@ -830,12 +838,20 @@ class NetworkManager:NSObject {
         
     }
     
-    
     func registerAPIKey(APIKey: String,language: Languages  = .english) {
         NetworkManager.shared().APIKey = APIKey
         UserDefaults.standard.set(APIKey, forKey: UserDefaultsKeys.APIKey.rawValue)
         setLanguage(language: language)
     }
+    
+    func registerBaseUrl(baseUrl: String) {
+        NetworkManager.shared().baseUrl = baseUrl
+    }
+    
+    func registerWidgetUrl(widgetUrl: String) {
+        NetworkManager.shared().widgetUrl = widgetUrl
+    }
+    
     func setLanguage(language: Languages) {
         GB_Localizator.sharedInstance.language = language
         NetworkManager.shared().currentLanguage = language

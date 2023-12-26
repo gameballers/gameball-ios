@@ -16,11 +16,14 @@ class ViewController: UIViewController {
     @IBOutlet weak var trackEventBtn: UIButton!
     
     @IBOutlet weak var apiKeyTextField: UITextField!
+    @IBOutlet weak var apiUrlTextField: UITextField!
+    @IBOutlet weak var widgetUrlTextField: UITextField!
     @IBOutlet weak var playerIdTextField: UITextField!
     @IBOutlet weak var langTextField: UITextField!
     @IBOutlet weak var shopTextField: UITextField!
     @IBOutlet weak var platformTextField: UITextField!
     @IBOutlet weak var openDetailTextField: UITextField!
+    @IBOutlet weak var playerAttributesTextView: UITextView!
     @IBOutlet weak var hideNavigationSwitch: UISwitch!
     
     override func viewDidLoad() {
@@ -43,6 +46,8 @@ class ViewController: UIViewController {
             lang: langTextField.text,
             shop: shopTextField.text,
             platform: platformTextField.text,
+            apiPrefix: apiUrlTextField.text,
+            widgetUrlPrefix: widgetUrlTextField.text,
             completion: { [weak self] in
                 guard let self = self else {return}
                 
@@ -59,10 +64,8 @@ class ViewController: UIViewController {
                     mobile: "010000000",
                     email: "email@test.com",
 //                    referrerCode: "GB_X1", // Must be valid, otherwise API will fail
-                    playerAttributes: [
-                        "custom_attribute": "custom_value",
-                        "country": "Egypt"
-                    ], completion: { gameballId, error in
+                    playerAttributes: convertToDictionary(text: playerAttributesTextView.text),
+                    completion: { gameballId, error in
                         if let error = error {
                             print("Registration failed with error: \(error)")
                         } else if let gameballId = gameballId {
@@ -101,6 +104,15 @@ class ViewController: UIViewController {
         let alert = UIAlertController(title: title, message: desc, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
         self.present(alert, animated: true, completion: nil)
+    }
+    
+    // For Demo
+    private func convertToDictionary(text: String) -> [String: Any] {
+        if let data = text.data(using: .utf8),
+            let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            return json ?? [:]
+        }
+        return [:]
     }
 }
 

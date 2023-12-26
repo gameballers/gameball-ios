@@ -31,7 +31,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let baseURL = "https://m.gameball.app"
+        let baseURL = NetworkManager.shared().widgetUrl
         
         var urlComponents = URLComponents(string: baseURL)
         var queryItems = [URLQueryItem]()

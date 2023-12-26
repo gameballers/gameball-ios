@@ -9,32 +9,11 @@
 import Foundation
 import UIKit
 
-//COMMENT ALL THE CLASS WHEN GO PRODUCTION
-//class TestingServer
-//{
-//    static let shared = TestingServer()
-//
-//    var base_URL = ""
-//    private init()
-//    {
-//           if UserDefaults.standard.bool(forKey: "prod") {
-//
-//             base_URL = "api.gameball.co"
-//           } else {
-//
-//             base_URL = "gb-api.azurewebsites.net"
-//
-//           }
-//    }
-//}
-
-
 class APIEndPoints {
 
     //PRODUCTION
-    static let base_URL = "api.gameball.co"
-
-    static let appPort = 8092
+    static let base_URL = "https://api.gameball.co"
+    static let widget_URL = "https://m.gameball.app"
     
     static let getBotStyle = "/api/v1.0/Bots/BotSettings"
     static let getChallengesWithUnlocks = "/api/v1.0/Bots/challenges"

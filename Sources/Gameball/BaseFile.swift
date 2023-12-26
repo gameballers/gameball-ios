@@ -27,11 +27,21 @@ open class Gameball {
         lang: String? = nil,
         shop: String? = nil,
         platform: String? = nil,
+        apiPrefix: String? = nil,
+        widgetUrlPrefix: String? = nil,
         completion: (() -> Void)? = nil) {
             self.apiKey = apiKey
             self.lang = lang
             self.shop = shop
             self.platform = platform
+            
+            if let baseUrl = apiPrefix {
+                NetworkManager.shared().registerBaseUrl(baseUrl: baseUrl)
+            }
+            
+            if let widgetUrl = widgetUrlPrefix {
+                NetworkManager.shared().registerWidgetUrl(widgetUrl: widgetUrl)
+            }
             
             NetworkManager.shared().registerAPIKey(APIKey: apiKey)
             
