@@ -40,10 +40,7 @@
     "OTHER_LDFLAGS": "$(inherited) -framework \"GameBallSDK\""
   },
   "source_files": "Sources/Gameball/**/*.{swift}",
-  "resources": [
-    "Sources/Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}",
-    "Sources/Gameball/Resources/GoogleService-Info.plist"
-  ],
+  "resources": "Sources/Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}",
   "swift_versions": "4.2",
   "swift_version": "4.2"
 }

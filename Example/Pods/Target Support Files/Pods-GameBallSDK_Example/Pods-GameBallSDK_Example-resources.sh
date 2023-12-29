@@ -200,7 +200,6 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ParentViewController.nib"
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/MainTableViewCell.nib"
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ProfileHeaderView.nib"
-  install_resource "${PODS_ROOT}/../../Sources/Gameball/Resources/GoogleService-Info.plist"
 fi
 if [[ "$CONFIGURATION" == "Release" ]]; then
   install_resource "${PODS_ROOT}/../../Sources/Gameball/Resources/Assets/Images/BackButton/back.png"
@@ -306,7 +305,6 @@ if [[ "$CONFIGURATION" == "Release" ]]; then
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ParentViewController.nib"
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/MainTableViewCell.nib"
   install_resource "${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ProfileHeaderView.nib"
-  install_resource "${PODS_ROOT}/../../Sources/Gameball/Resources/GoogleService-Info.plist"
 fi
 
 mkdir -p "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"

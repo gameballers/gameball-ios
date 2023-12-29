@@ -938,24 +938,20 @@ class NetworkManager:NSObject {
 
 extension URL {
     init(path: String, params: JSON , method: RequestMethod) {
-        
-        var components = URLComponents()
-        components.scheme = NetworkManager.shared().connectionScheme
-        components.host = NetworkManager.shared().host
-        //        components.port = NetworkManager.shared().port
-        components.path += path
+        var components = URLComponents(string: NetworkManager.shared().baseUrl)
+        components?.path += path
         if params.count > 0 {
             switch method {
             case .GET, .DELETE:
-                components.queryItems = params.map {
+                components?.queryItems = params.map {
                     URLQueryItem(name: $0.key, value: String(describing: $0.value))
                 }
             default:
                 break
             }
         }
-        Helpers().dPrint(components.url!)
-        self = components.url!
+        Helpers().dPrint((components?.url)!)
+        self = (components?.url)!
     }
 }
 

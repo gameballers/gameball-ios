@@ -51,7 +51,7 @@ Pod::Spec.new do |s|
   s.source_files = 'Sources/Gameball/**/*.{swift}'
 
   # 9
-  s.resources = 'Sources/Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}', 'Sources/Gameball/Resources/GoogleService-Info.plist'
+  s.resources = 'Sources/Gameball/**/*.{png,jpeg,jpg,storyboard,xib,xcassets,strings,otf,ttf}'
   
   # 10
   s.swift_version = '4.2'

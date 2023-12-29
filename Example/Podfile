@@ -2,7 +2,8 @@ use_frameworks!
 
 target 'GameBallSDK_Example' do
   pod 'Gameball', :path => '../'
-
+  pod 'FirebaseMessaging'
+  
   target 'GameBallSDK_Tests' do
     inherit! :search_paths
 

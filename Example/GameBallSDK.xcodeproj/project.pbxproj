@@ -179,6 +179,8 @@
 			dependencies = (
 			);
 			name = GameBallSDK_Example;
+			packageProductDependencies = (
+			);
 			productName = GameBallSDK;
 			productReference = 607FACD01AFB9204008FA782 /* GameBallSDK_Example.app */;
 			productType = "com.apple.product-type.application";
@@ -235,6 +237,8 @@
 				Base,
 			);
 			mainGroup = 607FACC71AFB9204008FA782;
+			packageReferences = (
+			);
 			productRefGroup = 607FACD11AFB9204008FA782 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -377,7 +381,6 @@
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ParentViewController.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/MainTableViewCell.nib",
 				"${BUILT_PRODUCTS_DIR}/Gameball/Gameball.framework/ProfileHeaderView.nib",
-				"${PODS_ROOT}/../../Sources/Gameball/Resources/GoogleService-Info.plist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -484,7 +487,6 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ParentViewController.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/MainTableViewCell.nib",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProfileHeaderView.nib",
-				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

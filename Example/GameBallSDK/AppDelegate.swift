@@ -50,5 +50,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
         return true
     }
+    
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        if let token = fcmToken {
+            gameballApp?.registerDevice(withToken: token)
+        }
+    }
 }
 
