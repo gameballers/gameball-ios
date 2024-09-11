@@ -821,15 +821,7 @@ class NetworkManager:NSObject {
         if NetworkManager.shared().APIKey.count > 0 {
             urlRequest.addValue(NetworkManager.shared().APIKey, forHTTPHeaderField: "APIKey")
             urlRequest.addValue("GB" + "\\" + "iOS" + NetworkManager.shared().sdkVersion, forHTTPHeaderField: "x-gb-agent")
-        
-            if GB_Localizator.sharedInstance.language == Languages.arabic {
-                urlRequest.addValue("ar", forHTTPHeaderField: "lang")
-                
-            } else {
-                urlRequest.addValue("en", forHTTPHeaderField: "lang")
-                
-            }
-            
+            urlRequest.addValue(currentLanguage  == .arabic ? "ar" : "en", forHTTPHeaderField: "lang")
         }
     }
     

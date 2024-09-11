@@ -43,7 +43,13 @@ open class Gameball {
                 NetworkManager.shared().registerWidgetUrl(widgetUrl: widgetUrl)
             }
             
-            NetworkManager.shared().registerAPIKey(APIKey: apiKey)
+            var language = Languages.english
+            
+            if lang == "ar" {
+                language = Languages.arabic
+            }
+            
+            NetworkManager.shared().registerAPIKey(APIKey: apiKey, language: language)
             
             if let completion = completion {
                 loadBotSettings(completion: completion)
