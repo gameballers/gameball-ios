@@ -52,9 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-        if let token = fcmToken {
-            gameballApp?.registerDevice(withToken: token)
-        }
+        // Store FCM Token locally to use it in registerPlayer
     }
 }
 

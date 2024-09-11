@@ -35,11 +35,11 @@ open class Gameball {
             self.shop = shop
             self.platform = platform
             
-            if let baseUrl = apiPrefix {
+            if let baseUrl = apiPrefix, !baseUrl.isEmpty, baseUrl != "" {
                 NetworkManager.shared().registerBaseUrl(baseUrl: baseUrl)
             }
             
-            if let widgetUrl = widgetUrlPrefix {
+            if let widgetUrl = widgetUrlPrefix, !widgetUrl.isEmpty, widgetUrl != "" {
                 NetworkManager.shared().registerWidgetUrl(widgetUrl: widgetUrl)
             }
             
@@ -134,14 +134,6 @@ open class Gameball {
     public func friendReferral(playerUniqueId: String,playerAttributes: [String:Any] = [:], completion: @escaping (String) -> Void)  {
         return NetworkManager.shared().friendReferral(playerUniqueId: playerUniqueId,playerAttributes: playerAttributes, completion: completion)
     }
-    
-    
-    public func registerDevice(withToken: String) {
-        // ToDo: send token to gameball servers
-        // a player should be registered to link token with player
-        NetworkManager.shared().registerDevice(withToken: withToken)
-    }
-    
     
     public func sendEvents(
         playerUniqueId: String,

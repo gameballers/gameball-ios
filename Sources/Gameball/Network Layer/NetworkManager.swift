@@ -14,7 +14,7 @@ typealias JSON = [String: Any]
 class NetworkManager:NSObject {
     let userCache = UserProfileCache.get()
     
-    var sdkVersion = "2.1.1"
+    var sdkVersion = "2.2.0"
     let urlSession: URLSession
     var baseUrl: String
     var widgetUrl: String
@@ -833,11 +833,6 @@ class NetworkManager:NSObject {
         }
     }
     
-    
-    func registerDevice() {
-        
-    }
-    
     func registerAPIKey(APIKey: String,language: Languages  = .english) {
         NetworkManager.shared().APIKey = APIKey
         UserDefaults.standard.set(APIKey, forKey: UserDefaultsKeys.APIKey.rawValue)
@@ -899,19 +894,6 @@ class NetworkManager:NSObject {
                 } else {
                     completion("Failed to Refer a friend  because \(response?.errorMsg ?? "")")
                 }
-            }
-        }
-    }
-    
-    func registerDevice(withToken: String) {
-        
-        self.registerPlayerRequest(playerUniqueId: playerUniqueId, playerCategroyId: categoryId, deviceToken: withToken) { (response, error) in
-            if error != nil {
-                // do something
-                Helpers().dPrint("failed to registerDevice user because \(error!.description)")
-            }
-            else {
-                Helpers().dPrint("registerDevice \(response)")
             }
         }
     }

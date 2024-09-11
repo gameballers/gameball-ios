@@ -12,124 +12,151 @@
         <!--View Controller-->
         <scene sceneID="71s-p7-A3I">
             <objects>
-                <viewController id="0ZL-Da-Ypn" customClass="ViewController" customModule="GameBallSDK_Example" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController automaticallyAdjustsScrollViewInsets="NO" id="0ZL-Da-Ypn" customClass="ViewController" customModule="GameBallSDK_Example" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="6eL-aG-gfD">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="1000"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="M9f-re-hHo">
-                                <rect key="frame" x="16" y="36" width="343" height="596.5"/>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="1py-Uf-Zeq">
+                                <rect key="frame" x="0.0" y="20" width="375" height="980"/>
                                 <subviews>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="API Key" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Bf2-Pe-3ye">
-                                        <rect key="frame" x="0.0" y="0.0" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="API Url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Bl0-cN-arg">
-                                        <rect key="frame" x="0.0" y="42" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Widget Url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="kkY-jG-Opm">
-                                        <rect key="frame" x="0.0" y="84" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Player Unique ID" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="pKo-Jn-2sH">
-                                        <rect key="frame" x="0.0" y="126" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Lang" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Kfl-GK-A1X">
-                                        <rect key="frame" x="0.0" y="168" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Shop" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="K83-ct-7WJ">
-                                        <rect key="frame" x="0.0" y="210" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Platform" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="tQD-sx-5bc">
-                                        <rect key="frame" x="0.0" y="252" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Open Detail" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="4XX-nB-WpQ">
-                                        <rect key="frame" x="0.0" y="294" width="343" height="34"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits"/>
-                                    </textField>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Player attributes in JSON format" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o0u-X5-RXY">
-                                        <rect key="frame" x="0.0" y="336" width="343" height="20.5"/>
-                                        <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="17"/>
-                                        <nil key="textColor"/>
-                                        <nil key="highlightedColor"/>
-                                    </label>
-                                    <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="VOj-2Q-dtt">
-                                        <rect key="frame" x="0.0" y="364.5" width="343" height="100"/>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wVj-tW-RzR">
+                                        <rect key="frame" x="0.0" y="0.0" width="375" height="628.5"/>
+                                        <subviews>
+                                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="M9f-re-hHo">
+                                                <rect key="frame" x="16" y="16" width="343" height="596.5"/>
+                                                <subviews>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="API Key" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Bf2-Pe-3ye">
+                                                        <rect key="frame" x="0.0" y="0.0" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="API Url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Bl0-cN-arg">
+                                                        <rect key="frame" x="0.0" y="42" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Widget Url" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="kkY-jG-Opm">
+                                                        <rect key="frame" x="0.0" y="84" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Player Unique ID" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="pKo-Jn-2sH">
+                                                        <rect key="frame" x="0.0" y="126" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Lang" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="Kfl-GK-A1X">
+                                                        <rect key="frame" x="0.0" y="168" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Shop" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="K83-ct-7WJ">
+                                                        <rect key="frame" x="0.0" y="210" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Platform" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="tQD-sx-5bc">
+                                                        <rect key="frame" x="0.0" y="252" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <textField opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="248" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Open Detail" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="4XX-nB-WpQ">
+                                                        <rect key="frame" x="0.0" y="294" width="343" height="34"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits"/>
+                                                    </textField>
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Player attributes in JSON format" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="o0u-X5-RXY">
+                                                        <rect key="frame" x="0.0" y="336" width="343" height="20.5"/>
+                                                        <fontDescription key="fontDescription" name=".AppleSystemUIFont" family=".AppleSystemUIFont" pointSize="17"/>
+                                                        <nil key="textColor"/>
+                                                        <nil key="highlightedColor"/>
+                                                    </label>
+                                                    <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="VOj-2Q-dtt">
+                                                        <rect key="frame" x="0.0" y="364.5" width="343" height="100"/>
+                                                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="100" id="y6E-mW-UWO"/>
+                                                        </constraints>
+                                                        <color key="textColor" systemColor="labelColor"/>
+                                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                                        <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                                                    </textView>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Rim-ln-XfC">
+                                                        <rect key="frame" x="0.0" y="472.5" width="343" height="31"/>
+                                                        <subviews>
+                                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="JYo-1g-Jz2">
+                                                                <rect key="frame" x="0.0" y="0.0" width="51" height="31"/>
+                                                            </switch>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Hide navigation" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Kvx-ci-GaF">
+                                                                <rect key="frame" x="57" y="0.0" width="286" height="31"/>
+                                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                                                <nil key="textColor"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                        </subviews>
+                                                    </stackView>
+                                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K2t-GE-Bzb">
+                                                        <rect key="frame" x="0.0" y="511.5" width="343" height="38.5"/>
+                                                        <state key="normal" title="Button"/>
+                                                        <buttonConfiguration key="configuration" style="plain" title="Init SDK"/>
+                                                        <connections>
+                                                            <action selector="didTapInitSDK:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="i9V-h0-6EL"/>
+                                                        </connections>
+                                                    </button>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ZrR-QV-iAN">
+                                                        <rect key="frame" x="0.0" y="558" width="343" height="38.5"/>
+                                                        <subviews>
+                                                            <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CkB-bg-SoS">
+                                                                <rect key="frame" x="0.0" y="0.0" width="171.5" height="38.5"/>
+                                                                <state key="normal" title="Button"/>
+                                                                <buttonConfiguration key="configuration" style="plain" title="Launch Widget"/>
+                                                                <connections>
+                                                                    <action selector="didTapLaunch:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="nWE-cm-2Ik"/>
+                                                                </connections>
+                                                            </button>
+                                                            <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SxN-yh-i8b">
+                                                                <rect key="frame" x="171.5" y="0.0" width="171.5" height="38.5"/>
+                                                                <state key="normal" title="Button"/>
+                                                                <buttonConfiguration key="configuration" style="plain" title="Track Event"/>
+                                                                <connections>
+                                                                    <action selector="didTapTrackEvent:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="r47-ht-Q27"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                    </stackView>
+                                                </subviews>
+                                            </stackView>
+                                        </subviews>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="100" id="y6E-mW-UWO"/>
+                                            <constraint firstItem="M9f-re-hHo" firstAttribute="top" secondItem="wVj-tW-RzR" secondAttribute="top" constant="16" id="3c6-ti-goE"/>
+                                            <constraint firstAttribute="bottom" secondItem="M9f-re-hHo" secondAttribute="bottom" constant="16" id="ND4-k4-pqN"/>
+                                            <constraint firstItem="M9f-re-hHo" firstAttribute="leading" secondItem="wVj-tW-RzR" secondAttribute="leading" constant="16" id="R4k-cf-DQg"/>
+                                            <constraint firstAttribute="trailing" secondItem="M9f-re-hHo" secondAttribute="trailing" constant="16" id="fMb-sj-csN"/>
                                         </constraints>
-                                        <color key="textColor" systemColor="labelColor"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
-                                    </textView>
-                                    <stackView opaque="NO" contentMode="scaleToFill" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="Rim-ln-XfC">
-                                        <rect key="frame" x="0.0" y="472.5" width="343" height="31"/>
-                                        <subviews>
-                                            <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="JYo-1g-Jz2">
-                                                <rect key="frame" x="0.0" y="0.0" width="51" height="31"/>
-                                            </switch>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Hide navigation" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Kvx-ci-GaF">
-                                                <rect key="frame" x="57" y="0.0" width="286" height="31"/>
-                                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                                <nil key="textColor"/>
-                                                <nil key="highlightedColor"/>
-                                            </label>
-                                        </subviews>
-                                    </stackView>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="K2t-GE-Bzb">
-                                        <rect key="frame" x="0.0" y="511.5" width="343" height="38.5"/>
-                                        <state key="normal" title="Button"/>
-                                        <buttonConfiguration key="configuration" style="plain" title="Init SDK"/>
-                                        <connections>
-                                            <action selector="didTapInitSDK:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="i9V-h0-6EL"/>
-                                        </connections>
-                                    </button>
-                                    <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ZrR-QV-iAN">
-                                        <rect key="frame" x="0.0" y="558" width="343" height="38.5"/>
-                                        <subviews>
-                                            <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="CkB-bg-SoS">
-                                                <rect key="frame" x="0.0" y="0.0" width="171.5" height="38.5"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="plain" title="Launch Widget"/>
-                                                <connections>
-                                                    <action selector="didTapLaunch:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="nWE-cm-2Ik"/>
-                                                </connections>
-                                            </button>
-                                            <button opaque="NO" contentMode="scaleToFill" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SxN-yh-i8b">
-                                                <rect key="frame" x="171.5" y="0.0" width="171.5" height="38.5"/>
-                                                <state key="normal" title="Button"/>
-                                                <buttonConfiguration key="configuration" style="plain" title="Track Event"/>
-                                                <connections>
-                                                    <action selector="didTapTrackEvent:" destination="0ZL-Da-Ypn" eventType="touchUpInside" id="r47-ht-Q27"/>
-                                                </connections>
-                                            </button>
-                                        </subviews>
-                                    </stackView>
+                                    </view>
                                 </subviews>
-                            </stackView>
+                                <constraints>
+                                    <constraint firstItem="wVj-tW-RzR" firstAttribute="leading" secondItem="1py-Uf-Zeq" secondAttribute="leading" id="ID3-oe-r3K"/>
+                                    <constraint firstAttribute="bottom" secondItem="wVj-tW-RzR" secondAttribute="bottom" id="cHD-ee-GeL"/>
+                                    <constraint firstItem="wVj-tW-RzR" firstAttribute="top" secondItem="1py-Uf-Zeq" secondAttribute="top" id="f1e-Qv-NM1"/>
+                                    <constraint firstItem="wVj-tW-RzR" firstAttribute="width" secondItem="1py-Uf-Zeq" secondAttribute="width" id="qSe-Gf-0vi"/>
+                                    <constraint firstAttribute="trailing" secondItem="wVj-tW-RzR" secondAttribute="trailing" id="tgS-ZO-oei"/>
+                                </constraints>
+                            </scrollView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="7zZ-tw-C0r"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
-                            <constraint firstItem="7zZ-tw-C0r" firstAttribute="trailing" secondItem="M9f-re-hHo" secondAttribute="trailing" constant="16" id="5in-zS-GWX"/>
-                            <constraint firstItem="M9f-re-hHo" firstAttribute="leading" secondItem="7zZ-tw-C0r" secondAttribute="leading" constant="16" id="Hvf-Rf-aSs"/>
-                            <constraint firstItem="M9f-re-hHo" firstAttribute="top" secondItem="7zZ-tw-C0r" secondAttribute="top" constant="16" id="LVS-Zb-tgH"/>
+                            <constraint firstItem="1py-Uf-Zeq" firstAttribute="leading" secondItem="7zZ-tw-C0r" secondAttribute="leading" id="2X4-ud-FPB"/>
+                            <constraint firstAttribute="bottom" secondItem="1py-Uf-Zeq" secondAttribute="bottom" id="FKp-iB-z8s" customClass="KeyboardLayoutConstraint" customModule="GameBallSDK_Example" customModuleProvider="target"/>
+                            <constraint firstAttribute="trailing" secondItem="1py-Uf-Zeq" secondAttribute="trailing" id="NhX-FF-YDe"/>
+                            <constraint firstItem="1py-Uf-Zeq" firstAttribute="top" secondItem="7zZ-tw-C0r" secondAttribute="top" id="pCH-Jg-PjQ"/>
                         </constraints>
                     </view>
+                    <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+                    <size key="freeformSize" width="375" height="1000"/>
                     <connections>
                         <outlet property="apiKeyTextField" destination="Bf2-Pe-3ye" id="GH6-7F-AQe"/>
                         <outlet property="apiUrlTextField" destination="Bl0-cN-arg" id="bIU-R5-meD"/>
@@ -138,6 +165,7 @@
                         <outlet property="launchWidgetBtn" destination="CkB-bg-SoS" id="RQU-7x-tGX"/>
                         <outlet property="openDetailTextField" destination="4XX-nB-WpQ" id="pzY-ZO-Bzc"/>
                         <outlet property="platformTextField" destination="tQD-sx-5bc" id="GHp-ZY-1ld"/>
+                        <outlet property="playerAttributesTextView" destination="VOj-2Q-dtt" id="6HH-hI-IIP"/>
                         <outlet property="playerIdTextField" destination="pKo-Jn-2sH" id="YNf-wU-j3B"/>
                         <outlet property="shopTextField" destination="K83-ct-7WJ" id="zJq-h3-ZK5"/>
                         <outlet property="trackEventBtn" destination="SxN-yh-i8b" id="vcl-tE-Oyf"/>
@@ -146,7 +174,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="653-S4-kRE" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-108" y="4"/>
+            <point key="canvasLocation" x="-108" y="3.5982008995502253"/>
         </scene>
     </scenes>
     <resources>

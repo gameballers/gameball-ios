@@ -60,7 +60,7 @@ class ViewController: UIViewController {
                 self.gameball?.registerPlayer(
                     playerUniqueId: playerId,
                     playerTypeId: "1",
-                    deviceToken: "firebase_token",
+                    deviceToken: "fcm_token",
                     mobile: "010000000",
                     email: "email@test.com",
 //                    referrerCode: "GB_X1", // Must be valid, otherwise API will fail
