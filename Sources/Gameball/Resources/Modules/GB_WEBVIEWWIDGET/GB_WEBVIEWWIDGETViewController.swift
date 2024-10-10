@@ -16,6 +16,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var lang: String? = ""
     var openDetail: String?
     var hideNavigation: Bool?
+    var showCloseBtn: Bool = true
     
     @IBOutlet weak var closeBtn: UIButton! {
         didSet {
@@ -30,6 +31,8 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     }
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        closeBtn.isHidden = !showCloseBtn
         
         let baseURL = NetworkManager.shared().widgetUrl
         

@@ -94,6 +94,7 @@ open class Gameball {
         playerUniqueId: String,
         openDetail: String? = nil,
         hideNavigation: Bool? = nil,
+        showCloseBtn: Bool = true,
         completion:  ((_ viewController: UIViewController?, _ errorMessage: String?)->())
     ) {
         let GB_ViewController = self.prepareGBVC(
@@ -102,14 +103,15 @@ open class Gameball {
             withColor: Gameball.clientBotStyle?.botMainColor,
             withLang: lang,
             openDetail: openDetail,
-            hideNavigation: hideNavigation
+            hideNavigation: hideNavigation,
+            showCloseBtn: showCloseBtn
         )
         
         completion(GB_ViewController, nil)
     }
     
     
-    private func prepareGBVC(withAPIKEY: String,withPlayerUniqueId: String,withColor: String?, withLang:String?, openDetail: String? = nil, hideNavigation: Bool? = nil) -> UIViewController {
+    private func prepareGBVC(withAPIKEY: String,withPlayerUniqueId: String,withColor: String?, withLang:String?, openDetail: String? = nil, hideNavigation: Bool? = nil, showCloseBtn: Bool) -> UIViewController {
         var bundle: Bundle?
         #if COCOAPODS
             bundle = Bundle(for: GB_WEBVIEWWIDGETViewController.self)
@@ -123,6 +125,7 @@ open class Gameball {
         GB_ViewController.lang = withLang
         GB_ViewController.openDetail = openDetail
         GB_ViewController.hideNavigation = hideNavigation
+        GB_ViewController.showCloseBtn = showCloseBtn
         return GB_ViewController
     }
     
