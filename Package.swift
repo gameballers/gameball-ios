@@ -27,7 +27,7 @@ let package = Package(
             dependencies: [],
             resources: [
                 Resource.process("Resources/Assets/Images"),
-                .process("PrivacyInfo.xcprivacy")
+                .process("Resources/PrivacyInfo.xcprivacy")
             ]
         ),
         .testTarget(
