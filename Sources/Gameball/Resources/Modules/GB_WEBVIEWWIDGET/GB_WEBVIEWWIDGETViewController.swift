@@ -17,6 +17,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var openDetail: String?
     var hideNavigation: Bool?
     var showCloseBtn: Bool = true
+    var pullToDismiss: Bool = false
     
     @IBOutlet weak var closeBtn: UIButton! {
         didSet {
@@ -70,13 +71,29 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
             print("Invalid encoded URL")
             return
         }
-        
+
         webView.navigationDelegate = self
         
         webView.load(URLRequest(url: encodedURL))
         
         webView.allowsBackForwardNavigationGestures = true
-    }
+        
+        if (pullToDismiss) {
+            let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+            panGesture.delegate = self
+            webView.scrollView.addGestureRecognizer(panGesture)
+        }
+   }
+
+   @objc func handlePanGesture(_ gesture: UIPanGestureRecognizer) {
+       let translation = gesture.translation(in: webView.scrollView)
+
+       if translation.y > 0 && webView.scrollView.contentOffset.y <= 0 {
+           if translation.y > 200 {
+               dismiss(animated: true, completion: nil)
+           }
+       }
+   }
     
     @IBAction func closeBtnAction(_ sender: Any) {
         self.dismiss(animated: true, completion: nil)
@@ -99,5 +116,11 @@ extension GB_WEBVIEWWIDGETViewController: WKNavigationDelegate {
         }
         
         decisionHandler(.allow)
+    }
+}
+
+extension GB_WEBVIEWWIDGETViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }
