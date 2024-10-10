@@ -25,7 +25,10 @@ let package = Package(
         .target(
             name: "Gameball",
             dependencies: [],
-            resources: [Resource.process("Resources/Assets/Images")]
+            resources: [
+                Resource.process("Resources/Assets/Images"),
+                .process("PrivacyInfo.xcprivacy")
+            ]
         ),
         .testTarget(
             name: "GameballTests",
