@@ -189,7 +189,8 @@ public class GameballApp {
     private func loadBotSettings(completion: @escaping (Error?) -> Void) {
         // Use only the path - the base URL is added automatically by the URL extension
         let path = APIEndPoints.getBotStyle
-        networkManager.load(path: path, method: RequestMethod.GET, params: [:], modelType: GetClientBotStyleResponse.self) { (data, error) in
+        let params: [String: Any] = ["c": "mobile"]
+        networkManager.load(path: path, method: RequestMethod.GET, params: params, modelType: GetClientBotStyleResponse.self) { (data, error) in
             if data != nil {
                 GameballApp.clientBotStyle = (data as? GetClientBotStyleResponse)?.response
                 self.networkManager.clientBotSettings = true
