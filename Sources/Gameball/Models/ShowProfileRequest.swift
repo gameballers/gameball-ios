@@ -21,7 +21,7 @@ public struct ShowProfileRequest {
     ///   - openDetail: Optional specific section to open (e.g., "achievements", "leaderboard")
     ///   - hideNavigation: Optional flag to hide navigation in widget
     ///   - showCloseButton: Optional flag to show close button (defaults to true)
-    ///   - closeButtonColor: Optional close button color (currently unused)
+    ///   - closeButtonColor: Optional close button color as hex string (e.g., "#FF0000", defaults to "#CECECE")
     ///   - widgetUrlPrefix: Optional custom widget URL (currently unused)
     public init(
         customerId: String,
