@@ -10,7 +10,8 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="GB_WEBVIEWWIDGETViewController" customModule="GameBallSDK" customModuleProvider="target">
             <connections>
-                <outlet property="closeBtn" destination="tM2-KC-iR4" id="OnG-9r-Ncl"/>
+                <outlet property="closeBtnRight" destination="tM2-KC-iR4" id="OnG-9r-Ncl"/>
+                <outlet property="closeBtnLeft" destination="XYZ-AB-CD1" id="XYZ-12-345"/>
                 <outlet property="view" destination="i5M-Pr-FkT" id="sfx-zR-JGt"/>
                 <outlet property="webView" destination="OTK-I0-JbD" id="fVu-PA-DcM"/>
             </connections>
@@ -30,15 +31,15 @@
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tM2-KC-iR4">
                     <rect key="frame" x="352" y="59" width="32" height="32"/>
                     <state key="normal" image="icon_outline_14px_close@2x.png"/>
-                </button>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="6D3-ts-3tt">
-                    <rect key="frame" x="344" y="44" width="70" height="50"/>
-                    <constraints>
-                        <constraint firstAttribute="width" constant="70" id="0xj-XU-fSf"/>
-                        <constraint firstAttribute="height" constant="50" id="T9S-6f-oIP"/>
-                    </constraints>
                     <connections>
                         <action selector="closeBtnAction:" destination="-1" eventType="touchUpInside" id="TYT-rf-FbN"/>
+                    </connections>
+                </button>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XYZ-AB-CD1">
+                    <rect key="frame" x="30" y="59" width="32" height="32"/>
+                    <state key="normal" image="icon_outline_14px_close@2x.png"/>
+                    <connections>
+                        <action selector="closeBtnAction:" destination="-1" eventType="touchUpInside" id="ABC-DE-FG2"/>
                     </connections>
                 </button>
             </subviews>
@@ -47,11 +48,11 @@
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" id="6Rp-B8-Nhn"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="centerX" secondItem="fnl-2z-Ty3" secondAttribute="centerX" id="F19-oB-Us3"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="width" secondItem="i5M-Pr-FkT" secondAttribute="width" id="Q4v-FI-VqS"/>
-                <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="6D3-ts-3tt" secondAttribute="trailing" id="gAs-5x-CRa"/>
-                <constraint firstItem="6D3-ts-3tt" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" id="j2o-ZM-0b1"/>
                 <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="tM2-KC-iR4" secondAttribute="trailing" constant="30" id="o69-by-jhi"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="bottom" secondItem="fnl-2z-Ty3" secondAttribute="bottom" id="xDd-lu-bml"/>
                 <constraint firstItem="tM2-KC-iR4" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" constant="15" id="zAe-bb-vCw"/>
+                <constraint firstItem="XYZ-AB-CD1" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="30" id="L1-L2-L3"/>
+                <constraint firstItem="XYZ-AB-CD1" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" constant="15" id="T1-T2-T3"/>
             </constraints>
             <viewLayoutGuide key="safeArea" id="fnl-2z-Ty3"/>
             <point key="canvasLocation" x="137.68115942028987" y="126.5625"/>
