@@ -1,0 +1,270 @@
+//
+//  GameballApp.swift
+//  Gameball
+//
+
+import Foundation
+import UIKit
+
+/// Main Gameball SDK class with thread-safe singleton pattern
+public class GameballApp {
+
+    // MARK: - Singleton
+
+    private static let shared = GameballApp()
+
+    /// Get singleton instance
+    public static func getInstance() -> GameballApp {
+        return shared
+    }
+
+    // MARK: - Internal Bot Style (for UI components)
+
+    /// Shared bot style configuration - used internally by UI components
+    /// This is populated during SDK initialization
+    static var clientBotStyle: ClientBotStyle?
+
+    // MARK: - Private Properties
+
+    private var isInitialized = false
+    private var config: GameballConfig?
+    private var customerId: String?
+
+    private let queue = DispatchQueue(label: "com.gameball.sdk", qos: .utility)
+    private let networkManager = NetworkManager.shared()
+
+    private init() {}
+
+    // MARK: - Public API
+
+    /// Initialize the Gameball SDK
+    /// - Parameters:
+    ///   - config: SDK configuration
+    ///   - completion: Completion handler called on main queue
+    public func `init`(config: GameballConfig, completion: @escaping (Error?) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+
+            if self.isInitialized && self.config?.apiKey == config.apiKey {
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+                return
+            }
+
+            self.config = config
+            if let baseUrl = config.apiPrefix, !baseUrl.isEmpty {
+                self.networkManager.registerBaseUrl(baseUrl: baseUrl)
+            }
+
+            // Save global preferred language
+            if config.lang.count == 2 {
+                UserDefaults.standard.set(config.lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
+            }
+
+            var language = Languages.english
+            if config.lang == "ar" {
+                language = Languages.arabic
+            }
+
+            self.networkManager.registerAPIKey(APIKey: config.apiKey, language: language)
+
+            self.loadBotSettings { error in
+                if error == nil {
+                    self.isInitialized = true
+                }
+                DispatchQueue.main.async {
+                    completion(error)
+                }
+            }
+        }
+    }
+
+    /// Initialize customer with the SDK
+    /// - Parameters:
+    ///   - request: Customer initialization request
+    ///   - completion: Completion handler with response object or error string
+    public func initializeCustomer(_ request: InitializeCustomerRequest,
+                                   completion: @escaping (InitializeCustomerResponse?, String?) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else {
+                DispatchQueue.main.async {
+                    completion(nil, nil)
+                }
+                return
+            }
+
+            guard self.isInitialized else {
+                DispatchQueue.main.async {
+                    completion(nil, ServiceError.notInitialized.description)
+                }
+                return
+            }
+
+            self.customerId = request.customerId
+
+            // Save customer preferred language if provided
+            if let preferredLanguage = request.customerAttributes?.preferredLanguage,
+               !preferredLanguage.isEmpty,
+               preferredLanguage.count == 2 {
+                UserDefaults.standard.set(preferredLanguage, forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
+            }
+
+            self.networkManager.initializeCustomer(
+                request: request,
+                completion: { response, error in
+                    DispatchQueue.main.async {
+                        completion(response, error?.description)
+                    }
+                }
+            )
+        }
+    }
+
+    /// Show profile widget with automatic presentation
+    /// - Parameters:
+    ///   - request: Profile display request
+    ///   - presentationStyle: Modal presentation style (default: .fullScreen)
+    public func showProfile(_ request: ShowProfileRequest, presentationStyle: UIModalPresentationStyle = .fullScreen) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            guard self.isInitialized, let config = self.config else {
+                print("Error: SDK not initialized")
+                return
+            }
+
+            // Resolve language using priority order
+            let resolvedLanguage = LanguageHelper.resolveLanguage()
+
+            let viewController = self.prepareProfileViewController(
+                apiKey: config.apiKey,
+                customerId: request.customerId,
+                lang: resolvedLanguage,
+                openDetail: request.openDetail,
+                hideNavigation: request.hideNavigation,
+                showCloseButton: request.showCloseButton,
+                widgetUrlPrefix: request.widgetUrlPrefix
+            )
+
+            viewController.modalPresentationStyle = presentationStyle
+
+            var rootVC: UIViewController?
+
+            if #available(iOS 13.0, *) {
+                rootVC = UIApplication.shared.connectedScenes
+                    .compactMap { $0 as? UIWindowScene }
+                    .flatMap { $0.windows }
+                    .first { $0.isKeyWindow }?.rootViewController
+            } else {
+                rootVC = UIApplication.shared.keyWindow?.rootViewController
+            }
+
+            rootVC?.present(viewController, animated: true)
+        }
+    }
+
+    // MARK: - Configuration Access
+
+    public var currentConfig: GameballConfig? {
+        return queue.sync {
+            return config
+        }
+    }
+
+    public var currentCustomerId: String? {
+        return queue.sync {
+            return customerId
+        }
+    }
+
+    public var initialized: Bool {
+        return queue.sync {
+            return isInitialized
+        }
+    }
+
+    // MARK: - Private Implementation
+
+    private func loadBotSettings(completion: @escaping (Error?) -> Void) {
+        // Use only the path - the base URL is added automatically by the URL extension
+        let path = APIEndPoints.getBotStyle
+        networkManager.load(path: path, method: RequestMethod.GET, params: [:], modelType: GetClientBotStyleResponse.self) { (data, error) in
+            if data != nil {
+                GameballApp.clientBotStyle = (data as? GetClientBotStyleResponse)?.response
+                self.networkManager.clientBotSettings = true
+            }
+            completion(error)
+        }
+    }
+
+    private func prepareProfileViewController(
+        apiKey: String,
+        customerId: String,
+        lang: String,
+        openDetail: String?,
+        hideNavigation: Bool?,
+        showCloseButton: Bool?,
+        widgetUrlPrefix: String?
+    ) -> UIViewController {
+        var bundle: Bundle?
+        #if COCOAPODS
+            bundle = Bundle(for: GB_WEBVIEWWIDGETViewController.self)
+        #else
+            bundle = Bundle.module
+        #endif
+
+        let viewController = GB_WEBVIEWWIDGETViewController(nibName: String(describing: GB_WEBVIEWWIDGETViewController.self), bundle: bundle)
+        viewController.APIKEY = apiKey
+        viewController.customerId = customerId
+        viewController.color = GameballApp.clientBotStyle?.botMainColor
+        viewController.lang = lang
+        viewController.openDetail = openDetail
+        viewController.hideNavigation = hideNavigation
+        viewController.showCloseBtn = showCloseButton ?? true
+        viewController.pullToDismiss = false
+
+        return viewController
+    }
+}
+
+// MARK: - Convenience Extensions
+
+extension GameballApp {
+
+    /// Quick SDK initialization
+    public func `init`(apiKey: String, language: String, completion: @escaping (Error?) -> Void) {
+        let config = GameballConfig(apiKey: apiKey, lang: language)
+        self.`init`(config: config, completion: completion)
+    }
+
+
+    /// Send event
+    /// - Parameters:
+    ///   - event: Event to send
+    ///   - completion: Completion handler with success flag and error string
+    public func sendEvent(_ event: Event, completion: @escaping (Bool, String?) -> Void) {
+        queue.async { [weak self] in
+            guard let self = self else {
+                DispatchQueue.main.async {
+                    completion(false, nil)
+                }
+                return
+            }
+
+            guard self.isInitialized else {
+                DispatchQueue.main.async {
+                    completion(false, ServiceError.notInitialized.description)
+                }
+                return
+            }
+
+            self.networkManager.sendEvent(event: event) { success, error in
+                DispatchQueue.main.async {
+                    completion(success, error?.description)
+                }
+            }
+        }
+    }
+
+}
