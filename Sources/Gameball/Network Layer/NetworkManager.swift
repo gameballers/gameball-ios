@@ -12,17 +12,12 @@ import UIKit
 typealias JSON = [String: Any]
 
 class NetworkManager:NSObject {
-    let userCache = UserProfileCache.get()
-    
-    var sdkVersion = "2.2.3"
     let urlSession: URLSession
     var baseUrl: String
     var widgetUrl: String
     var APIKey: String
     var currentLanguage: Languages
-    var referalCode = ""
-    var playerUniqueId: String
-    var categoryId: String
+    var customerId: String
     var clientBotSettings: Bool?
     
     private static var sharedManager:NetworkManager = {
@@ -35,16 +30,14 @@ class NetworkManager:NSObject {
         let urlSession = URLSession(configuration: sessionConfiguration)
         
         let APIKey = ""
-        let playerUniqueId = ""
-        let categoryId = ""
+        let customerId = ""
         let currentLanguage = Languages.english
         let networkManager = NetworkManager.init(
             urlSession: urlSession,
             baseUrl: APIEndPoints.base_URL,
             widgetUrl: APIEndPoints.widget_URL,
             APIKey: APIKey,
-            playerUniqueId: playerUniqueId,
-            categoryId: categoryId,
+            customerId: customerId,
             currentLanguage: currentLanguage
         )
         return networkManager
@@ -56,16 +49,14 @@ class NetworkManager:NSObject {
         baseUrl: String,
         widgetUrl: String,
         APIKey: String,
-        playerUniqueId: String,
-        categoryId: String,
+        customerId: String,
         currentLanguage: Languages
     ) {
         self.urlSession = urlSession
         self.baseUrl = baseUrl
         self.widgetUrl = widgetUrl
         self.APIKey = APIKey
-        self.playerUniqueId = playerUniqueId
-        self.categoryId = categoryId
+        self.customerId = customerId
         self.currentLanguage = currentLanguage
     }
     
@@ -82,12 +73,9 @@ class NetworkManager:NSObject {
     func isBotSettingsSet() -> Bool {
         return clientBotSettings ?? false
     }
-    func isDynamicSet() -> Bool {
-        return (self.referalCode.count > 0) ? true : false
-    }
-    
-    func isPlayerIdSet() -> Bool {
-        return (self.playerUniqueId.count > 0) ? true : false
+
+    func isCustomerIdSet() -> Bool {
+        return (self.customerId.count > 0) ? true : false
     }
     
     func loadDebug<T>(path: String, method: RequestMethod, params: JSON, modelType: T.Type, completion: @escaping (Any?, ServiceError?) -> ()) where T:Codable {
@@ -241,587 +229,124 @@ class NetworkManager:NSObject {
         //        task.resume()
     }
     
-    
-    // Get playerCategoryId from shared preferences
+
     func sendEvent(
-        playerUniqueId: String,
-        events: [Event],
-        completion: @escaping ((_ response: PostActionResponse?, _ error: ServiceError?)->())
+        event: Event,
+        completion: @escaping ((_ success: Bool, _ error: ServiceError?)->())
     ) {
-        
+
         guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
+            completion(false, ServiceError.noInternetConnection)
             return
         }
-        
+
+        // Encode the event object using Codable
         var params: JSON = [:]
-        //        params["ChallengeAPIIDs"] = challengeAPIIDs
-        //        params["QuestAPIID"] = questAPIID
-        
-        var paramsEvents = [String: Any]()
-        
-        events.forEach { event in
-            paramsEvents[event.name] = event.params
+
+        if let eventData = try? JSONEncoder().encode(event),
+           let jsonObject = try? JSONSerialization.jsonObject(with: eventData),
+           let eventDict = jsonObject as? JSON {
+            params = eventDict
+        } else {
+            completion(false, ServiceError.malformedResponse)
+            return
         }
-        
-        params["events"] = paramsEvents
-        
-        params["playerUniqueId"] = playerUniqueId
-        
-        Helpers().dPrint(params)
-        
+
         var request = URLRequest(path: APIEndPoints.sendEvent, method: .POST, params: params)
         self.adaptRequest(urlRequest: &request)
         let task = self.urlSession.dataTask(with: request) { data, response, error in
             if let httpResponse = response as? HTTPURLResponse {
                 switch httpResponse.statusCode {
                 case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                        guard let tempObject = try? JSONDecoder().decode(PostActionResponse.self, from: data) else {
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
+                    completion(true, nil)
                 case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
+                    completion(false, ServiceError.missingAPIKey)
                 case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
+                    completion(false, ServiceError.invalidAPIKey)
                 case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(PostActionResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
+                    if let data = data,
+                       let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                       let json = jsonObject as? [String: Any],
+                       let errorMsg = json["errorMsg"] as? String {
+                        completion(false, ServiceError.custom(errorMsg))
+                    } else {
+                        completion(false, ServiceError.serverError)
                     }
                 default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
+                    completion(false, ServiceError.serverError)
                 }
+            } else {
+                completion(false, ServiceError.serverError)
             }
         }
-        
+
         task.resume()
     }
-    
-    //generateOTP
-    
-    func generateOTP(completion: @escaping ((_ response: GenerateOTPResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["TransactionTime"] = Helpers().getTransactionTime()
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: "")
-        
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.generateOTP, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(GenerateOTPResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(GenerateOTPResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    
-    
-    // 4.9 getPlayerBalance
-    
-    func getPlayerBalance(completion: @escaping ((_ response: GenerateOTPResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: "")
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.getPlayerBalance, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(GenerateOTPResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(GenerateOTPResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    //4.3    Reward Points
-    
-    func rewardPoints(transactionOnClientSystemId: String = "",amount: Int = 0,completion: @escaping ((_ response: RewardPointsResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["TransactionTime"] = Helpers().getTransactionTime()
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: String(amount))
-        params["TransactionOnClientSystemId"] = transactionOnClientSystemId
-        params["Amount"] = amount
-        
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.rewardPoints, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(RewardPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(RewardPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    
-    
-    //4.5    Hold Points
-    func holdPoints(OTP: String = "",amount: Int = 0,completion: @escaping ((_ response: HoldPointsResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["TransactionTime"] = Helpers().getTransactionTime()
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: String(amount))
-        params["OTP"] = OTP
-        params["Amount"] = amount
-        
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.holdPoints, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    
-    
-    //4.4    Redeem Points
-    func redeemPoints(transactionOnClientSystemId: String = "",holdReference: String = "",amount: Int = 0,completion: @escaping ((_ response: HoldPointsResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["TransactionTime"] = Helpers().getTransactionTime()
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: String(amount))
-        params["TransactionOnClientSystemId"] = transactionOnClientSystemId
-        params["Amount"] = amount
-        params["HoldReference"] = holdReference
-        
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.redeemPoints, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    
-    //4.6    Reverse Points
-    func reversePoints(holdReference: String = "",completion: @escaping ((_ response: HoldPointsResponse?, _ error: ServiceError?)->())) {
-        
-        guard Reachability.isConnectedToNetwork() else {
-            //            completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        
-        params["PlayerUniqueID"] = self.playerUniqueId
-        params["TransactionTime"] = Helpers().getTransactionTime()
-        params["BodyHashed"] = Helpers().getBodyHashed(playerUniqueID: self.playerUniqueId, amount: "")
-        params["HoldReference"] = holdReference
-        
-        Helpers().dPrint(params)
-        
-        var request = URLRequest(path: APIEndPoints.reversePoints, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<300):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(tempObject, nil)
-                    }
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                case 400:
-                    Helpers().dPrint("400")
-                    
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(HoldPointsResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        completion(nil, ServiceError.custom(tempObject.errorMsg ?? ""))
-                    }
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-    }
-    func registerPlayerRequest(
-        playerUniqueId: String,
-        playerCategroyId: String,
-        deviceToken: String = "",
-        mobile: String? = nil,
-        email: String? = nil,
-        referrerCode: String? = nil,
-        playerAttributes: [String:Any] = [:],
-        completion: @escaping ((_ response: PlayerInfo?, _ error: ServiceError?)->())) {
-            
+    func initializeCustomer(
+        request: InitializeCustomerRequest,
+        completion: @escaping ((_ response: InitializeCustomerResponse?, _ error: ServiceError?)->())) {
+
             guard Reachability.isConnectedToNetwork() else {
-                //   completion(nil, ServiceError.noInternetConnection)
+                completion(nil, ServiceError.noInternetConnection)
                 return
             }
-            
+
+            // Encode the request object, handling customerAttributes specially for additionalAttributes
             var params: JSON = [:]
-            var attributes = playerAttributes
-            if let mobile = mobile {
-                params["mobile"] = mobile
-                attributes["mobile"] = mobile
+
+            if let requestData = try? JSONEncoder().encode(request),
+               let jsonObject = try? JSONSerialization.jsonObject(with: requestData),
+               var requestDict = jsonObject as? JSON {
+
+                // Replace customerAttributes with properly mapped version
+                if let customerAttributes = request.customerAttributes {
+                    requestDict["customerAttributes"] = AttributesHelper.mapToRequestParams(customerAttributes)
+                }
+
+                params = requestDict
+            } else {
+                completion(nil, ServiceError.malformedResponse)
+                return
             }
-            if let email = email {
-                params["email"] = email
-                attributes["email"] = email
-            }
-            if !NetworkManager.shared().referalCode.isEmpty {
-                params["referrerCode"] = NetworkManager.shared().referalCode
-            }
-            if let code = referrerCode {
-                params["referrerCode"] = code
-            }
-            params["playerUniqueId"] = playerUniqueId
-            params["playerCategoryId"] = playerCategroyId
-            params["playerAttributes"] = attributes
-            params["deviceToken"] = deviceToken
-            params["osType"] = "iPhone/iPad"
-            
-            var request = URLRequest(path: APIEndPoints.registerPlayer, method: .POST, params: params)
-            self.adaptRequest(urlRequest: &request)
-            
-            let task = self.urlSession.dataTask(with: request) { data, response, error in
+
+            var urlRequest = URLRequest(path: APIEndPoints.initializeCustomer, method: .POST, params: params)
+            self.adaptRequest(urlRequest: &urlRequest)
+
+            let task = self.urlSession.dataTask(with: urlRequest) { data, response, error in
                 if let httpResponse = response as? HTTPURLResponse {
                     switch httpResponse.statusCode {
                     case (200..<300):
-                        // Parsing incoming data
-                        if let data = data {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            guard let tempObject = try? JSONDecoder().decode(PlayerInfo.self, from: data) else {
-                                Helpers().dPrint(JSONString ?? "Could not print Json")
-                                completion(nil, ServiceError.malformedResponse)
-                                return
-                            }
-                            
-                            //                        let data = NSKeyedArchiver.archivedData(withRootObject: tempObject.response)
-                            //                        UserDefaults.standard.set(data, forKey: UserDefaultsKeys.PlayerInfo.rawValue)
-                            UserProfileCache.save(tempObject)
-                            completion(tempObject, nil)
-                            
+                        if let data = data,
+                           let responseObject = try? JSONDecoder().decode(InitializeCustomerResponse.self, from: data) {
+                            completion(responseObject, nil)
+                        } else {
+                            completion(nil, ServiceError.malformedResponse)
                         }
-                        
-                        
+
                     case 403:
-                        Helpers().dPrint("403")
                         completion(nil, ServiceError.missingAPIKey)
                     case 401:
-                        Helpers().dPrint("401")
                         completion(nil, ServiceError.invalidAPIKey)
                     case 402:
                         completion(nil, ServiceError.invalidReferrerCode)
                     default:
-                        Helpers().dPrint("default")
                         completion(nil, ServiceError.serverError)
                     }
                 }
             }
-            
+
             task.resume()
-            
-            
         }
-    func friendReferralRequest(withReferralCode: String,playerUniqueId: String, playerAttributes: [String:Any], completion: @escaping ((_ response: FriendReferralResponse?, _ error: ServiceError?)->())) {
-        guard Reachability.isConnectedToNetwork() else {
-            // completion(nil, ServiceError.noInternetConnection)
-            return
-        }
-        
-        var params: JSON = [:]
-        params["playerCode"] = withReferralCode
-        params["playerUniqueId"] = playerUniqueId
-        params["playerAttributes"] = playerAttributes
-        
-        
-        var request = URLRequest(path: APIEndPoints.friendReferral, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
-        
-        let task = self.urlSession.dataTask(with: request) { data, response, error in
-            if let httpResponse = response as? HTTPURLResponse {
-                switch httpResponse.statusCode {
-                case (200..<401):
-                    // Parsing incoming data
-                    if let data = data {
-                        guard let tempObject = try? JSONDecoder().decode(FriendReferralResponse.self, from: data) else {
-                            let JSONString = String(data: data, encoding: String.Encoding.utf8)
-                            Helpers().dPrint(JSONString ?? "Could not print Json")
-                            completion(nil, ServiceError.malformedResponse)
-                            return
-                        }
-                        
-                        
-                        
-                        completion(tempObject, nil)
-                        
-                    }
-                    
-                case 403:
-                    Helpers().dPrint("403")
-                    completion(nil, ServiceError.missingAPIKey)
-                case 401:
-                    Helpers().dPrint("401")
-                    completion(nil, ServiceError.invalidAPIKey)
-                default:
-                    Helpers().dPrint("default")
-                    completion(nil, ServiceError.serverError)
-                }
-            }
-        }
-        
-        task.resume()
-        
-        
-    }
     
     
     func adaptRequest(urlRequest: inout URLRequest) {
         if NetworkManager.shared().APIKey.count > 0 {
             urlRequest.addValue(NetworkManager.shared().APIKey, forHTTPHeaderField: "APIKey")
-            urlRequest.addValue("GB" + "\\" + "iOS" + NetworkManager.shared().sdkVersion, forHTTPHeaderField: "x-gb-agent")
-            urlRequest.addValue(currentLanguage  == .arabic ? "ar" : "en", forHTTPHeaderField: "lang")
+            urlRequest.addValue(SDKInfo.userAgent, forHTTPHeaderField: "x-gb-agent")
+
+            // Use LanguageHelper to resolve language with priority order
+            let resolvedLanguage = LanguageHelper.resolveLanguage()
+            urlRequest.addValue(resolvedLanguage, forHTTPHeaderField: "lang")
         }
     }
     
@@ -845,69 +370,25 @@ class NetworkManager:NSObject {
         UserDefaults.standard.set(language.rawValue, forKey: UserDefaultsKeys.LanguageKey.rawValue)
     }
     
-    func registerPlayer(
-        playerUniqueId: String,
-        categoryId: String,
-        playerAttributes: [String:Any],
-        withDeviceToken: String,
-        mobile: String? = nil,
-        email: String? = nil,
-        referrerCode: String? = nil,
+    // FIXME: Temporarily commented out - rebuilding step by step
+    /*
+    func registerCustomer(
+        request: InitializeCustomerRequest,
         completion: ((_ gameballId: Int?, _ error: String?) -> Void)?
     ) {
-            NetworkManager.shared().playerUniqueId = playerUniqueId
-            NetworkManager.shared().categoryId = categoryId
-            UserDefaults.standard.set(categoryId, forKey: UserDefaultsKeys.playerCategoryId.rawValue)
-            UserDefaults.standard.set(playerUniqueId, forKey: UserDefaultsKeys.playerUniqueId.rawValue)
-            self.registerPlayerRequest(
-                playerUniqueId: playerUniqueId,
-                playerCategroyId: categoryId,
-                deviceToken: withDeviceToken,
-                mobile: mobile,
-                email: email,
-                referrerCode: referrerCode,
-                playerAttributes: playerAttributes) { (response, error) in
+            NetworkManager.shared().customerId = request.customerId
+            UserDefaults.standard.set(request.customerId, forKey: UserDefaultsKeys.customerId.rawValue)
+            self.registerCustomerRequest(
+                request: request) { (gameballId, error) in
                     if error != nil {
                         completion?(nil, error?.description)
                         Helpers().dPrint("failed to register user because \(error?.description ?? "")")
                     } else {
-                        completion?(response?.gameballId, nil)
+                        completion?(gameballId, nil)
                     }
                 }
         }
-    
-    
-    func friendReferral(playerUniqueId: String,playerAttributes: [String:Any] = [:],completion: @escaping (String) -> Void) {
-        if isDynamicSet(){
-            self.friendReferralRequest(withReferralCode: referalCode,playerUniqueId: playerUniqueId, playerAttributes: playerAttributes) { (response, error) in
-                
-                if (response?.success ?? false) {
-                    completion("Succeded to Refer a friend")
-                } else {
-                    completion("Failed to Refer a friend  because \(response?.errorMsg ?? "")")
-                }
-            }
-        }
-    }
-    
-    func setPlayer(playerUniqueId: String, categoryId: String) {
-        NetworkManager.shared().playerUniqueId = playerUniqueId
-        NetworkManager.shared().categoryId = categoryId
-        UserDefaults.standard.set(categoryId, forKey: UserDefaultsKeys.playerCategoryId.rawValue)
-        UserDefaults.standard.set(playerUniqueId, forKey: UserDefaultsKeys.playerUniqueId.rawValue)
-    }
-    
-    
-    func deRegisterPlayer() {
-        NetworkManager.shared().playerUniqueId = ""
-        NetworkManager.shared().categoryId = ""
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.playerUniqueId.rawValue)
-        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.playerCategoryId.rawValue)
-    }
-    
-    
-    
-    
+    */
 }
 
 extension URL {
@@ -943,24 +424,5 @@ extension URLRequest {
             break
         }
     }
-    
-}
-//set, get & remove User own profile in cache
-struct UserProfileCache {
-    static let key = "userProfileCache"
-    static func save(_ value: PlayerInfo!) {
-        UserDefaults.standard.set(try? PropertyListEncoder().encode(value), forKey: key)
-    }
-    static func get() -> PlayerInfo! {
-        var userData: PlayerInfo!
-        if let data = UserDefaults.standard.value(forKey: key) as? Data {
-            userData = try? PropertyListDecoder().decode(PlayerInfo.self, from: data)
-            return userData!
-        } else {
-            return userData
-        }
-    }
-    static func remove() {
-        UserDefaults.standard.removeObject(forKey: key)
-    }
+
 }

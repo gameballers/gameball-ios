@@ -19,6 +19,7 @@ enum ServiceError: Error {
     case missingAPIKey
     case invalidAPIKey
     case invalidReferrerCode
+    case notInitialized
 }
 
 
@@ -42,6 +43,8 @@ extension ServiceError {
             return "Client API key is inavlid"
         case .invalidReferrerCode:
             return "Referrer Code is incorrect"
+        case .notInitialized:
+            return "SDK not initialized. Call init() first"
         case .other:
             return "An unkown error occured"
         }
