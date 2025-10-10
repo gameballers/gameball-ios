@@ -8,7 +8,7 @@
 import UIKit
 import WebKit
 class GB_WEBVIEWWIDGETViewController: BaseViewController {
-
+    
     @IBOutlet weak var webView: WKWebView!
     var customerId = ""  // Renamed from playerID/customerID for consistency
     var color: String? = ""
@@ -19,24 +19,57 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var showCloseBtn: Bool = true
     var pullToDismiss: Bool = false
 
-    @IBOutlet weak var closeBtn: UIButton! {
+    @IBOutlet weak var closeBtnRight: UIButton! {
         didSet {
-            var origImage: UIImage?
-#if COCOAPODS
-            origImage = UIImage(named: "icon_outline_14px_close@2x.png")
-#else
-            origImage = UIImage(named: "icon_outline_14px_close@2x.png", in: Bundle.module, compatibleWith: nil)
-#endif
-            closeBtn.setImage(origImage, for: .normal)
-            closeBtn.backgroundColor = .clear
-            closeBtn.adjustsImageWhenHighlighted = false
-            closeBtn.showsTouchWhenHighlighted = false
+            setupCloseButton(closeBtnRight)
         }
+    }
+
+    @IBOutlet weak var closeBtnLeft: UIButton! {
+        didSet {
+            setupCloseButton(closeBtnLeft)
+        }
+    }
+
+    private var closeBtn: UIButton!
+
+    private func setupCloseButton(_ button: UIButton) {
+        var origImage: UIImage?
+#if COCOAPODS
+        origImage = UIImage(named: "icon_outline_14px_close@2x.png")
+#else
+        origImage = UIImage(named: "icon_outline_14px_close@2x.png", in: Bundle.module, compatibleWith: nil)
+#endif
+        button.setImage(origImage, for: .normal)
+        button.backgroundColor = .clear
+        button.adjustsImageWhenHighlighted = false
+        button.showsTouchWhenHighlighted = false
     }
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        closeBtn.isHidden = !showCloseBtn
+        // Default to right button (LTR)
+        closeBtn = closeBtnRight
+
+        // Handle close button visibility and position based on language direction
+        if !showCloseBtn {
+            closeBtnRight.isHidden = true
+            closeBtnLeft.isHidden = true
+        } else {
+            let selectedLanguage = lang ?? LanguageHelper.resolveLanguage()
+
+            if LanguageHelper.shouldHandleCloseButtonDirection(selectedLanguage: selectedLanguage) {
+                // RTL language with LTR device or vice versa - show left button
+                closeBtnRight.isHidden = true
+                closeBtnLeft.isHidden = false
+                closeBtn = closeBtnLeft
+            } else {
+                // Default - show right button
+                closeBtnRight.isHidden = false
+                closeBtnLeft.isHidden = true
+                closeBtn = closeBtnRight
+            }
+        }
 
         let baseURL = NetworkManager.shared().widgetUrl
         var urlComponents = URLComponents(string: baseURL)
@@ -90,7 +123,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
            }
        }
    }
-
+    
     @IBAction func closeBtnAction(_ sender: Any) {
         self.dismiss(animated: true, completion: nil)
     }
