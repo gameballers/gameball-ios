@@ -17,6 +17,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var openDetail: String?
     var hideNavigation: Bool?
     var showCloseBtn: Bool = true
+    var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
 
     @IBOutlet weak var closeBtnRight: UIButton! {
@@ -44,6 +45,10 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         button.backgroundColor = .clear
         button.adjustsImageWhenHighlighted = false
         button.showsTouchWhenHighlighted = false
+
+        // Apply close button color (default to #CECECE if not provided)
+        let colorToUse = closeButtonColor ?? "#CECECE"
+        button.tintColor = UIColor(hexString: colorToUse)
     }
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -151,5 +156,54 @@ extension GB_WEBVIEWWIDGETViewController: WKNavigationDelegate {
 extension GB_WEBVIEWWIDGETViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
+    }
+}
+
+// MARK: - UIColor Hex Extension
+extension UIColor {
+    /// Initializes a UIColor from a hex color string
+    /// - Parameter hexString: Hex color string (e.g., "#FF0000", "FF0000", "#FFAA0088")
+    /// - Returns: UIColor from hex string, or light gray (#CECECE) if parsing fails
+    ///
+    /// Supports 6-character RGB format (#RRGGBB) and 8-character RGBA format (#RRGGBBAA)
+    /// The '#' prefix is optional and will be stripped if present
+    /// Returns default light gray color (#CECECE) if hex string is invalid
+    ///
+    /// Examples:
+    /// - "#FF0000" → Red color (RGB)
+    /// - "00FF00" → Green color (RGB without #)
+    /// - "#0000FFAA" → Blue color with 66% opacity (RGBA)
+    /// - "invalid" → Light gray (fallback to #CECECE)
+    convenience init(hexString: String) {
+        var hexSanitized = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+        let length = hexSanitized.count
+        let r, g, b, a: CGFloat
+
+        if Scanner(string: hexSanitized).scanHexInt64(&rgb) {
+            if length == 6 {
+                r = CGFloat((rgb & 0xFF0000) >> 16) / 255.0
+                g = CGFloat((rgb & 0x00FF00) >> 8) / 255.0
+                b = CGFloat(rgb & 0x0000FF) / 255.0
+                a = 1.0
+            } else if length == 8 {
+                r = CGFloat((rgb & 0xFF000000) >> 24) / 255.0
+                g = CGFloat((rgb & 0x00FF0000) >> 16) / 255.0
+                b = CGFloat((rgb & 0x0000FF00) >> 8) / 255.0
+                a = CGFloat(rgb & 0x000000FF) / 255.0
+            } else {
+                // Invalid format - use default light gray
+                self.init(red: 0.807, green: 0.807, blue: 0.807, alpha: 1.0) // #CECECE
+                return
+            }
+        } else {
+            // Parsing failed - use default light gray
+            self.init(red: 0.807, green: 0.807, blue: 0.807, alpha: 1.0) // #CECECE
+            return
+        }
+
+        self.init(red: r, green: g, blue: b, alpha: a)
     }
 }

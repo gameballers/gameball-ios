@@ -144,6 +144,7 @@ public class GameballApp {
                 openDetail: request.openDetail,
                 hideNavigation: request.hideNavigation,
                 showCloseButton: request.showCloseButton,
+                closeButtonColor: request.closeButtonColor,
                 widgetUrlPrefix: request.widgetUrlPrefix
             )
 
@@ -206,6 +207,7 @@ public class GameballApp {
         openDetail: String?,
         hideNavigation: Bool?,
         showCloseButton: Bool?,
+        closeButtonColor: String?,
         widgetUrlPrefix: String?
     ) -> UIViewController {
         var bundle: Bundle?
@@ -223,6 +225,7 @@ public class GameballApp {
         viewController.openDetail = openDetail
         viewController.hideNavigation = hideNavigation
         viewController.showCloseBtn = showCloseButton ?? true
+        viewController.closeButtonColor = closeButtonColor
         viewController.pullToDismiss = false
 
         return viewController
