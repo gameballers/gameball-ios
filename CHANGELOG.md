@@ -1,0 +1,158 @@
+# 📋 Changelog
+
+All notable changes to Gameball iOS SDK are documented here.
+
+## [Unreleased] 🚧
+*Changes planned for next release*
+
+---
+
+## [3.0.0] - 2025-10-13 🎉
+
+> **Major Release**: Complete SDK modernization with breaking API changes for iOS best practices
+
+### ✨ Added
+- 🏗️ **Modern Swift Architecture**: Singleton pattern with `GameballApp.getInstance()`
+- ⚙️ **Type-Safe Request Models**: Throwing initializers with built-in validation
+- 🔧 **Enhanced Validation**: `GameballError` enum for comprehensive error handling
+- 🚀 **Immutable Models**: All request models (`InitializeCustomerRequest`, `Event`, `ShowProfileRequest`) with throwing constructors
+- 📊 **Improved Event Tracking**: Restructured `Event` model with flexible metadata support
+- 🎁 **Advanced Profile Widget**: New `ShowProfileRequest` with comprehensive customization options
+- 🌐 **Language Management**: Enhanced language priority system (customer → global → config)
+- 📱 **Push Notification Support**: Native Firebase and Huawei push provider integration
+- 🛡️ **Input Validation**: Comprehensive validation with proper error messages
+- 🔗 **Referral Code Support**: Built-in referral tracking in customer initialization
+- ⚡ **Thread Safety**: Thread-safe singleton with serial dispatch queue
+- 🔧 **Custom Widget URL**: Support for custom widget URL prefixes
+- 🎨 **Customizable Close Button**: Custom colors and RTL/LTR positioning for widget close button
+
+### 🔄 Changed
+- 💥 **BREAKING**: Migrated from individual static methods to singleton pattern
+- 💥 **BREAKING**: All request models now use throwing initializers instead of builder pattern
+- 💥 **BREAKING**: Method signatures updated to use throwing Swift structs
+- 💥 **BREAKING**: Customer initialization now requires `InitializeCustomerRequest` object
+- 💥 **BREAKING**: Event tracking requires `Event` object with validation
+- 💥 **BREAKING**: Profile widget requires `ShowProfileRequest` object
+- 💥 **BREAKING**: `registerPlayer` renamed to `initializeCustomer`
+- 💥 **BREAKING**: `playerID` terminology replaced with `customerId` throughout
+- 🚀 **Performance**: Optimized internal architecture with Codable encoding
+- 📦 **Network Layer**: Refactored to use object-based communication instead of manual parameter extraction
+- 🔧 **Error Handling**: Enhanced error messages with specific validation feedback
+- 📱 **Widget Integration**: Improved profile widget rendering with better language support
+- 🧹 **Code Organization**: Centralized SDK info with `SDKInfo` enum
+
+### 🗑️ Removed
+- 💥 **BREAKING**: Removed deprecated v2.x Player-based API methods
+- 💥 **BREAKING**: Removed legacy UI components (Challenge, Mission, Leaderboard, Profile views)
+- 💥 **BREAKING**: Removed multiple method overloads (replaced with single throwing initializer pattern)
+- 💥 **BREAKING**: Removed view models (ChallengesViewModel, LeaderboardsViewModel, etc.)
+- 🧹 **Cleanup**: Removed unused internal dependencies and legacy code paths
+- 💥 **BREAKING**: Removed deprecated parent view controller and custom UI components
+- 💥 **BREAKING**: Removed hardcoded SDK version from NetworkManager (now in SDKInfo)
+
+### 🐛 Fixed
+- 🔧 **Widget Display**: Fixed profile widget language resolution using priority system
+- 🔧 **Memory Management**: Resolved memory leaks with weak self references
+- 🔧 **Type Safety**: Fixed compilation issues with Swift strict mode
+- 🔧 **Async Handling**: Improved callback handling and error propagation
+- 🔧 **Push Notifications**: Fixed device token validation for Firebase and Huawei providers
+- 🔧 **SDK Version**: Fixed stale SDK version in HTTP headers
+- 🔧 **Customer Attributes**: Fixed missing completion callback in initializeCustomer
+
+### 🔒 Security
+- 🛡️ **Input Validation**: Enhanced validation prevents invalid API calls and data corruption
+- 🛡️ **API Key Management**: Improved API key handling with better security practices
+- 🛡️ **Error Sanitization**: Proper error message sanitization to prevent information leakage
+- 🛡️ **Thread Safety**: Thread-safe singleton prevents race conditions
+
+---
+
+## [2.2.3] - 2024-11-15 📱
+
+> **Patch Release**: Privacy manifest updates
+
+### 🔄 Changed
+- 📱 **Privacy Info**: Adjusted privacy information in manifest for App Store compliance
+
+---
+
+## [2.2.2] - 2024-10-28 🔧
+
+> **Patch Release**: Privacy and widget improvements
+
+### ✨ Added
+- 📋 **Privacy Manifest**: Added privacy info to manifest for better transparency
+- 🎛️ **Pull to Dismiss**: Added pullToDismiss option for widget
+
+---
+
+## [2.2.1] - 2024-09-20 🌐
+
+> **Patch Release**: Language handling improvements
+
+### ✨ Added
+- 🌍 **Language Headers**: Pass lang parameter to network request headers for better localization
+
+---
+
+## [2.2.0] - 2024-08-15 📢
+
+> **Minor Release**: Referral system improvements
+
+### 🐛 Fixed
+- 🔧 **Register Player**: Fix register player being called multiple times
+
+---
+
+## [2.1.1] - 2024-07-10 🔧
+
+> **Patch Release**: Version bump with improvements
+
+### 🔄 Changed
+- 📦 **Version Management**: Bumped version with improved release process
+
+---
+
+## [2.1.0] - 2024-06-01 🎛️
+
+> **Minor Release**: Widget customization enhancements
+
+### ✨ Added
+- 🎛️ **Close Button Control**: Option to show/hide the widget close button
+- 🎨 **Widget Customization**: Enhanced widget display options
+
+---
+
+## [2.0.0] - 2024-03-15 🎉
+
+> **Major Release**: Customer-centric API transition
+
+### ✨ Added
+- 🎯 **Customer-Centric API**: Complete transition from "Player" to "Customer" terminology
+- 📱 **Better WebView**: Improved scrolling and interaction in the customer profile widget
+- 📦 **Updated Dependencies**: Latest Firebase versions for better performance
+
+### 🔄 Changed
+- 💥 **BREAKING**: Now runs on Integrations APIs V4 - more powerful and flexible!
+- 🎨 **Enhanced Profile Widget**: Smoother scrolling and better user experience
+
+---
+
+## [1.0.0] - 2023-10-01 🎉
+
+> **Initial Release**: Welcome to Gameball iOS SDK!
+
+### ✨ Added
+- 👥 **Player Registration**: Register and manage player profiles
+- 🔗 **Referral System**: Built-in referral tracking and management
+- 📊 **Event Tracking**: Track user actions and behaviors
+- 🎨 **Profile Widget**: Beautiful customer profile display widget
+- 🏆 **Challenges & Missions**: Challenge and mission tracking
+- 📊 **Leaderboards**: Leaderboard integration
+- 🔔 **Push Notifications**: Firebase push notification support
+
+*Ready to engage your customers like never before!* 🚀
+
+---
+
+*For migration guides and detailed upgrade instructions, see [MIGRATION.md](MIGRATION.md)*
