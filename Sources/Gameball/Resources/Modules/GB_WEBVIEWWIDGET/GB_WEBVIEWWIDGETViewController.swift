@@ -19,6 +19,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var showCloseBtn: Bool = true
     var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
+    var widgetApiPrefix: String?
 
     @IBOutlet weak var closeBtnRight: UIButton! {
         didSet {
@@ -76,7 +77,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
             }
         }
 
-        let baseURL = NetworkManager.shared().widgetUrl
+        let baseURL = widgetApiPrefix ?? NetworkManager.shared().widgetUrl
         var urlComponents = URLComponents(string: baseURL)
         var queryItems = [URLQueryItem]()
 
