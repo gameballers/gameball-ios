@@ -227,6 +227,7 @@ public class GameballApp {
         viewController.showCloseBtn = showCloseButton ?? true
         viewController.closeButtonColor = closeButtonColor
         viewController.pullToDismiss = false
+        viewController.widgetApiPrefix = widgetUrlPrefix
 
         return viewController
     }
