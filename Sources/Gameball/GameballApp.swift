@@ -40,14 +40,14 @@ public class GameballApp {
     /// Initialize the Gameball SDK
     /// - Parameters:
     ///   - config: SDK configuration
-    ///   - completion: Completion handler called on main queue
-    public func `init`(config: GameballConfig, completion: @escaping (Error?) -> Void) {
+    ///   - completion: Optional completion handler called on main queue
+    public func `init`(config: GameballConfig, completion: ((Error?) -> Void)? = nil) {
         queue.async { [weak self] in
             guard let self = self else { return }
 
             if self.isInitialized && self.config?.apiKey == config.apiKey {
                 DispatchQueue.main.async {
-                    completion(nil)
+                    completion?(nil)
                 }
                 return
             }
@@ -69,13 +69,16 @@ public class GameballApp {
 
             self.networkManager.registerAPIKey(APIKey: config.apiKey, language: language)
 
-            self.loadBotSettings { error in
-                if error == nil {
-                    self.isInitialized = true
-                }
-                DispatchQueue.main.async {
-                    completion(error)
-                }
+            // Mark as initialized immediately
+            self.isInitialized = true
+
+            // Fire bot settings request in background (fire-and-forget)
+            self.loadBotSettings { _ in
+                // Settings loaded in background, no action needed
+            }
+
+            DispatchQueue.main.async {
+                completion?(nil)
             }
         }
     }
@@ -238,7 +241,7 @@ public class GameballApp {
 extension GameballApp {
 
     /// Quick SDK initialization
-    public func `init`(apiKey: String, language: String, completion: @escaping (Error?) -> Void) {
+    public func `init`(apiKey: String, language: String, completion: ((Error?) -> Void)? = nil) {
         let config = GameballConfig(apiKey: apiKey, lang: language)
         self.`init`(config: config, completion: completion)
     }
