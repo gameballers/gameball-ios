@@ -29,6 +29,7 @@ public class GameballApp {
     private var isInitialized = false
     private var config: GameballConfig?
     private var customerId: String?
+    private var sessionToken: String?
 
     private let queue = DispatchQueue(label: "com.gameball.sdk", qos: .utility)
     private let networkManager = NetworkManager.shared()
@@ -62,6 +63,9 @@ public class GameballApp {
                 UserDefaults.standard.set(config.lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
             }
 
+            // Store session token in memory (no persistence)
+            self.sessionToken = config.sessionToken
+
             var language = Languages.english
             if config.lang == "ar" {
                 language = Languages.arabic
@@ -87,8 +91,10 @@ public class GameballApp {
     /// - Parameters:
     ///   - request: Customer initialization request
     ///   - completion: Completion handler with response object or error string
+    ///   - sessionToken: Optional session token to override global token
     public func initializeCustomer(_ request: InitializeCustomerRequest,
-                                   completion: @escaping (InitializeCustomerResponse?, String?) -> Void) {
+                                   completion: @escaping (InitializeCustomerResponse?, String?) -> Void,
+                                   sessionToken: String? = nil) {
         queue.async { [weak self] in
             guard let self = self else {
                 DispatchQueue.main.async {
@@ -104,6 +110,9 @@ public class GameballApp {
                 return
             }
 
+            // Set session token if provided, otherwise set to nil
+            self.sessionToken = sessionToken
+
             self.customerId = request.customerId
 
             // Save customer preferred language if provided
@@ -115,6 +124,7 @@ public class GameballApp {
 
             self.networkManager.initializeCustomer(
                 request: request,
+                sessionToken: self.sessionToken,
                 completion: { response, error in
                     DispatchQueue.main.async {
                         completion(response, error?.description)
@@ -128,7 +138,13 @@ public class GameballApp {
     /// - Parameters:
     ///   - request: Profile display request
     ///   - presentationStyle: Modal presentation style (default: .fullScreen)
-    public func showProfile(_ request: ShowProfileRequest, presentationStyle: UIModalPresentationStyle = .fullScreen) {
+    ///   - sessionToken: Optional session token to override global token
+    public func showProfile(_ request: ShowProfileRequest, presentationStyle: UIModalPresentationStyle = .fullScreen, sessionToken: String? = nil) {
+        // Set session token if provided (on background queue for thread safety)
+        queue.async { [weak self] in
+            self?.sessionToken = sessionToken
+        }
+
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
@@ -148,7 +164,8 @@ public class GameballApp {
                 hideNavigation: request.hideNavigation,
                 showCloseButton: request.showCloseButton,
                 closeButtonColor: request.closeButtonColor,
-                widgetUrlPrefix: request.widgetUrlPrefix
+                widgetUrlPrefix: request.widgetUrlPrefix,
+                sessionToken: self.sessionToken
             )
 
             viewController.modalPresentationStyle = presentationStyle
@@ -188,6 +205,7 @@ public class GameballApp {
         }
     }
 
+
     // MARK: - Private Implementation
 
     private func loadBotSettings(completion: @escaping (Error?) -> Void) {
@@ -211,7 +229,8 @@ public class GameballApp {
         hideNavigation: Bool?,
         showCloseButton: Bool?,
         closeButtonColor: String?,
-        widgetUrlPrefix: String?
+        widgetUrlPrefix: String?,
+        sessionToken: String?
     ) -> UIViewController {
         var bundle: Bundle?
         #if COCOAPODS
@@ -231,6 +250,7 @@ public class GameballApp {
         viewController.closeButtonColor = closeButtonColor
         viewController.pullToDismiss = false
         viewController.widgetApiPrefix = widgetUrlPrefix
+        viewController.sessionToken = sessionToken
 
         return viewController
     }
@@ -251,7 +271,8 @@ extension GameballApp {
     /// - Parameters:
     ///   - event: Event to send
     ///   - completion: Completion handler with success flag and error string
-    public func sendEvent(_ event: Event, completion: @escaping (Bool, String?) -> Void) {
+    ///   - sessionToken: Optional session token to override global token
+    public func sendEvent(_ event: Event, completion: @escaping (Bool, String?) -> Void, sessionToken: String? = nil) {
         queue.async { [weak self] in
             guard let self = self else {
                 DispatchQueue.main.async {
@@ -267,7 +288,10 @@ extension GameballApp {
                 return
             }
 
-            self.networkManager.sendEvent(event: event) { success, error in
+            // Set session token if provided, otherwise set to nil
+            self.sessionToken = sessionToken
+
+            self.networkManager.sendEvent(event: event, sessionToken: self.sessionToken) { success, error in
                 DispatchQueue.main.async {
                     completion(success, error?.description)
                 }

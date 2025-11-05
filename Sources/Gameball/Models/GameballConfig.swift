@@ -12,6 +12,7 @@ public struct GameballConfig {
     public let platform: String?
     public let shop: String?
     public let apiPrefix: String?
+    public let sessionToken: String?
 
     /// Initialize Gameball SDK configuration
     /// - Parameters:
@@ -20,12 +21,15 @@ public struct GameballConfig {
     ///   - platform: Platform identifier (optional)
     ///   - shop: Shop identifier (optional)
     ///   - apiPrefix: Custom API base URL (optional)
+    ///   - sessionToken: Session token for enhanced security (optional)
     public init(apiKey: String, lang: String, platform: String? = nil,
-                shop: String? = nil, apiPrefix: String? = nil) {
+                shop: String? = nil, apiPrefix: String? = nil,
+                sessionToken: String? = nil) {
         self.apiKey = apiKey
         self.lang = lang
         self.platform = platform
         self.shop = shop
         self.apiPrefix = apiPrefix
+        self.sessionToken = sessionToken
     }
 }
