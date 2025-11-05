@@ -12,9 +12,12 @@ class APIEndPoints {
     static let base_URL = "https://api.gameball.co"
     static let widget_URL = "https://m.gameball.app"
 
+    static let api_v4_0 = "/api/v4.0/integrations"
+    static let api_v4_1 = "/api/v4.1/integrations"
+
     static let getBotStyle = "/api/v1.0/Bots/BotSettings"
-    static let sendEvent = "/api/v4.0/integrations/events"
-    static let initializeCustomer = "/api/v4.0/integrations/customers"
+    static let sendEvent = "/events"
+    static let initializeCustomer = "/customers"
 }
 
 enum SDKInfo {

@@ -20,6 +20,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
     var widgetApiPrefix: String?
+    var sessionToken: String?
 
     @IBOutlet weak var closeBtnRight: UIButton! {
         didSet {
@@ -98,6 +99,11 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         }
         if let hideNavigation = hideNavigation {
             queryItems.append(URLQueryItem(name: "hideNavigation", value: hideNavigation ? "true" : "false"))
+        }
+
+        // Add session token to widget URL if present
+        if let sessionToken = sessionToken, !sessionToken.isEmpty {
+            queryItems.append(URLQueryItem(name: "sessionToken", value: sessionToken))
         }
 
         urlComponents?.queryItems = queryItems

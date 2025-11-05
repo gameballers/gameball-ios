@@ -40,7 +40,7 @@ extension ServiceError {
         case .missingAPIKey:
             return "Client API key is missing"
         case .invalidAPIKey:
-            return "Client API key is inavlid"
+            return "Client API key or Session Token is inavlid"
         case .invalidReferrerCode:
             return "Referrer Code is incorrect"
         case .notInitialized:

@@ -79,14 +79,14 @@ class NetworkManager:NSObject {
     }
     
     func loadDebug<T>(path: String, method: RequestMethod, params: JSON, modelType: T.Type, completion: @escaping (Any?, ServiceError?) -> ()) where T:Codable {
-        
+
         guard Reachability.isConnectedToNetwork() else {
             //            completion(nil, ServiceError.noInternetConnection)
             return
         }
-        
+
         var request = URLRequest(path: path, method: method, params: params)
-        self.adaptRequest(urlRequest: &request)
+        self.adaptRequest(urlRequest: &request, sessionToken: nil)
         // Sending request to the server.
         let task = self.urlSession.dataTask(with: request) { data, response, error in
             // Parsing incoming data
@@ -118,14 +118,14 @@ class NetworkManager:NSObject {
     
     
     func load<T>(path: String, method: RequestMethod, params: JSON, modelType: T.Type, completion: @escaping (Any?, ServiceError?) -> ()) where T:Codable {
-        
+
         guard Reachability.isConnectedToNetwork() else {
             // completion(nil, ServiceError.noInternetConnection)
             return
         }
-        
+
         var request = URLRequest(path: path, method: method, params: params)
-        self.adaptRequest(urlRequest: &request)
+        self.adaptRequest(urlRequest: &request, sessionToken: nil)
         // Sending request to the server.
         let task = self.urlSession.dataTask(with: request) { data, response, error in
             var object: T? = nil
@@ -187,7 +187,7 @@ class NetworkManager:NSObject {
         }
         var req = URLRequest(url: myUrl);
         //        var request = URLRequest(path: modifiedPath)
-        self.adaptRequest(urlRequest: &req)
+        self.adaptRequest(urlRequest: &req, sessionToken: nil)
         let task = URLSession.shared.dataTask(with: req) { (data, response, error) in
             if let httpResponse = response as? HTTPURLResponse, (200..<300) ~= httpResponse.statusCode {
                 if let imageData = data {
@@ -232,6 +232,7 @@ class NetworkManager:NSObject {
 
     func sendEvent(
         event: Event,
+        sessionToken: String?,
         completion: @escaping ((_ success: Bool, _ error: ServiceError?)->())
     ) {
 
@@ -252,8 +253,8 @@ class NetworkManager:NSObject {
             return
         }
 
-        var request = URLRequest(path: APIEndPoints.sendEvent, method: .POST, params: params)
-        self.adaptRequest(urlRequest: &request)
+        var request = URLRequest(path: APIEndPoints.sendEvent, method: .POST, params: params, sessionToken: sessionToken)
+        self.adaptRequest(urlRequest: &request, sessionToken: sessionToken)
         let task = self.urlSession.dataTask(with: request) { data, response, error in
             if let httpResponse = response as? HTTPURLResponse {
                 switch httpResponse.statusCode {
@@ -284,6 +285,7 @@ class NetworkManager:NSObject {
     }
     func initializeCustomer(
         request: InitializeCustomerRequest,
+        sessionToken: String?,
         completion: @escaping ((_ response: InitializeCustomerResponse?, _ error: ServiceError?)->())) {
 
             guard Reachability.isConnectedToNetwork() else {
@@ -309,8 +311,8 @@ class NetworkManager:NSObject {
                 return
             }
 
-            var urlRequest = URLRequest(path: APIEndPoints.initializeCustomer, method: .POST, params: params)
-            self.adaptRequest(urlRequest: &urlRequest)
+            var urlRequest = URLRequest(path: APIEndPoints.initializeCustomer, method: .POST, params: params, sessionToken: sessionToken)
+            self.adaptRequest(urlRequest: &urlRequest, sessionToken: sessionToken)
 
             let task = self.urlSession.dataTask(with: urlRequest) { data, response, error in
                 if let httpResponse = response as? HTTPURLResponse {
@@ -339,7 +341,7 @@ class NetworkManager:NSObject {
         }
     
     
-    func adaptRequest(urlRequest: inout URLRequest) {
+    func adaptRequest(urlRequest: inout URLRequest, sessionToken: String?) {
         if NetworkManager.shared().APIKey.count > 0 {
             urlRequest.addValue(NetworkManager.shared().APIKey, forHTTPHeaderField: "APIKey")
             urlRequest.addValue(SDKInfo.userAgent, forHTTPHeaderField: "x-gb-agent")
@@ -347,6 +349,11 @@ class NetworkManager:NSObject {
             // Use LanguageHelper to resolve language with priority order
             let resolvedLanguage = LanguageHelper.resolveLanguage()
             urlRequest.addValue(resolvedLanguage, forHTTPHeaderField: "lang")
+
+            // Add session token header if present
+            if let sessionToken = sessionToken, !sessionToken.isEmpty {
+                urlRequest.addValue(sessionToken, forHTTPHeaderField: "X-GB-TOKEN")
+            }
         }
     }
     
@@ -392,9 +399,28 @@ class NetworkManager:NSObject {
 }
 
 extension URL {
-    init(path: String, params: JSON , method: RequestMethod) {
+    init(path: String, params: JSON, method: RequestMethod, sessionToken: String? = nil) {
         var components = URLComponents(string: NetworkManager.shared().baseUrl)
-        components?.path += path
+
+        // Build final path with version-aware concatenation
+        var finalPath: String
+
+        // Check if this is a versioned integrations endpoint
+        if path.hasPrefix("/events") || path.hasPrefix("/customers") {
+            // Determine which API version to use based on session token
+            if let sessionToken = sessionToken, !sessionToken.isEmpty {
+                // Has token → use v4.1
+                finalPath = APIEndPoints.api_v4_1 + path
+            } else {
+                // No token → use v4.0
+                finalPath = APIEndPoints.api_v4_0 + path
+            }
+        } else {
+            // Non-versioned endpoint (like getBotStyle) - use as-is
+            finalPath = path
+        }
+
+        components?.path += finalPath
         if params.count > 0 {
             switch method {
             case .GET, .DELETE:
@@ -411,15 +437,15 @@ extension URL {
 }
 
 extension URLRequest {
-    init(path: String, method: RequestMethod = .GET, params: JSON = [:]) {
-        let url = URL(path: path, params: params, method: method)
+    init(path: String, method: RequestMethod = .GET, params: JSON = [:], sessionToken: String? = nil) {
+        let url = URL(path: path, params: params, method: method, sessionToken: sessionToken)
         self.init(url: url)
         httpMethod = method.rawValue
         switch method {
         case .POST, .PUT:
             httpBody = try! JSONSerialization.data(withJSONObject: params, options: [])
             setValue("application/json", forHTTPHeaderField: "Content-Type")
-            
+
         default:
             break
         }
