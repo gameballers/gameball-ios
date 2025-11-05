@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -22,32 +22,23 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 - **Target iOS Version**: Latest
 - **Swift**: 5.0+
 - **Xcode**: 12.0+
-- **CocoaPods**: 1.10+ or Swift Package Manager
+- **Swift Package Manager**: Required
 
 ## Installation
 
-### CocoaPods
-```ruby
-pod 'Gameball', '~> 3.0.0'
-```
-
-Then run:
-```bash
-pod install
-```
-
 ### Swift Package Manager
-Add the following to your `Package.swift`:
+
+**Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.0.0")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.0")
 ]
 ```
 
-Or add it via Xcode: File > Add Packages > Enter repository URL:
-```
-https://github.com/gameballers/gameball-ios.git
-```
+**Via Xcode:**
+1. File > Add Packages
+2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
+3. Select version: `3.1.0` or later
 
 ## Quick Start
 
@@ -138,12 +129,62 @@ GameballApp.getInstance().showProfile(profileRequest)
 ## API Methods
 
 The SDK provides the following public methods:
-- `init(config:completion:)` - Initialize the SDK with GameballConfig
-- `initializeCustomer(_:completion:)` - Register/initialize customer with throwing initializer
-- `sendEvent(_:completion:)` - Track events with Event model
-- `showProfile(_:presentationStyle:)` - Show profile widget with ShowProfileRequest
+- `init(config:completion:)` - Initialize the SDK with GameballConfig (completion is optional)
+- `initializeCustomer(_:completion:sessionToken:)` - Register/initialize customer with optional token override
+- `sendEvent(_:completion:sessionToken:)` - Track events with optional token override
+- `showProfile(_:presentationStyle:sessionToken:)` - Show profile widget with optional token override
 
 ## Advanced Usage
+
+### Session Token Authentication (v3.1.0+)
+
+The SDK supports optional token-based authentication for enhanced security. Session tokens are stored in-memory and automatically injected into API requests.
+
+#### Initialize with Session Token
+```swift
+let config = GameballConfig(
+    apiKey: "your_api_key",
+    lang: "en",
+    sessionToken: "your_session_token"  // Optional
+)
+
+GameballApp.getInstance().init(config: config)
+```
+
+#### Per-Request Token Override
+You can override or clear the session token for individual API calls:
+
+```swift
+// Override token for this specific request
+GameballApp.getInstance().initializeCustomer(
+    request,
+    completion: { response, error in
+        // Handle response
+    },
+    sessionToken: "new_token"  // Overrides global token
+)
+
+// Clear token for this specific request
+GameballApp.getInstance().sendEvent(
+    event,
+    completion: { success, error in
+        // Handle response
+    },
+    sessionToken: nil  // Clears token for this request
+)
+
+// Use with showProfile
+GameballApp.getInstance().showProfile(
+    profileRequest,
+    sessionToken: "specific_token"
+)
+```
+
+#### How It Works
+- **Without token**: Requests use `/api/v4.0/integrations/*` endpoints
+- **With token**: Requests automatically route to `/api/v4.1/integrations/*` with `X-GB-TOKEN` header
+- **In-memory storage**: Tokens are not persisted and cleared on app restart
+- **Thread-safe**: All token operations are synchronized for multi-threaded access
 
 ### Customer Attributes
 ```swift
