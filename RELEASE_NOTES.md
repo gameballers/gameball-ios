@@ -4,7 +4,292 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.0.0
+## Latest Release: v3.1.0
+
+**Release Date**: 2025-11-05
+**Version**: 3.1.0
+**Type**: Feature Release (Non-Breaking)
+
+---
+
+## 🎉 What's New in v3.1.0
+
+Gameball iOS SDK v3.1.0 introduces optional session token authentication for enhanced security, along with improved SDK initialization performance. **This is a non-breaking release** - all v3.0.0 code continues to work without modifications.
+
+### 🔐 Session Token Authentication
+
+Add an optional security layer to your API requests with session token authentication:
+
+```swift
+// Initialize with session token
+let config = GameballConfig(
+    apiKey: "your_api_key",
+    lang: "en",
+    sessionToken: "your_session_token"  // NEW: Optional
+)
+
+GameballApp.getInstance().init(config: config)
+```
+
+**Key Features:**
+- **Automatic API Versioning**: Routes to v4.0 (no token) or v4.1 (with token) automatically
+- **X-GB-TOKEN Header**: Automatically injected into authenticated requests
+- **Per-Request Override**: Override or clear tokens for individual API calls
+- **In-Memory Storage**: Tokens stored securely in memory (not persisted)
+- **Thread-Safe**: All token operations synchronized via dispatch queue
+
+### ⚡ Improved SDK Initialization
+
+SDK initialization is now faster and more flexible:
+
+```swift
+// Optional completion handler
+GameballApp.getInstance().init(config: config)  // Fire-and-forget
+
+// Or with completion
+GameballApp.getInstance().init(config: config) { error in
+    // Handle completion
+}
+```
+
+**Improvements:**
+- **Non-Blocking**: Init no longer waits for bot settings API call
+- **Optional Completion**: Completion handler is now optional
+- **Faster Startup**: Bot settings load in background
+
+### 🎯 Per-Request Token Management
+
+Override or clear session tokens for individual requests:
+
+```swift
+// Override token for specific request
+GameballApp.getInstance().initializeCustomer(
+    request,
+    completion: { response, error in },
+    sessionToken: "specific_token"  // Override global token
+)
+
+// Clear token for specific request
+GameballApp.getInstance().sendEvent(
+    event,
+    completion: { success, error in },
+    sessionToken: nil  // Clear token for this request
+)
+
+// Token for profile widget
+GameballApp.getInstance().showProfile(
+    profileRequest,
+    sessionToken: "widget_token"
+)
+```
+
+---
+
+## 🚀 Key Features
+
+### Session Token Configuration
+
+**Initialize with token:**
+```swift
+let config = GameballConfig(
+    apiKey: "your_api_key",
+    lang: "en",
+    sessionToken: "your_session_token"
+)
+
+GameballApp.getInstance().init(config: config)
+```
+
+### Automatic Endpoint Versioning
+
+**How it works:**
+- **Without token**: `/api/v4.0/integrations/*` (default behavior)
+- **With token**: `/api/v4.1/integrations/*` with `X-GB-TOKEN` header
+
+No manual configuration required - the SDK handles versioning automatically.
+
+### Flexible Token Management
+
+**Per-method token override:**
+```swift
+// Each method accepts optional sessionToken parameter
+.initializeCustomer(_:completion:sessionToken:)
+.sendEvent(_:completion:sessionToken:)
+.showProfile(_:presentationStyle:sessionToken:)
+```
+
+### Widget Integration
+
+Session tokens are automatically passed to the profile widget:
+```swift
+GameballApp.getInstance().showProfile(
+    profileRequest,
+    sessionToken: "user_specific_token"
+)
+```
+
+---
+
+## 🔄 Changes & Improvements
+
+### API Changes (Backward Compatible)
+
+All methods now support optional `sessionToken` parameter:
+- `init(config:completion:)` - completion is now optional
+- `initializeCustomer(_:completion:sessionToken:)` - new token parameter
+- `sendEvent(_:completion:sessionToken:)` - new token parameter
+- `showProfile(_:presentationStyle:sessionToken:)` - new token parameter
+
+### Internal Improvements
+
+- **Endpoint Management**: Simplified endpoint constants with version-aware concatenation
+- **Network Layer**: Enhanced NetworkManager with automatic header injection
+- **URL Construction**: Smart URL building based on token presence
+- **Thread Safety**: Synchronized token access via dispatch queue
+
+---
+
+## 🛡️ Security Enhancements
+
+### Token-Based Authentication
+
+- **Additional Security Layer**: Beyond API key authentication
+- **Per-Request Control**: Override tokens for specific operations
+- **In-Memory Storage**: Tokens not persisted (cleared on app restart)
+- **Automatic Header Injection**: `X-GB-TOKEN` added to authenticated requests
+- **Secure Routing**: Automatic v4.1 endpoint usage with tokens
+
+### Security Best Practices
+
+✅ Store tokens securely (e.g., Keychain) before passing to SDK
+✅ Use per-request tokens for multi-user scenarios
+✅ Clear tokens when user logs out
+✅ Tokens are in-memory only - handle persistence yourself if needed
+
+---
+
+## 📈 Performance Improvements
+
+### Initialization Performance
+
+- **Non-Blocking Init**: Bot settings load in background
+- **Faster Startup**: SDK ready immediately
+- **Optional Callbacks**: Skip completion handlers when not needed
+
+### Network Efficiency
+
+- **Smart Routing**: Automatic endpoint selection
+- **Header Optimization**: Efficient token injection
+- **Thread-Safe Operations**: No performance overhead from locking
+
+---
+
+## 🔧 Technical Details
+
+### Requirements (Unchanged)
+
+- **Minimum iOS**: 12.0
+- **Target iOS**: Latest
+- **Swift**: 5.0+
+- **Xcode**: 12.0+
+- **Swift Package Manager**: Required
+
+### Dependencies (Unchanged)
+
+- Firebase/Core
+- Firebase/Messaging
+- Firebase/Analytics
+
+### API Version Support
+
+- **v4.0**: Default endpoints (no authentication token)
+- **v4.1**: Secure endpoints (with authentication token)
+
+### Token Behavior
+
+- **Storage**: In-memory only (not persisted)
+- **Lifecycle**: Cleared on app restart
+- **Thread-Safety**: All operations synchronized
+- **Override**: Per-request token override supported
+
+---
+
+## 📚 Migration from v3.0.0
+
+### No Changes Required!
+
+**Your existing v3.0.0 code works without modifications.**
+
+### Optional Enhancements
+
+To add session token support:
+
+1. Update dependency to v3.1.0
+2. Add `sessionToken` to `GameballConfig` if needed
+3. Use per-request tokens for advanced scenarios
+
+See [MIGRATION.md](MIGRATION.md) for detailed migration guide.
+
+---
+
+## 📦 Installation
+
+### Swift Package Manager
+
+**Via Package.swift:**
+```swift
+dependencies: [
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.0")
+]
+```
+
+**Via Xcode:**
+1. File > Add Packages
+2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
+3. Select version: `3.1.0` or later
+
+---
+
+## 🏆 Benefits Summary
+
+✅ **Enhanced Security**: Optional token-based authentication
+✅ **Backward Compatible**: All v3.0.0 code works unchanged
+✅ **Flexible Authentication**: Per-request token control
+✅ **Faster Initialization**: Non-blocking SDK startup
+✅ **Automatic Routing**: Smart endpoint versioning
+✅ **Thread-Safe**: Secure token management
+✅ **Zero Configuration**: Automatic header and endpoint handling
+
+---
+
+## 🎯 What's Next
+
+### Future Enhancements
+- Swift Concurrency (async/await) support
+- Enhanced analytics capabilities
+- Additional authentication methods
+
+### Roadmap
+- Version 3.2.0: Swift Concurrency integration
+- Future: Advanced personalization features
+
+---
+
+## 📚 Resources
+
+- **[Migration Guide](MIGRATION.md)**: v3.0.0 → v3.1.0 migration
+- **[README](README.md)**: Complete usage documentation
+- **[Changelog](CHANGELOG.md)**: Detailed change history
+
+### Support
+
+- 📧 **Email**: support@gameball.co
+- 📖 **Documentation**: [https://developer.gameball.co/](https://developer.gameball.co/)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/gameballers/gameball-ios/issues)
+
+---
+
+## Previous Release: v3.0.0
 
 **Release Date**: 2025-10-13
 **Version**: 3.0.0

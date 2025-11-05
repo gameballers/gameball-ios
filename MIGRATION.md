@@ -1,4 +1,96 @@
-# Migration Guide: Gameball iOS SDK v2.x → v3.0.0
+# Migration Guide: Gameball iOS SDK
+
+This guide helps you migrate between versions of the Gameball iOS SDK.
+
+---
+
+## v3.0.0 → v3.1.0 (Non-Breaking)
+
+### Overview
+v3.1.0 adds optional session token authentication and improves SDK initialization. **All v3.0.0 code continues to work without changes.**
+
+### What's New
+- ✨ **Session Token Authentication**: Optional token-based security layer
+- ⚡ **Non-Blocking Initialization**: SDK init no longer waits for bot settings
+- 🔧 **Optional Completion Handler**: Init completion is now optional
+- 🔄 **Automatic API Versioning**: Routes to v4.0 or v4.1 based on token
+
+### Migration Steps
+
+#### 1. Update Dependencies
+
+**Swift Package Manager:**
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.0")
+```
+
+#### 2. Optional: Add Session Token Support
+
+**Existing v3.0.0 code (still works):**
+```swift
+let config = GameballConfig(apiKey: "your_api_key", lang: "en")
+GameballApp.getInstance().init(config: config) { error in
+    // Handle completion
+}
+```
+
+**New v3.1.0 with session token:**
+```swift
+let config = GameballConfig(
+    apiKey: "your_api_key",
+    lang: "en",
+    sessionToken: "your_session_token"  // NEW: Optional
+)
+
+// Completion handler is now optional
+GameballApp.getInstance().init(config: config)  // Fire-and-forget
+
+// Or with completion
+GameballApp.getInstance().init(config: config) { error in
+    // Handle completion
+}
+```
+
+#### 3. Optional: Use Per-Request Token Override
+
+```swift
+// Override token for specific requests
+GameballApp.getInstance().initializeCustomer(
+    request,
+    completion: { response, error in },
+    sessionToken: "specific_token"  // NEW: Override global token
+)
+
+GameballApp.getInstance().sendEvent(
+    event,
+    completion: { success, error in },
+    sessionToken: nil  // NEW: Clear token for this request
+)
+
+GameballApp.getInstance().showProfile(
+    profileRequest,
+    sessionToken: "token"  // NEW: Token for widget
+)
+```
+
+### Session Token Behavior
+
+- **Without token**: Uses `/api/v4.0/integrations/*` endpoints (default)
+- **With token**: Automatically routes to `/api/v4.1/integrations/*` with `X-GB-TOKEN` header
+- **Storage**: In-memory only (not persisted, cleared on app restart)
+- **Thread-safe**: All operations synchronized via dispatch queue
+
+### Migration Checklist
+
+- [ ] Update SPM dependency to 3.1.0
+- [ ] (Optional) Add sessionToken to GameballConfig if needed
+- [ ] (Optional) Update method calls to use per-request token override
+- [ ] Test authentication flows
+- [ ] Verify API requests route to correct endpoints
+
+---
+
+## v2.x → v3.0.0 (Breaking Changes)
 
 This guide helps you migrate from v2.x to v3.0.0 with modern iOS architecture, throwing initializers, and enhanced type safety.
 
@@ -25,17 +117,13 @@ This guide helps you migrate from v2.x to v3.0.0 with modern iOS architecture, t
 
 **Before (v2.x):**
 ```ruby
-pod 'Gameball', '~> 2.2.3'
+pod 'Gameball', '~> 2.2.3'  # Old CocoaPods version
 ```
 
 **After (v3.0.0):**
-```ruby
-pod 'Gameball', '~> 3.0.0'
-```
-
-Then run:
-```bash
-pod install
+```swift
+// Swift Package Manager
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.0.0")
 ```
 
 ### 2. SDK Initialization

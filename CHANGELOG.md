@@ -7,6 +7,35 @@ All notable changes to Gameball iOS SDK are documented here.
 
 ---
 
+## [3.1.0] - 2025-11-05 🔐
+
+> **Feature Release**: Token-based authentication with automatic endpoint versioning
+
+### ✨ Added
+- 🔐 **Session Token Authentication**: Optional token-based authentication for enhanced API security
+- 🔄 **Automatic Endpoint Versioning**: Seamless switching between v4.0 and v4.1 endpoints based on token presence
+- 🎯 **Per-Request Token Override**: Flexible token management with per-method sessionToken parameter
+- 📝 **X-GB-TOKEN Header**: Automatic header injection for authenticated requests
+- 🔧 **Widget Token Support**: Session token integration in profile widget URL
+- 🧵 **Thread-Safe Token Access**: Secure token storage with dispatch queue synchronization
+
+### 🔄 Changed
+- ⚡ **Non-Blocking Initialization**: SDK init no longer waits for bot settings API call
+- 🔧 **Optional Completion Handler**: Init completion handler is now optional for fire-and-forget usage
+- 📡 **Smart API Routing**: Endpoints automatically route to secure v4.1 when token is present
+
+### 🛡️ Security
+- 🔒 **Enhanced API Security**: Optional token-based authentication layer beyond API key
+- 🎯 **Flexible Authentication**: Support for multi-user scenarios and per-request authentication control
+- 🔐 **In-Memory Token Storage**: Session tokens stored in memory (not persisted) for security
+
+### 📚 Documentation
+- Added session token configuration examples
+- Documented per-request token override patterns
+- Updated API versioning behavior
+
+---
+
 ## [3.0.0] - 2025-10-13 🎉
 
 > **Major Release**: Complete SDK modernization with breaking API changes for iOS best practices
