@@ -89,7 +89,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
             queryItems.append(URLQueryItem(name: "main", value: color))
         }
 
-        queryItems.append(URLQueryItem(name: "playerid", value: customerId))
+        queryItems.append(URLQueryItem(name: "customerId", value: customerId))
         queryItems.append(URLQueryItem(name: "lang", value: lang))
         queryItems.append(URLQueryItem(name: "apiKey", value: APIKEY))
         queryItems.append(URLQueryItem(name: "os", value: "iOS"))
