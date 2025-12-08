@@ -10,7 +10,7 @@ import WebKit
 class GB_WEBVIEWWIDGETViewController: BaseViewController {
     
     @IBOutlet weak var webView: WKWebView!
-    var customerId = ""  // Renamed from playerID/customerID for consistency
+    var customerId: String?
     var color: String? = ""
     var APIKEY = ""
     var lang: String? = ""
