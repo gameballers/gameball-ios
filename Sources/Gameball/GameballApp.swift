@@ -223,7 +223,7 @@ public class GameballApp {
 
     private func prepareProfileViewController(
         apiKey: String,
-        customerId: String,
+        customerId: String?,
         lang: String,
         openDetail: String?,
         hideNavigation: Bool?,
