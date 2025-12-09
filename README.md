@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -31,14 +31,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.0")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.1")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.1.0` or later
+3. Select version: `3.1.1` or later
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ let config = GameballConfig(
     lang: "en"
 )
 
-GameballApp.getInstance().init(config: config) { error in
+GameballApp.getInstance().`init`(config: config) { error in
     if let error = error {
         print("SDK initialization failed: \(error.localizedDescription)")
     } else {
@@ -64,28 +64,32 @@ GameballApp.getInstance().init(config: config) { error in
 ```swift
 import Gameball
 
-let attributes = CustomerAttributes(
-    displayName: "John Doe",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
-    mobile: "1234567890",
-    customAttributes: ["tier": "premium"]
-)
+do {
+    let attributes = CustomerAttributes(
+        displayName: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
+        email: "john@example.com",
+        mobile: "1234567890",
+        customAttributes: ["tier": "premium"]
+    )
 
-let request = try InitializeCustomerRequest(
-    customerId: "unique_customer_id",
-    email: "customer@example.com",
-    mobile: "1234567890",
-    customerAttributes: attributes
-)
+    let request = try InitializeCustomerRequest(
+        customerId: "customer_id",
+        email: "customer@example.com",
+        mobile: "1234567890",
+        customerAttributes: attributes
+    )
 
-GameballApp.getInstance().initializeCustomer(request) { response, errorMessage in
-    if let errorMessage = errorMessage {
-        print("Error: \(errorMessage)")
-    } else {
-        print("Customer initialized successfully")
+    GameballApp.getInstance().initializeCustomer(request) { response, errorMessage in
+        if let errorMessage = errorMessage {
+            print("Error: \(errorMessage)")
+        } else {
+            print("Customer initialized successfully")
+        }
     }
+} catch {
+    print("Validation error: \(error)")
 }
 ```
 
@@ -93,23 +97,29 @@ GameballApp.getInstance().initializeCustomer(request) { response, errorMessage i
 ```swift
 import Gameball
 
-let event = try Event(
-    events: [
-        "purchase": [
-            "amount": 100.00,
-            "currency": "USD",
-            "product_id": "prod_123"
-        ]
-    ],
-    customerId: "unique_customer_id"
-)
+do {
+    let event = try Event(
+        events: [
+            "purchase": [
+                "amount": 100.00,
+                "currency": "USD",
+                "product_id": "prod_123",
+                "category": "electronics",
+                "quantity": 2
+            ]
+        ],
+        customerId: "customer_id"
+    )
 
-GameballApp.getInstance().sendEvent(event) { success, errorMessage in
-    if success {
-        print("Event sent successfully")
-    } else if let errorMessage = errorMessage {
-        print("Error sending event: \(errorMessage)")
+    GameballApp.getInstance().sendEvent(event) { success, errorMessage in
+        if success {
+            print("Event sent successfully")
+        } else if let errorMessage = errorMessage {
+            print("Error sending event: \(errorMessage)")
+        }
     }
+} catch {
+    print("Validation error: \(error)")
 }
 ```
 
@@ -117,24 +127,252 @@ GameballApp.getInstance().sendEvent(event) { success, errorMessage in
 ```swift
 import Gameball
 
-let profileRequest = try ShowProfileRequest(
-    customerId: "unique_customer_id",
+// For authenticated customers
+let profileRequest = ShowProfileRequest(
+    customerId: "customer_id",
     showCloseButton: true,
     closeButtonColor: "#FF0000"
 )
 
 GameballApp.getInstance().showProfile(profileRequest)
+
+// For guest mode (no customer ID required)
+let guestProfileRequest = ShowProfileRequest(
+    showCloseButton: true,
+    closeButtonColor: "#FF0000"
+)
+
+GameballApp.getInstance().showProfile(guestProfileRequest)
 ```
+
+#### UI Presentation
+The SDK automatically handles view controller presentation. You can customize the modal presentation style:
+
+**UIKit:**
+```swift
+// Full screen presentation (default)
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullScreen)
+
+// Page sheet (iOS 13+)
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .pageSheet)
+
+// Form sheet
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .formSheet)
+
+// Automatic (adapts to device)
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .automatic)
+```
+
+**SwiftUI:**
+```swift
+import SwiftUI
+import Gameball
+
+struct ContentView: View {
+    var body: some View {
+        VStack {
+            Button("Show Profile") {
+                showProfileWidget()
+            }
+
+            Button("Show Guest Profile") {
+                showGuestProfileWidget()
+            }
+        }
+    }
+
+    private func showProfileWidget() {
+        let profileRequest = ShowProfileRequest(
+            customerId: "customer_123",
+            showCloseButton: true,
+            closeButtonColor: "#FF6B6B"
+        )
+
+        // SDK automatically finds and presents on the root view controller
+        GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullScreen)
+    }
+
+    private func showGuestProfileWidget() {
+        let guestRequest = ShowProfileRequest(
+            showCloseButton: true,
+            closeButtonColor: "#4CAF50"
+        )
+
+        GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .pageSheet)
+    }
+}
+```
+
+**How It Works:**
+- The SDK automatically finds your app's root view controller
+- Works seamlessly with both UIKit and SwiftUI apps
+- Presents the profile widget modally with animation
+- No manual view controller management required
 
 ## API Methods
 
 The SDK provides the following public methods:
-- `init(config:completion:)` - Initialize the SDK with GameballConfig (completion is optional)
+- ``init`(config:completion:)` - Initialize the SDK with GameballConfig (completion is optional)
 - `initializeCustomer(_:completion:sessionToken:)` - Register/initialize customer with optional token override
 - `sendEvent(_:completion:sessionToken:)` - Track events with optional token override
 - `showProfile(_:presentationStyle:sessionToken:)` - Show profile widget with optional token override
 
 ## Advanced Usage
+
+### Guest Mode (v3.1.1+)
+
+The profile widget now supports guest mode, allowing users to view it without authentication. This is useful for showcasing loyalty features before user registration.
+
+#### Show Profile Widget in Guest Mode
+```swift
+// Guest mode - no customer ID required
+let guestRequest = ShowProfileRequest(
+    showCloseButton: true,
+    closeButtonColor: "#4CAF50"
+)
+
+GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .fullScreen)
+```
+
+#### Show Profile for Authenticated Customer
+```swift
+// Authenticated mode - with customer ID
+let customerRequest = ShowProfileRequest(
+    customerId: "customer_123",
+    openDetail: "details_earn",  // Open the earn points section
+    showCloseButton: true,
+    closeButtonColor: "#FF6B6B"
+)
+
+GameballApp.getInstance().showProfile(customerRequest, presentationStyle: .fullScreen)
+```
+
+**Key Features:**
+- **No Authentication Required**: Display widget without customer login
+- **Seamless Experience**: Same widget UI for both guest and authenticated users
+- **Easy Transition**: Users can register after exploring as guests
+
+### UI Presentation Styles
+
+The SDK provides flexible presentation options that work with both UIKit and SwiftUI applications.
+
+#### Available Presentation Styles
+
+**Full Screen (Default)**
+```swift
+// Covers the entire screen
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullScreen)
+```
+
+**Page Sheet (iOS 13+)**
+```swift
+// Card-like appearance with rounded corners
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .pageSheet)
+```
+
+**Form Sheet**
+```swift
+// Centered modal (useful for iPad)
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .formSheet)
+```
+
+**Automatic**
+```swift
+// System determines the best style for the device
+GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .automatic)
+```
+
+#### UIKit Integration Example
+
+```swift
+import UIKit
+import Gameball
+
+class ProfileViewController: UIViewController {
+    @IBAction func showProfileTapped(_ sender: UIButton) {
+        let profileRequest = ShowProfileRequest(
+            customerId: "customer_123",
+            showCloseButton: true,
+            closeButtonColor: "#FF6B6B"
+        )
+
+        // SDK handles presentation automatically
+        GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullScreen)
+    }
+
+    @IBAction func showGuestProfileTapped(_ sender: UIButton) {
+        let guestRequest = ShowProfileRequest(
+            showCloseButton: true,
+            closeButtonColor: "#4CAF50"
+        )
+
+        // Present as page sheet for guest mode
+        GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .pageSheet)
+    }
+}
+```
+
+#### SwiftUI Integration Example
+
+```swift
+import SwiftUI
+import Gameball
+
+struct ProfileView: View {
+    @State private var showingProfile = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Button(action: {
+                presentAuthenticatedProfile()
+            }) {
+                Text("View My Rewards")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.blue)
+                    .cornerRadius(10)
+            }
+
+            Button(action: {
+                presentGuestProfile()
+            }) {
+                Text("Explore Loyalty Program")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.green)
+                    .cornerRadius(10)
+            }
+        }
+    }
+
+    private func presentAuthenticatedProfile() {
+        let request = ShowProfileRequest(
+            customerId: "customer_123",
+            openDetail: "details_earn",  // Open the earn points section
+            showCloseButton: true,
+            closeButtonColor: "#007AFF"
+        )
+
+        GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+    }
+
+    private func presentGuestProfile() {
+        let request = ShowProfileRequest(
+            showCloseButton: true,
+            closeButtonColor: "#34C759"
+        )
+
+        GameballApp.getInstance().showProfile(request, presentationStyle: .pageSheet)
+    }
+}
+```
+
+**Implementation Notes:**
+- The SDK automatically resolves your app's root view controller
+- No need to pass view controller references manually
+- Presentation happens on the main thread automatically
+- Works with navigation controllers, tab bar controllers, and split view controllers
+- The widget dismisses automatically when the close button is tapped
 
 ### Session Token Authentication (v3.1.0+)
 
@@ -148,7 +386,7 @@ let config = GameballConfig(
     sessionToken: "your_session_token"  // Optional
 )
 
-GameballApp.getInstance().init(config: config)
+GameballApp.getInstance().`init`(config: config)
 ```
 
 #### Per-Request Token Override
@@ -188,41 +426,70 @@ GameballApp.getInstance().showProfile(
 
 ### Customer Attributes
 ```swift
-let attributes = CustomerAttributes(
-    displayName: "John Doe",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john@example.com",
-    mobile: "1234567890",
-    gender: "M",
-    dateOfBirth: "1990-01-01",
-    preferredLanguage: "en",
-    customAttributes: [
-        "tier": "premium",
-        "city": "New York"
-    ],
-    additionalAttributes: [
-        "segment": "vip",
-        "source": "mobile_app"
-    ]
-)
+do {
+    let attributes = CustomerAttributes(
+        displayName: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
+        email: "john@example.com",
+        mobile: "1234567890",
+        gender: "M",
+        dateOfBirth: "1990-01-01",
+        preferredLanguage: "en",
+        customAttributes: [
+            "tier": "premium",
+            "city": "New York"
+        ],
+        additionalAttributes: [
+            "segment": "vip",
+            "source": "mobile_app"
+        ]
+    )
+
+    let request = try InitializeCustomerRequest(
+        customerId: "customer_id",
+        customerAttributes: attributes
+    )
+
+    GameballApp.getInstance().initializeCustomer(request) { response, error in
+        // Handle response
+    }
+} catch {
+    print("Validation error: \(error)")
+}
 ```
 
 ### Push Notifications
 ```swift
-// Firebase FCM
-let request = try InitializeCustomerRequest(
-    customerId: "customer_id",
-    deviceToken: "fcm_token",
-    pushProvider: .firebase
-)
+do {
+    // Firebase FCM
+    let request = try InitializeCustomerRequest(
+        customerId: "customer_id",
+        deviceToken: "fcm_token",
+        pushProvider: .firebase
+    )
 
-// Huawei Push Kit
-let request = try InitializeCustomerRequest(
-    customerId: "customer_id",
-    deviceToken: "hms_token",
-    pushProvider: .huawei
-)
+    GameballApp.getInstance().initializeCustomer(request) { response, error in
+        // Handle response
+    }
+} catch {
+    print("Validation error: \(error)")
+}
+
+do {
+    // Huawei Push Kit
+    let request = try InitializeCustomerRequest(
+        customerId: "customer_id",
+        deviceToken: "hms_token",
+        pushProvider: .huawei
+    )
+
+    GameballApp.getInstance().initializeCustomer(request) { response, error in
+        // Handle response
+    }
+} catch {
+    print("Validation error: \(error)")
+}
 ```
 
 ### Error Handling
@@ -314,16 +581,24 @@ Request object for initializing/registering customers with the Gameball platform
 
 **Example:**
 ```swift
-let request = try InitializeCustomerRequest(
-    customerId: "customer_123",
-    email: "john@example.com",
-    mobile: "1234567890",
-    deviceToken: "firebase_token",
-    pushProvider: .firebase,
-    customerAttributes: attributes,
-    referralCode: "REF123",
-    isGuest: false
-)
+do {
+    let request = try InitializeCustomerRequest(
+        customerId: "customer_123",
+        email: "john@example.com",
+        mobile: "1234567890",
+        deviceToken: "firebase_token",
+        pushProvider: .firebase,
+        customerAttributes: attributes,
+        referralCode: "REF123",
+        isGuest: false
+    )
+
+    GameballApp.getInstance().initializeCustomer(request) { response, error in
+        // Handle response
+    }
+} catch {
+    print("Validation error: \(error)")
+}
 ```
 
 ### CustomerAttributes
@@ -382,57 +657,53 @@ Event objects for tracking customer actions and behaviors for analytics and camp
 
 **Example:**
 ```swift
-let event = try Event(
-    events: [
-        "purchase": [
-            "amount": 99.99,
-            "currency": "USD",
-            "product_id": "prod_123",
-            "category": "electronics"
-        ]
-    ],
-    customerId: "customer_123",
-    email: "john@example.com",
-    mobile: "1234567890"
-)
-
-// Multiple events example
-let multipleEvents = try Event(
-    events: [
-        "page_view": [
-            "page": "product_detail",
-            "product_id": "prod_123"
+do {
+    let event = try Event(
+        events: [
+            "purchase": [
+                "amount": 99.99,
+                "currency": "USD",
+                "product_id": "prod_123",
+                "category": "electronics",
+                "quantity": 2,
+                "discount": 10.00,
+                "payment_method": "credit_card"
+            ]
         ],
-        "add_to_cart": [
-            "product_id": "prod_123",
-            "quantity": 1
-        ]
-    ],
-    customerId: "customer_123"
-)
+        customerId: "customer_123",
+        email: "john@example.com",
+        mobile: "1234567890"
+    )
+
+    GameballApp.getInstance().sendEvent(event) { success, error in
+        // Handle response
+    }
+} catch {
+    print("Validation error: \(error)")
+}
 ```
 
 ### ShowProfileRequest
-Request object for displaying the Gameball customer profile widget with customization options.
+Request object for displaying the Gameball customer profile widget with customization options. Supports both authenticated and guest modes.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `customerId` | String | ✅ | Customer identifier |
-| `openDetail` | String | ❌ | Specific detail to open (e.g., "achievements", "leaderboard") |
+| `customerId` | String? | ❌ | Customer identifier (optional - omit for guest mode) |
+| `openDetail` | String | ❌ | Specific detail to open (e.g., "details_earn") |
 | `hideNavigation` | Bool | ❌ | Hide navigation elements |
 | `showCloseButton` | Bool | ❌ | Show close button (defaults to true) |
 | `closeButtonColor` | String | ❌ | Close button color (hex format like "#FF0000") |
 | `widgetUrlPrefix` | String | ❌ | Custom widget URL prefix |
 
-**Validation Rules:**
-- `customerId` cannot be empty
-- Throws `GameballError.emptyCustomerId` if validation fails
+**Guest Mode (v3.1.1+):**
+- `customerId` is now optional - when `nil` or omitted, widget opens in guest mode
+- Allows users to explore loyalty features without authentication
 
-**Example:**
+**Example (Authenticated):**
 ```swift
-let profileRequest = try ShowProfileRequest(
+let profileRequest = ShowProfileRequest(
     customerId: "customer_123",
-    openDetail: "rewards",
+    openDetail: "details_earn",  // Open the earn points section
     hideNavigation: false,
     showCloseButton: true,
     closeButtonColor: "#FF6B6B",
@@ -440,6 +711,17 @@ let profileRequest = try ShowProfileRequest(
 )
 
 GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullScreen)
+```
+
+**Example (Guest Mode):**
+```swift
+// No customerId - opens in guest mode
+let guestRequest = ShowProfileRequest(
+    showCloseButton: true,
+    closeButtonColor: "#4CAF50"
+)
+
+GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .fullScreen)
 ```
 
 ## Troubleshooting
@@ -450,7 +732,7 @@ GameballApp.getInstance().showProfile(profileRequest, presentationStyle: .fullSc
 ```
 Error: SDK not initialized
 ```
-**Solution**: Ensure you call `GameballApp.getInstance().init(config:completion:)` before any other SDK methods.
+**Solution**: Ensure you call `GameballApp.getInstance().`init`(config:completion:)` before any other SDK methods.
 
 **2. Empty Customer ID**
 ```
