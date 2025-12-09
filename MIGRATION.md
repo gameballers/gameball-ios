@@ -4,6 +4,149 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
+## v3.1.0 → v3.1.1 (Non-Breaking)
+
+### Overview
+v3.1.1 fixes the profile widget to support guest mode. **All v3.1.0 and v3.0.0 code continues to work without changes.**
+
+### What's Fixed
+- 🎁 **Guest Mode Support**: Profile widget now works without customer authentication
+- ⚡ **Simplified API**: `ShowProfileRequest` initializer is now non-throwing (no `try` keyword needed)
+- 🔓 **Optional Customer ID**: `customerId` is now optional, defaulting to `nil` for guest mode
+
+### Migration Steps
+
+#### 1. Update Dependencies
+
+**Swift Package Manager:**
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.1")
+```
+
+#### 2. Optional: Simplify ShowProfileRequest Creation
+
+**Before (v3.1.0) - throwing initializer:**
+```swift
+do {
+    let request = try ShowProfileRequest(
+        customerId: "customer_123",
+        showCloseButton: true
+    )
+    GameballApp.getInstance().showProfile(request)
+} catch {
+    print("Error: \(error)")
+}
+```
+
+**After (v3.1.1) - non-throwing initializer:**
+```swift
+// No try keyword needed!
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    showCloseButton: true
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+#### 3. Optional: Use Guest Mode
+
+**Fixed in v3.1.1 - Guest Mode:**
+```swift
+// Show widget without customer ID (guest mode)
+let guestRequest = ShowProfileRequest(
+    showCloseButton: true,
+    closeButtonColor: "#4CAF50"
+)
+
+// Customize presentation style
+GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .fullScreen)
+```
+
+#### 4. Optional: Customize UI Presentation
+
+**Available presentation styles:**
+```swift
+// Full screen (default)
+GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+
+// Page sheet (card-like, iOS 13+)
+GameballApp.getInstance().showProfile(request, presentationStyle: .pageSheet)
+
+// Form sheet (centered modal)
+GameballApp.getInstance().showProfile(request, presentationStyle: .formSheet)
+
+// Automatic (system determines best style)
+GameballApp.getInstance().showProfile(request, presentationStyle: .automatic)
+```
+
+**SwiftUI Integration:**
+```swift
+import SwiftUI
+import Gameball
+
+struct ProfileView: View {
+    var body: some View {
+        Button("Show Profile") {
+            let request = ShowProfileRequest(customerId: "customer_123")
+            GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+        }
+    }
+}
+```
+
+### Common Use Cases
+
+#### Use Case 1: Conditional Widget Display
+```swift
+func showLoyaltyWidget() {
+    if let customerId = UserDefaults.standard.string(forKey: "customerId") {
+        // User is logged in - show authenticated widget
+        let request = ShowProfileRequest(customerId: customerId)
+        GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+    } else {
+        // User not logged in - show guest mode
+        let guestRequest = ShowProfileRequest()
+        GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .pageSheet)
+    }
+}
+```
+
+#### Use Case 2: Onboarding Flow
+```swift
+// Step 1: Show guest mode during onboarding
+func showOnboarding() {
+    let guestRequest = ShowProfileRequest(
+        openDetail: "details_earn",  // Open the earn points section
+        showCloseButton: true
+    )
+    GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .pageSheet)
+}
+
+// Step 2: After user registers, show authenticated widget
+func afterRegistration(customerId: String) {
+    let request = ShowProfileRequest(customerId: customerId)
+    GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+}
+```
+
+### API Changes Summary
+
+| Change | v3.1.0 | v3.1.1 |
+|--------|--------|--------|
+| **ShowProfileRequest Init** | Throwing (`try` required) | Non-throwing (no `try` needed) |
+| **customerId Parameter** | Required (not `nil`) | Optional (defaults to `nil` for guest mode) |
+| **Validation** | Throws on empty customerId | No validation (supports guest mode) |
+
+### Migration Checklist
+
+- [ ] Update SPM dependency to 3.1.1
+- [ ] Remove `try` keyword from `ShowProfileRequest` initialization (optional)
+- [ ] Add guest mode support where applicable (optional)
+- [ ] Test guest mode widget display (optional)
+- [ ] Test authenticated widget display
+
+---
+
 ## v3.0.0 → v3.1.0 (Non-Breaking)
 
 ### Overview
@@ -21,7 +164,7 @@ v3.1.0 adds optional session token authentication and improves SDK initializatio
 
 **Swift Package Manager:**
 ```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.0")
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.1")
 ```
 
 #### 2. Optional: Add Session Token Support
@@ -29,7 +172,7 @@ v3.1.0 adds optional session token authentication and improves SDK initializatio
 **Existing v3.0.0 code (still works):**
 ```swift
 let config = GameballConfig(apiKey: "your_api_key", lang: "en")
-GameballApp.getInstance().init(config: config) { error in
+GameballApp.getInstance().`init`(config: config) { error in
     // Handle completion
 }
 ```
@@ -43,10 +186,10 @@ let config = GameballConfig(
 )
 
 // Completion handler is now optional
-GameballApp.getInstance().init(config: config)  // Fire-and-forget
+GameballApp.getInstance().`init`(config: config)  // Fire-and-forget
 
 // Or with completion
-GameballApp.getInstance().init(config: config) { error in
+GameballApp.getInstance().`init`(config: config) { error in
     // Handle completion
 }
 ```
@@ -132,7 +275,7 @@ pod 'Gameball', '~> 2.2.3'  # Old CocoaPods version
 ```swift
 import Gameball
 
-GameballApp.shared().init(
+GameballApp.shared().`init`(
     APIKey: "your_api_key",
     Language: "en"
 ) { error in
@@ -149,7 +292,7 @@ let config = GameballConfig(
     lang: "en"
 )
 
-GameballApp.getInstance().init(config: config) { error in
+GameballApp.getInstance().`init`(config: config) { error in
     if let error = error {
         print("SDK initialization failed: \(error.localizedDescription)")
     } else {
@@ -288,7 +431,7 @@ do {
 ```swift
 GameballApp.shared().showProfile(
     playerUniqueId: "player_123",
-    openDetail: "achievements",
+    openDetail: "details_earn",  // Open the earn points section
     hideNavigation: false
 )
 ```
@@ -298,7 +441,7 @@ GameballApp.shared().showProfile(
 do {
     let profileRequest = try ShowProfileRequest(
         customerId: "customer_123",
-        openDetail: "achievements",
+        openDetail: "details_earn",  // Open the earn points section
         hideNavigation: false,
         showCloseButton: true,
         closeButtonColor: "#FF0000"  // New customization option
@@ -519,7 +662,7 @@ The following v2.x features have been removed:
 | Feature | v2.x | v3.0.0 |
 |---------|------|--------|
 | **SDK Access** | `GameballApp.shared()` | `GameballApp.getInstance()` |
-| **Initialization** | `init(APIKey:Language:completion:)` | `init(config:completion:)` |
+| **Initialization** | ``init`(APIKey:Language:completion:)` | ``init`(config:completion:)` |
 | **Customer Registration** | `registerPlayer(playerUniqueId:...)` | `initializeCustomer(InitializeCustomerRequest)` |
 | **Event Tracking** | `sendEvent(playerUniqueId:eventName:...)` | `sendEvent(Event)` |
 | **Profile Widget** | `showProfile(playerUniqueId:...)` | `showProfile(ShowProfileRequest)` |

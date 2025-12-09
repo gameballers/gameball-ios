@@ -2,8 +2,23 @@
 
 All notable changes to Gameball iOS SDK are documented here.
 
-## [Unreleased] 🚧
-*Changes planned for next release*
+
+## [3.1.1] - 2025-12-15 🔧
+
+> **Patch Release**: Guest mode support for profile widget
+
+### 🐛 Fixed
+- 🎁 **Guest Mode Support**: Profile widget can now be displayed without customer authentication
+- 🔓 **Optional Customer ID**: `ShowProfileRequest.customerId` is now optional, defaulting to `nil` for guest mode
+
+### 🔄 Changed
+- 🏗️ **ShowProfileRequest Initializer**: No longer throws - customer ID validation removed for guest mode support
+- 📝 **Widget URL Construction**: Enhanced to support both authenticated and guest modes
+
+### 🛠️ Developer Experience
+- ⚡ **Simpler API**: Create `ShowProfileRequest` without `try` keyword - non-throwing initializer
+- 🎯 **Flexible Usage**: Support for preview/showcase scenarios before user registration
+- 📖 **Better Documentation**: Clear examples for both guest and authenticated modes
 
 ---
 
