@@ -15,6 +15,7 @@ public struct ShowProfileRequest {
     public let widgetUrlPrefix: String?
     public let mobile: String?
     public let email: String?
+    public let externalLinkCallback: ((String) -> Void)?
 
     /// Initialize profile display request
     /// - Parameters:
@@ -26,6 +27,7 @@ public struct ShowProfileRequest {
     ///   - widgetUrlPrefix: Optional custom widget URL (currently unused)
     ///   - mobile: Optional customer mobile number
     ///   - email: Optional customer email address
+    ///   - externalLinkCallback: Optional handler for links tagged gbExternalBrowser=true; when set, the link is delegated to it instead of being opened by the SDK in the system browser
     public init(
         customerId: String? = nil,
         openDetail: String? = nil,
@@ -34,7 +36,8 @@ public struct ShowProfileRequest {
         closeButtonColor: String? = nil,
         widgetUrlPrefix: String? = nil,
         mobile: String? = nil,
-        email: String? = nil
+        email: String? = nil,
+        externalLinkCallback: ((String) -> Void)? = nil
     ) {
         self.customerId = customerId
         self.openDetail = openDetail
@@ -44,5 +47,6 @@ public struct ShowProfileRequest {
         self.widgetUrlPrefix = widgetUrlPrefix
         self.mobile = mobile
         self.email = email
+        self.externalLinkCallback = externalLinkCallback
     }
 }
