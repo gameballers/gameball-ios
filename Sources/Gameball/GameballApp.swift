@@ -165,6 +165,8 @@ public class GameballApp {
                 showCloseButton: request.showCloseButton,
                 closeButtonColor: request.closeButtonColor,
                 widgetUrlPrefix: request.widgetUrlPrefix,
+                mobile: request.mobile,
+                email: request.email,
                 sessionToken: self.sessionToken
             )
 
@@ -230,6 +232,8 @@ public class GameballApp {
         showCloseButton: Bool?,
         closeButtonColor: String?,
         widgetUrlPrefix: String?,
+        mobile: String?,
+        email: String?,
         sessionToken: String?
     ) -> UIViewController {
         var bundle: Bundle?
@@ -250,6 +254,8 @@ public class GameballApp {
         viewController.closeButtonColor = closeButtonColor
         viewController.pullToDismiss = false
         viewController.widgetApiPrefix = widgetUrlPrefix
+        viewController.mobile = mobile
+        viewController.email = email
         viewController.sessionToken = sessionToken
 
         return viewController
