@@ -26,7 +26,7 @@ enum SDKInfo {
     static let platform = "iOS"
 
     static var userAgent: String {
-        return "GB\\\(platform)\(version)"
+        return "GB/ios/\(version)"
     }
 }
 
