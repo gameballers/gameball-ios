@@ -18,6 +18,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var hideNavigation: Bool?
     var mobile: String?
     var email: String?
+    var externalLinkCallback: ((String) -> Void)?
     var showCloseBtn: Bool = true
     var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
@@ -151,20 +152,58 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
 
 extension GB_WEBVIEWWIDGETViewController: WKNavigationDelegate {
 
+    // Host that identifies Gameball widget content. Any subdomain of this (m., www.,
+    // app., alpha., …) loads in-webview; everything else is treated as a cross-host link.
+    private static let gameballHost = "gameball.app"
+    private static let gameballHostSuffix = ".gameball.app"
+    // Query marker the widget appends to a link it wants opened in the device browser.
+    private static let externalBrowserFlag = "gbExternalBrowser=true"
+
+    // Navigation precedence:
+    //   1) Gameball host (gameball.app or any *.gameball.app) → load in-webview (widget
+    //      content never leaves the webview, regardless of any flag).
+    //   2) Cross-host link:
+    //      a) gbExternalBrowser=true → device browser
+    //      b) else if externalLinkCallback set → delegate to it
+    //      c) else → device browser (safety net)
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-
-        if let url = navigationAction.request.url,
-           let urlComponents = URLComponents(string: url.absoluteString),
-           let openExternal = urlComponents.queryItems?.first(where: { $0.name == "openInExternalBrowser" })?.value,
-           openExternal == "true",
-           UIApplication.shared.canOpenURL(url) {
-
-            UIApplication.shared.open(url)
-
+        if let url = navigationAction.request.url, !isGameballHost(url) {
+            handleExternalBrowserLink(url)
             return decisionHandler(.cancel)
         }
-
         decisionHandler(.allow)
+    }
+
+    // True when the URL belongs to Gameball — host is "gameball.app" or ends with
+    // ".gameball.app" (so m./www./app./alpha. etc. all match). The suffix check with the
+    // leading dot rejects look-alikes such as "evilgameball.app". A URL with no host
+    // (about:blank, data:) is also treated as in-widget so the widget renders normally.
+    private func isGameballHost(_ url: URL) -> Bool {
+        guard let host = url.host?.lowercased() else {
+            return true
+        }
+        return host == GB_WEBVIEWWIDGETViewController.gameballHost
+            || host.hasSuffix(GB_WEBVIEWWIDGETViewController.gameballHostSuffix)
+    }
+
+    // Handle a cross-host link (never loads in-widget):
+    //   1) gbExternalBrowser=true → device browser (flag outranks the callback)
+    //   2) else if externalLinkCallback set → delegate to it
+    //   3) else → device browser (safety net)
+    private func handleExternalBrowserLink(_ url: URL) {
+        if url.absoluteString.contains(GB_WEBVIEWWIDGETViewController.externalBrowserFlag) {
+            openInDeviceBrowser(url)
+        } else if let externalLinkCallback = externalLinkCallback {
+            externalLinkCallback(url.absoluteString)
+        } else {
+            openInDeviceBrowser(url)
+        }
+    }
+
+    private func openInDeviceBrowser(_ url: URL) {
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        }
     }
 }
 

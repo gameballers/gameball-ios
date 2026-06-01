@@ -180,6 +180,7 @@ public class GameballApp {
                 widgetUrlPrefix: request.widgetUrlPrefix,
                 mobile: request.mobile,
                 email: request.email,
+                externalLinkCallback: request.externalLinkCallback,
                 sessionToken: self.sessionToken
             )
 
@@ -260,6 +261,7 @@ public class GameballApp {
         widgetUrlPrefix: String?,
         mobile: String?,
         email: String?,
+        externalLinkCallback: ((String) -> Void)?,
         sessionToken: String?
     ) -> UIViewController {
         var bundle: Bundle?
@@ -282,6 +284,7 @@ public class GameballApp {
         viewController.widgetApiPrefix = widgetUrlPrefix
         viewController.mobile = mobile
         viewController.email = email
+        viewController.externalLinkCallback = externalLinkCallback
         viewController.sessionToken = sessionToken
 
         return viewController
