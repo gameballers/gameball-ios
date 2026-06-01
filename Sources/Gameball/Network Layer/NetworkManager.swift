@@ -283,6 +283,19 @@ class NetworkManager:NSObject {
 
         task.resume()
     }
+
+    func sendLogs(body: JSON) {
+        guard Reachability.isConnectedToNetwork() else { return }
+
+        var request = URLRequest(path: APIEndPoints.mobileLogs, method: .POST, params: body, sessionToken: nil)
+        self.adaptRequest(urlRequest: &request, sessionToken: nil)
+
+        let task = self.urlSession.dataTask(with: request) { _, _, _ in
+            // Fire-and-forget telemetry: response and errors are intentionally ignored.
+        }
+        task.resume()
+    }
+
     func initializeCustomer(
         request: InitializeCustomerRequest,
         sessionToken: String?,

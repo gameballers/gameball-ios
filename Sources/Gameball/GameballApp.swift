@@ -33,6 +33,7 @@ public class GameballApp {
 
     private let queue = DispatchQueue(label: "com.gameball.sdk", qos: .utility)
     private let networkManager = NetworkManager.shared()
+    private let logger = GameballLogger.shared
 
     private init() {}
 
@@ -75,6 +76,16 @@ public class GameballApp {
 
             // Mark as initialized immediately
             self.isInitialized = true
+
+            // Record the init call (full config as-is).
+            self.logger.log("sdk.init", params: GameballLogger.compact([
+                "apiKey": config.apiKey,
+                "lang": config.lang,
+                "platform": config.platform,
+                "shop": config.shop,
+                "apiPrefix": config.apiPrefix,
+                "sessionToken": config.sessionToken
+            ]))
 
             // Fire bot settings request in background (fire-and-forget)
             self.loadBotSettings { _ in
@@ -131,6 +142,8 @@ public class GameballApp {
                     }
                 }
             )
+            // Fire telemetry immediately after dispatching the request.
+            self.logger.log("sdk.initializeCustomer", params: GameballLogger.dict(request))
         }
     }
 
@@ -184,6 +197,19 @@ public class GameballApp {
             }
 
             rootVC?.present(viewController, animated: true)
+
+            // showProfile opens a webview (never hits the backend), so it is invisible server-side — log it here.
+            // Full request as-is (externalLinkCallback omitted — not serializable).
+            self.logger.log("sdk.showProfile", params: GameballLogger.compact([
+                "customerId": request.customerId,
+                "openDetail": request.openDetail,
+                "hideNavigation": request.hideNavigation,
+                "showCloseButton": request.showCloseButton,
+                "closeButtonColor": request.closeButtonColor,
+                "widgetUrlPrefix": request.widgetUrlPrefix,
+                "mobile": request.mobile,
+                "email": request.email
+            ]))
         }
     }
 
@@ -302,6 +328,8 @@ extension GameballApp {
                     completion(success, error?.description)
                 }
             }
+            // Fire telemetry immediately after dispatching the request.
+            self.logger.log("sdk.sendEvent", params: GameballLogger.dict(event))
         }
     }
 

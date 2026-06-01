@@ -18,6 +18,7 @@ class APIEndPoints {
     static let getBotStyle = "/api/v1.0/Bots/BotSettings"
     static let sendEvent = "/events"
     static let initializeCustomer = "/customers"
+    static let mobileLogs = "/api/v4.0/integrations/mobile/logs"
 }
 
 enum SDKInfo {
@@ -35,4 +36,5 @@ enum UserDefaultsKeys: String {
     case LanguageKey = "languageKey"
     case globalPreferredLanguage = "gameballSDKGlobalPreferredLanguage"
     case customerPreferredLanguage = "gameballSDKCustomerPreferredLanguage"
+    case installId = "gameballSDKInstallId"
 }
