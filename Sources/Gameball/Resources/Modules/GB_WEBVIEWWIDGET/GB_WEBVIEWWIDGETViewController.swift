@@ -16,6 +16,8 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var lang: String? = ""
     var openDetail: String?
     var hideNavigation: Bool?
+    var mobile: String?
+    var email: String?
     var showCloseBtn: Bool = true
     var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
@@ -99,6 +101,12 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         }
         if let hideNavigation = hideNavigation {
             queryItems.append(URLQueryItem(name: "hideNavigation", value: hideNavigation ? "true" : "false"))
+        }
+        if let mobile = mobile, !mobile.isEmpty {
+            queryItems.append(URLQueryItem(name: "mobile", value: mobile))
+        }
+        if let email = email, !email.isEmpty {
+            queryItems.append(URLQueryItem(name: "email", value: email))
         }
 
         // Add session token to widget URL if present
