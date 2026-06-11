@@ -19,6 +19,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     var mobile: String?
     var email: String?
     var externalLinkCallback: ((String) -> Void)?
+    var widgetEventCallback: (([String: Any]?) -> Void)?
     var showCloseBtn: Bool = true
     var closeButtonColor: String? = nil
     var pullToDismiss: Bool = false
@@ -123,6 +124,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         }
 
         webView.navigationDelegate = self
+        setupWidgetEventBridge()
         print("🌐 Loading URL: \(encodedURL)")
         webView.load(URLRequest(url: encodedURL))
 
@@ -147,6 +149,28 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     
     @IBAction func closeBtnAction(_ sender: Any) {
         self.dismiss(animated: true, completion: nil)
+    }
+
+    /// Exposes `window.WidgetEvent.postEvent(rawJson)` to the widget and forwards every
+    /// posted string to `widgetEventCallback`. The shim is injected at document start so the
+    /// widget can post immediately; messages arrive on the "widgetEvent" handler. A weak
+    /// `GBScriptMessageProxy` is used because `WKUserContentController` retains its handlers
+    /// strongly — registering `self` directly would leak this view controller.
+    private func setupWidgetEventBridge() {
+        let contentController = webView.configuration.userContentController
+        let shim = """
+        window.WidgetEvent = window.WidgetEvent || {};
+        window.WidgetEvent.postEvent = function (raw) {
+            window.webkit.messageHandlers.widgetEvent.postMessage(raw);
+        };
+        """
+        contentController.addUserScript(WKUserScript(source: shim, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        contentController.removeScriptMessageHandler(forName: "widgetEvent")
+        contentController.add(GBScriptMessageProxy(target: self), name: "widgetEvent")
+    }
+
+    deinit {
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "widgetEvent")
     }
 }
 
@@ -210,6 +234,19 @@ extension GB_WEBVIEWWIDGETViewController: WKNavigationDelegate {
 extension GB_WEBVIEWWIDGETViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
+    }
+}
+
+extension GB_WEBVIEWWIDGETViewController: WKScriptMessageHandler {
+    /// Receives messages posted by the widget through `window.WidgetEvent.postEvent`,
+    /// parsed into a [type, metadata] dictionary forwarded to `widgetEventCallback`.
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "widgetEvent", let raw = message.body as? String, let data = raw.data(using: .utf8) else {
+            widgetEventCallback?(nil)
+            return
+        }
+        let event = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        widgetEventCallback?(event)
     }
 }
 

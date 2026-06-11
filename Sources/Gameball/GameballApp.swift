@@ -181,6 +181,7 @@ public class GameballApp {
                 mobile: request.mobile,
                 email: request.email,
                 externalLinkCallback: request.externalLinkCallback,
+                widgetEventCallback: request.widgetEventCallback,
                 sessionToken: self.sessionToken
             )
 
@@ -262,6 +263,7 @@ public class GameballApp {
         mobile: String?,
         email: String?,
         externalLinkCallback: ((String) -> Void)?,
+        widgetEventCallback: (([String: Any]?) -> Void)?,
         sessionToken: String?
     ) -> UIViewController {
         var bundle: Bundle?
@@ -285,6 +287,7 @@ public class GameballApp {
         viewController.mobile = mobile
         viewController.email = email
         viewController.externalLinkCallback = externalLinkCallback
+        viewController.widgetEventCallback = widgetEventCallback
         viewController.sessionToken = sessionToken
 
         return viewController
