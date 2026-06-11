@@ -4,6 +4,32 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
+## v3.1.1 → v3.2.0 (Non-Breaking)
+
+### Overview
+v3.2.0 adds a widget event channel, widget dismissal controls, and external-link handling. **All v3.1.x and v3.0.0 code continues to work without changes** — every addition is optional.
+
+### What's New
+- 🎯 **Widget Event Channel**: pass `widgetEventCallback` to `ShowProfileRequest` to receive widget events as a `[String: Any]` `{type, metadata}`; `gameCompleted` includes `hasWon`, `rewardType`, `discountType`, `rewardName`, `campaignId`, `campaignType`
+- 🔚 **Widget Dismissal**: the widget can close itself via `window.GameballWidget.closeWidget()`; the host can dismiss it via `GameballApp.getInstance().hideProfile()`
+- 🔗 **External Links**: pass `externalLinkCallback` to intercept links the widget flags with `gbExternalBrowser=true`
+- 📇 **Channel Merging**: `showProfile` accepts optional `mobile` and `email` parameters
+- 📊 **Diagnostic logging**: the SDK now records internal diagnostic logs (automatic, no integration change required)
+- 🔧 **Header**: the `x-gb-agent` header format is now `GB/<sdkType>/<version>`
+
+### Action Required
+None. To adopt the new features, add the optional callbacks to your existing `ShowProfileRequest`:
+
+```swift
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    widgetEventCallback: { event in /* handle the [type, metadata] dictionary */ }
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+---
+
 ## v3.1.0 → v3.1.1 (Non-Breaking)
 
 ### Overview

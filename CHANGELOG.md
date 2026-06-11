@@ -3,6 +3,22 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.2.0] - 2026-06-17 📱
+
+> **Minor Release**: Widget event channel, widget dismissal controls, external-link handling, diagnostic logging, and channel-merging parameters
+
+### ✨ Added
+- 🏗️ **Widget Event Channel**: `ShowProfileRequest.widgetEventCallback` receives events posted from the widget (e.g. game completion) as a `[String: Any]` `{type, metadata}`; the `gameCompleted` payload carries `hasWon`, `rewardType`, `discountType`, `rewardName`, `campaignId`, `campaignType`
+- 🏗️ **Web-Initiated Close**: the widget can dismiss its own webview via `window.GameballWidget.closeWidget()`
+- 🏗️ **Host-Initiated Dismiss**: new `GameballApp.hideProfile()` dismisses the widget programmatically (no-op when nothing is shown)
+- ⚙️ **External-Link Handling**: links flagged `gbExternalBrowser=true` open in the system browser; optional `externalLinkCallback` lets the host intercept them
+- 📊 **Diagnostic Logging**: added internal diagnostic logging to aid SDK troubleshooting
+- 📇 **Channel-Merging Parameters**: `showProfile` now accepts optional `mobile` and `email` to support customer channel merging
+
+### 🔄 Changed
+- 🔧 **User-Agent Header**: unified the `x-gb-agent` header format to `GB/<sdkType>/<version>`
+
+
 ## [3.1.1] - 2025-12-15 🔧
 
 > **Patch Release**: Guest mode support for profile widget
@@ -36,7 +52,7 @@ All notable changes to Gameball iOS SDK are documented here.
 
 ### 🔄 Changed
 - ⚡ **Non-Blocking Initialization**: SDK init no longer waits for bot settings API call
-- 🔧 **Optional Completion Handler**: Init completion handler is now optional for fire-and-forget usage
+- 🔧 **Optional Completion Handler**: Init completion handler is now optional
 - 📡 **Smart API Routing**: Endpoints automatically route to secure v4.1 when token is present
 
 ### 🛡️ Security

@@ -3,7 +3,7 @@
 //  Gameball
 //
 //  Created by Mahmoud Tarek on 29/07/2023.
-//  Updated for v3.1.1 with Guest Mode support
+//  Updated for v3.2.0 with widget event channel and dismissal controls
 //
 
 import UIKit
@@ -150,7 +150,14 @@ class ViewController: UIViewController {
             hideNavigation: hideNavigationSwitch.isOn,
             showCloseButton: true,
             closeButtonColor: "#FF6B6B",  // Custom color
-            widgetUrlPrefix: widgetUrlTextField.text?.isEmpty == false ? widgetUrlTextField.text : nil
+            widgetUrlPrefix: widgetUrlTextField.text?.isEmpty == false ? widgetUrlTextField.text : nil,
+            // v3.2.0: receive events posted by the widget as a [type, metadata] dictionary
+            widgetEventCallback: { event in
+                guard let event = event else { return }
+                let type = event["type"] as? String ?? ""
+                let metadata = event["metadata"] as? [String: Any] ?? [:]
+                print("🎯 Widget event: \(type) — \(metadata)")
+            }
         )
 
         // Show profile widget
@@ -467,5 +474,38 @@ extension ViewController {
         )
 
         GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+    }
+
+    // EXAMPLE 13: Receive Widget Events (v3.2.0+)
+    func example_widgetEvents() {
+        let request = ShowProfileRequest(
+            customerId: "customer_123",
+            widgetEventCallback: { event in
+                guard let event = event else { return }                 // nil = malformed payload
+                let type = event["type"] as? String                              // e.g. "gameCompleted"
+                let metadata = event["metadata"] as? [String: Any] ?? [:]
+
+                switch type {
+                case "gameCompleted":
+                    let hasWon = metadata["hasWon"] as? Bool ?? false
+                    let rewardType = metadata["rewardType"] as? String       // "Default", "Bonus", "NoReward"…
+                    let discountType = metadata["discountType"] as? String   // "FreeShipping", "Percentage"… (nil if not a coupon win)
+                    let rewardName = metadata["rewardName"] as? String       // localized display name
+                    let campaignType = metadata["campaignType"] as? String   // "spinTheWheel", "scratchCard"…
+                    let campaignId = metadata["campaignId"] as? String              // "90340"
+                    print("🎮 Game completed — won: \(hasWon), reward: \(rewardType ?? "-"), discount: \(discountType ?? "-"), campaign: \(campaignType ?? "-") #\(campaignId ?? "-")")
+                default:
+                    print("🎯 Widget event: \(type ?? "")")
+                }
+            }
+        )
+
+        GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+    }
+
+    // EXAMPLE 14: Dismiss the Widget Programmatically (v3.2.0+)
+    func example_hideProfile() {
+        // Host-initiated dismiss — e.g. on logout. No-op when nothing is shown.
+        GameballApp.getInstance().hideProfile()
     }
 }

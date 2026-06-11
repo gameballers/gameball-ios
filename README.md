@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -31,14 +31,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.1")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.0")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.1.1` or later
+3. Select version: `3.2.0` or later
 
 ## Quick Start
 
@@ -209,6 +209,61 @@ struct ContentView: View {
 - Presents the profile widget modally with animation
 - No manual view controller management required
 
+### Widget Events & Dismissal (v3.2.0+)
+
+Pass `widgetEventCallback` to react to events the widget posts (e.g. game completion). Each event is a `[String: Any]` dictionary with a top-level `type` and a nested `metadata`:
+
+```swift
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    widgetEventCallback: { event in
+        guard let event = event else { return }          // nil = malformed payload
+        let type = event["type"] as? String                       // e.g. "gameCompleted"
+        let metadata = event["metadata"] as? [String: Any] ?? [:]
+        if type == "gameCompleted" {
+            let hasWon = metadata["hasWon"] as? Bool ?? false
+            let rewardType = metadata["rewardType"] as? String       // "Default", "Bonus", "NoReward"…
+            let discountType = metadata["discountType"] as? String   // "FreeShipping", "Percentage"… (nil if not a coupon win)
+            let rewardName = metadata["rewardName"] as? String       // localized display name
+            let campaignId = metadata["campaignId"] as? String          // e.g. 90340
+            let campaignType = metadata["campaignType"] as? String   // "spinTheWheel", "scratchCard"…
+            if hasWon { /* refresh balance, show win UI, … */ }
+        }
+    }
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+The `gameCompleted` event's `metadata` carries:
+
+| Field | Type | Description |
+|---|---|---|
+| `hasWon` | `Bool` | Whether the player won a reward this round |
+| `rewardType` | `String?` | Reward category — `Default`, `Friend`, `Bonus`, `CustomText`, `Streak`, `NoReward` |
+| `discountType` | `String?` | Coupon kind when the win is a coupon — e.g. `Fixed`, `Percentage`, `FreeShipping`, `FreeProduct`, `Custom`, `RechargeFixed`, `RechargePercentage`, `ExternalReward`; `nil` for non-coupon wins |
+| `rewardName` | `String?` | Localized, human-readable reward name |
+| `campaignId` | `String` | Challenge / campaign identifier |
+| `campaignType` | `String?` | Game type — `spinTheWheel`, `slotMachine`, `quiz`, `scratchCard`, `matchCards`, `catcher`, `ticTacToe`, `shooter`, `puzzle`, `tapTarget`, `highwayDrive` |
+
+Dismiss the widget programmatically from your app (no-op when nothing is shown):
+
+```swift
+GameballApp.getInstance().hideProfile()
+```
+
+The widget can also dismiss itself by calling `window.GameballWidget.closeWidget()`.
+
+### Channel Merging & Diagnostic Logging (v3.2.0+)
+
+`showProfile` also accepts optional `mobile` and `email` for channel merging:
+
+```swift
+let request = ShowProfileRequest(customerId: "customer_123", mobile: "+201234567890", email: "customer@example.com")
+GameballApp.getInstance().showProfile(request)
+```
+
+The SDK also records internal diagnostic logs automatically to aid troubleshooting.
+
 ## API Methods
 
 The SDK provides the following public methods:
@@ -216,6 +271,7 @@ The SDK provides the following public methods:
 - `initializeCustomer(_:completion:sessionToken:)` - Register/initialize customer with optional token override
 - `sendEvent(_:completion:sessionToken:)` - Track events with optional token override
 - `showProfile(_:presentationStyle:sessionToken:)` - Show profile widget with optional token override
+- `hideProfile()` - Dismiss the currently shown profile widget (no-op when nothing is shown)
 
 ## Advanced Usage
 
