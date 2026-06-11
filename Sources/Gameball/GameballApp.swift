@@ -30,6 +30,7 @@ public class GameballApp {
     private var config: GameballConfig?
     private var customerId: String?
     private var sessionToken: String?
+    private weak var presentedWidgetVC: UIViewController?
 
     private let queue = DispatchQueue(label: "com.gameball.sdk", qos: .utility)
     private let networkManager = NetworkManager.shared()
@@ -199,6 +200,7 @@ public class GameballApp {
             }
 
             rootVC?.present(viewController, animated: true)
+            self.presentedWidgetVC = viewController
 
             // showProfile opens a webview (never hits the backend), so it is invisible server-side — log it here.
             // Full request as-is (externalLinkCallback omitted — not serializable).
@@ -212,6 +214,14 @@ public class GameballApp {
                 "mobile": request.mobile,
                 "email": request.email
             ]))
+        }
+    }
+
+    /// Dismisses the currently shown profile widget. No-op when nothing is shown. Counterpart to showProfile.
+    public func hideProfile() {
+        DispatchQueue.main.async { [weak self] in
+            guard let vc = self?.presentedWidgetVC, vc.presentingViewController != nil else { return }
+            vc.dismiss(animated: true)
         }
     }
 

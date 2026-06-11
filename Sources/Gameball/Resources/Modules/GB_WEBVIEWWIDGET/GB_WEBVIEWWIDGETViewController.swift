@@ -151,11 +151,12 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         self.dismiss(animated: true, completion: nil)
     }
 
-    /// Exposes `window.WidgetEvent.postEvent(rawJson)` to the widget and forwards every
-    /// posted string to `widgetEventCallback`. The shim is injected at document start so the
-    /// widget can post immediately; messages arrive on the "widgetEvent" handler. A weak
-    /// `GBScriptMessageProxy` is used because `WKUserContentController` retains its handlers
-    /// strongly — registering `self` directly would leak this view controller.
+    /// Exposes the widget→SDK bridges as document-start globals:
+    ///   • `window.WidgetEvent.postEvent(rawJson)` → forwarded verbatim to `widgetEventCallback`.
+    ///   • `window.GameballWidget.closeWidget()`   → dismisses this view controller.
+    /// Each routes through a WKScriptMessageHandler. A weak `GBScriptMessageProxy` is used
+    /// because `WKUserContentController` retains its handlers strongly — registering `self`
+    /// directly would leak this view controller.
     private func setupWidgetEventBridge() {
         let contentController = webView.configuration.userContentController
         let shim = """
@@ -163,14 +164,21 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         window.WidgetEvent.postEvent = function (raw) {
             window.webkit.messageHandlers.widgetEvent.postMessage(raw);
         };
+        window.GameballWidget = window.GameballWidget || {};
+        window.GameballWidget.closeWidget = function () {
+            window.webkit.messageHandlers.gameballClose.postMessage("");
+        };
         """
         contentController.addUserScript(WKUserScript(source: shim, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         contentController.removeScriptMessageHandler(forName: "widgetEvent")
         contentController.add(GBScriptMessageProxy(target: self), name: "widgetEvent")
+        contentController.removeScriptMessageHandler(forName: "gameballClose")
+        contentController.add(GBScriptMessageProxy(target: self), name: "gameballClose")
     }
 
     deinit {
         webView?.configuration.userContentController.removeScriptMessageHandler(forName: "widgetEvent")
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "gameballClose")
     }
 }
 
@@ -238,15 +246,23 @@ extension GB_WEBVIEWWIDGETViewController: UIGestureRecognizerDelegate {
 }
 
 extension GB_WEBVIEWWIDGETViewController: WKScriptMessageHandler {
-    /// Receives messages posted by the widget through `window.WidgetEvent.postEvent`,
-    /// parsed into a [type, metadata] dictionary forwarded to `widgetEventCallback`.
+    /// Receives messages posted by the widget bridges:
+    ///   • "widgetEvent"   → JSON parsed into a [type, metadata] dictionary for `widgetEventCallback`.
+    ///   • "gameballClose" → dismiss the widget.
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "widgetEvent", let raw = message.body as? String, let data = raw.data(using: .utf8) else {
-            widgetEventCallback?(nil)
-            return
+        switch message.name {
+        case "widgetEvent":
+            guard let raw = message.body as? String, let data = raw.data(using: .utf8) else {
+                widgetEventCallback?(nil)
+                return
+            }
+            let event = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            widgetEventCallback?(event)
+        case "gameballClose":
+            dismiss(animated: true, completion: nil)
+        default:
+            break
         }
-        let event = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-        widgetEventCallback?(event)
     }
 }
 
