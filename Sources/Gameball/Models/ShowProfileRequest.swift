@@ -16,6 +16,7 @@ public struct ShowProfileRequest {
     public let mobile: String?
     public let email: String?
     public let externalLinkCallback: ((String) -> Void)?
+    public let widgetEventCallback: (([String: Any]?) -> Void)?
 
     /// Initialize profile display request
     /// - Parameters:
@@ -28,6 +29,7 @@ public struct ShowProfileRequest {
     ///   - mobile: Optional customer mobile number
     ///   - email: Optional customer email address
     ///   - externalLinkCallback: Optional handler for links tagged gbExternalBrowser=true; when set, the link is delegated to it instead of being opened by the SDK in the system browser
+    ///   - widgetEventCallback: Optional handler that receives widget events as a [type, metadata] dictionary posted via window.WidgetEvent.postEvent
     public init(
         customerId: String? = nil,
         openDetail: String? = nil,
@@ -37,7 +39,8 @@ public struct ShowProfileRequest {
         widgetUrlPrefix: String? = nil,
         mobile: String? = nil,
         email: String? = nil,
-        externalLinkCallback: ((String) -> Void)? = nil
+        externalLinkCallback: ((String) -> Void)? = nil,
+        widgetEventCallback: (([String: Any]?) -> Void)? = nil
     ) {
         self.customerId = customerId
         self.openDetail = openDetail
@@ -48,5 +51,6 @@ public struct ShowProfileRequest {
         self.mobile = mobile
         self.email = email
         self.externalLinkCallback = externalLinkCallback
+        self.widgetEventCallback = widgetEventCallback
     }
 }
