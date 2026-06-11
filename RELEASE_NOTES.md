@@ -4,98 +4,137 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.1.1
+## Latest Release: v3.2.0
 
-**Release Date**: 2025-12-15
-**Version**: 3.1.1
-**Type**: Patch Release
+**Release Date**: 2026-06-17
+**Version**: 3.2.0
+**Type**: Minor Release
 
 ---
 
 ## 🎉 What's New
 
-v3.1.1 fixes the profile widget to support guest mode, allowing users to explore loyalty features before signing up. All v3.0.0 and v3.1.0 code continues to work without modifications.
+v3.2.0 introduces a **widget event channel** so your app can react to what customers do inside the widget, **dismissal controls** for both the widget and the host app, **external-link handling**, optional **channel-merging parameters**, and internal **diagnostic logging**. All v3.1.x code continues to work without modification — every addition is backward compatible.
 
-### Guest Mode Support
+### Widget Event Channel
 
-The profile widget now works without requiring customer authentication:
+The widget can now post events (e.g. game completion, reward redemption) back to your app. Register `widgetEventCallback` and each event arrives as a `[String: Any]` dictionary with a top-level `type` and a nested `metadata`:
 
 ```swift
-// Show widget without customer ID
-let guestRequest = ShowProfileRequest(
-    showCloseButton: true,
-    closeButtonColor: "#4CAF50"
-)
-GameballApp.getInstance().showProfile(guestRequest)
-
-// Authenticated mode
-let customerRequest = ShowProfileRequest(
+let request = ShowProfileRequest(
     customerId: "customer_123",
-    showCloseButton: true
+    widgetEventCallback: { event in
+        guard let event = event else { return }                 // nil = malformed payload
+        let type = event["type"] as? String                              // e.g. "gameCompleted"
+        let metadata = event["metadata"] as? [String: Any] ?? [:]
+
+        switch type {
+        case "gameCompleted":
+            let hasWon = metadata["hasWon"] as? Bool ?? false
+            let rewardType = metadata["rewardType"] as? String       // "Default", "Bonus", "NoReward"…
+            let discountType = metadata["discountType"] as? String   // "FreeShipping", "Percentage"… (nil if not a coupon win)
+            let rewardName = metadata["rewardName"] as? String       // localized display name
+            let campaignId = metadata["campaignId"] as? String              // "90340"
+            let campaignType = metadata["campaignType"] as? String   // "spinTheWheel", "scratchCard"…
+            if hasWon { refreshBalance() }
+        default:
+            break
+        }
+    }
 )
-GameballApp.getInstance().showProfile(customerRequest)
+GameballApp.getInstance().showProfile(request)
 ```
 
-### Simplified API
+The `gameCompleted` event's `metadata` carries:
 
-`ShowProfileRequest` is now non-throwing since customer ID is optional:
+| Field | Type | Description |
+|---|---|---|
+| `hasWon` | `Bool` | Whether the player won a reward this round |
+| `rewardType` | `String?` | Reward category — `Default`, `Friend`, `Bonus`, `CustomText`, `Streak`, `NoReward` |
+| `discountType` | `String?` | Coupon kind when the win is a coupon — e.g. `Fixed`, `Percentage`, `FreeShipping`, `FreeProduct`, `Custom`, `RechargeFixed`, `RechargePercentage`, `ExternalReward`; `nil` for non-coupon wins |
+| `rewardName` | `String?` | Localized, human-readable reward name |
+| `campaignId` | `String` | Challenge / campaign identifier |
+| `campaignType` | `String?` | Game type — `spinTheWheel`, `slotMachine`, `quiz`, `scratchCard`, `matchCards`, `catcher`, `ticTacToe`, `shooter`, `puzzle`, `tapTarget`, `highwayDrive` |
+
+### Web-Initiated Close
+
+The widget can dismiss its own webview by calling `window.GameballWidget.closeWidget()` — no host code required.
+
+### Host-Initiated Dismiss
+
+Dismiss the widget programmatically from your app (e.g. on logout or a deep link):
 
 ```swift
-// v3.1.0 - throwing initializer
-let request = try ShowProfileRequest(customerId: "customer_123")
-
-// v3.1.1 - non-throwing
-let request = ShowProfileRequest(customerId: "customer_123")  // No 'try'
+GameballApp.getInstance().hideProfile()   // no-op when nothing is shown
 ```
+
+### External-Link Handling
+
+Links the widget flags with `gbExternalBrowser=true` open in the system browser. Optionally intercept them with `externalLinkCallback`:
+
+```swift
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    externalLinkCallback: { url in
+        // open `url` your own way — in-app browser, router, etc.
+    }
+)
+```
+
+### Channel-Merging Parameters
+
+`showProfile` now accepts optional `mobile` and `email`, so the widget can merge a guest/known profile with a customer's contact channels:
+
+```swift
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    mobile: "+201234567890",
+    email: "customer@example.com"
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+### Diagnostic Logging
+
+The SDK now records internal diagnostic logs to aid troubleshooting. This is automatic and requires no integration changes.
 
 ---
 
 ## 🔄 Changes
 
-- `ShowProfileRequest` initializer is now non-throwing (no validation errors)
-- `customerId` parameter is optional (defaults to `nil` for guest mode)
+- Added `ShowProfileRequest.widgetEventCallback: (([String: Any]?) -> Void)?`
+- Added `ShowProfileRequest.externalLinkCallback: ((String) -> Void)?`
+- Added optional `ShowProfileRequest.mobile` and `ShowProfileRequest.email` (channel merging)
+- Added `GameballApp.hideProfile()`
+- Exposed `window.GameballWidget.closeWidget()` to the widget webview
+- Added internal SDK diagnostic logging
+- Unified the `x-gb-agent` header format to `GB/<sdkType>/<version>`
 
 ---
 
 ## Usage Examples
 
-**Conditional Display** - Show guest mode for unauthenticated users:
+**React to a reward and refresh the wallet:**
 ```swift
-func showLoyaltyWidget() {
-    if let customerId = UserDefaults.standard.string(forKey: "customerId") {
-        let request = ShowProfileRequest(customerId: customerId)
-        GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
-    } else {
-        let guestRequest = ShowProfileRequest()
-        GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .pageSheet)
-    }
-}
-```
-
-**UI Presentation** - Customize modal presentation:
-```swift
-// Full screen (default)
-GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
-
-// Page sheet (card-like)
-GameballApp.getInstance().showProfile(request, presentationStyle: .pageSheet)
-
-// Form sheet (centered)
-GameballApp.getInstance().showProfile(request, presentationStyle: .formSheet)
-```
-
-**SwiftUI Integration**:
-```swift
-import SwiftUI
-import Gameball
-
-struct ContentView: View {
-    var body: some View {
-        Button("Show Loyalty") {
-            let request = ShowProfileRequest(customerId: "customer_123")
-            GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    widgetEventCallback: { event in
+        guard let metadata = event?["metadata"] as? [String: Any] else { return }
+        if metadata["hasWon"] as? Bool == true {
+            let reward = metadata["rewardName"] as? String ?? ""
+            showWinAnimation(reward)
+            refreshBalance()
         }
     }
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+**Dismiss on logout:**
+```swift
+func logout() {
+    GameballApp.getInstance().hideProfile()
+    clearSession()
 }
 ```
 
@@ -111,7 +150,7 @@ struct ContentView: View {
 
 ## Migration
 
-No changes required. Existing v3.1.0 and v3.0.0 code works without modifications.
+No changes required — all v3.1.x and v3.0.0 code works without modification. The new callbacks, parameters, and `hideProfile()` are additive. Diagnostic logging is automatic and requires no integration changes.
 
 See [MIGRATION.md](MIGRATION.md) for details.
 
@@ -120,7 +159,7 @@ See [MIGRATION.md](MIGRATION.md) for details.
 ## Installation
 
 ```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.1.1")
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.0")
 ```
 
 ---
@@ -133,37 +172,9 @@ See [MIGRATION.md](MIGRATION.md) for details.
 
 ---
 
-## Previous Release: v3.0.0
+## Previous Release: v3.1.1
 
-**Release Date**: 2025-10-13
-**Version**: 3.0.0
-**Type**: Major Release
+**Release Date**: 2025-12-15
+**Type**: Patch Release
 
----
-
-### What's New
-
-Complete SDK modernization with Swift-first architecture, throwing initializers, and transition from Player to Customer terminology.
-
-**Key Changes:**
-- Singleton pattern: `GameballApp.getInstance()`
-- Throwing initializers with compile-time validation
-- Player → Customer terminology
-- Enhanced type safety with `GameballError` enum
-
----
-
-### Breaking Changes
-
-Migration required for v2.x users:
-
-- `GameballApp.shared()` → `GameballApp.getInstance()`
-- `registerPlayer()` → `initializeCustomer()`
-- Player terminology → Customer terminology
-- `PlayerAttributes` → `CustomerAttributes`
-- `playerUniqueId` → `customerId`
-- `mobileNumber` → `mobile`
-- All request models require `try` keyword
-- Removed v2.x UI components
-
-See [MIGRATION.md](MIGRATION.md) for upgrade instructions.
+Guest mode support — the profile widget can be shown without customer authentication, and `ShowProfileRequest` became non-throwing with an optional `customerId`. See [CHANGELOG.md](CHANGELOG.md) for the full history.
