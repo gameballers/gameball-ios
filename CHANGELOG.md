@@ -3,6 +3,17 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.2.1] - 2026-07-02 🔧
+
+> **Patch Release**: Vector close button and bundled-asset cleanup
+
+### 🔄 Changed
+- 🎨 **Widget Close Button**: the close "X" is now drawn as a crisp vector (a stroked template image tinted by `closeButtonColor`, default `#CECECE`) instead of a bundled PNG — sharp at any scale
+
+### 🗑️ Removed
+- 🧹 **Unused Image Assets**: removed 70 unreferenced bundled PNGs (and their `Package.swift` resource entry), shrinking the SDK footprint; no public API or behavior change
+
+
 ## [3.2.0] - 2026-06-17 📱
 
 > **Minor Release**: Widget event channel, widget dismissal controls, external-link handling, diagnostic logging, and channel-merging parameters
