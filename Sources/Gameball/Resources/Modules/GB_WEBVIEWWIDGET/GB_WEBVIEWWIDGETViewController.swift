@@ -41,13 +41,12 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     private var closeBtn: UIButton!
 
     private func setupCloseButton(_ button: UIButton) {
-        var origImage: UIImage?
-#if COCOAPODS
-        origImage = UIImage(named: "icon_outline_14px_close@2x.png")
-#else
-        origImage = UIImage(named: "icon_outline_14px_close@2x.png", in: Bundle.module, compatibleWith: nil)
-#endif
-        button.setImage(origImage, for: .normal)
+        // Draw the "X" as a stroked vector into a template image rather than loading a PNG,
+        // so it stays crisp at any scale, ships no bundled asset, and is tinted by
+        // `closeButtonColor` on a transparent background. This mirrors the Android SDK's
+        // vector `ic_close` (two diagonals, thin stroke, #CECECE) and works on iOS 11+
+        // (unlike SF Symbols, which require iOS 13). See `GB_WEBVIEWWIDGETViewController`.
+        button.setImage(GB_WEBVIEWWIDGETViewController.closeXImage(), for: .normal)
         button.backgroundColor = .clear
         button.adjustsImageWhenHighlighted = false
         button.showsTouchWhenHighlighted = false
@@ -55,6 +54,34 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
         // Apply close button color (default to #CECECE if not provided)
         let colorToUse = closeButtonColor ?? "#CECECE"
         button.tintColor = UIColor(hexString: colorToUse)
+    }
+
+    /// Builds the close "X" as a template `UIImage`: a thin, gray, two-diagonal X that
+    /// shares the visual language of the Android (`ic_close`, a #CECECE stroked X) and
+    /// Flutter (`Icons.close`) SDKs, while keeping an iOS-native feel — rounded line caps
+    /// in a balanced square box, the same treatment iOS system glyphs (e.g. SF `xmark`)
+    /// use. Rendered as a template so the button's `tintColor` (`closeButtonColor`,
+    /// default #CECECE) drives the color.
+    private static func closeXImage(size: CGFloat = 16, lineWidth: CGFloat = 1.5) -> UIImage {
+        let dimension = CGSize(width: size, height: size)
+        let renderer = UIGraphicsImageRenderer(size: dimension)
+        let image = renderer.image { context in
+            let cg = context.cgContext
+            // Inset by half the line width so the rounded caps sit fully inside the bounds.
+            let inset = lineWidth / 2 + 1
+            cg.setLineWidth(lineWidth)
+            cg.setLineCap(.round)               // iOS identity: rounded ends
+            cg.setLineJoin(.round)
+            cg.setStrokeColor(UIColor.black.cgColor) // overridden by template tint
+            // Top-left → bottom-right
+            cg.move(to: CGPoint(x: inset, y: inset))
+            cg.addLine(to: CGPoint(x: size - inset, y: size - inset))
+            // Top-right → bottom-left
+            cg.move(to: CGPoint(x: size - inset, y: inset))
+            cg.addLine(to: CGPoint(x: inset, y: size - inset))
+            cg.strokePath()
+        }
+        return image.withRenderingMode(.alwaysTemplate)
     }
     override func viewDidLoad() {
         super.viewDidLoad()

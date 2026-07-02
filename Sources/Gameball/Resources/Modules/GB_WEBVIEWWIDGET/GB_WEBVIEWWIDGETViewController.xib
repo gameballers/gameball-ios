@@ -30,14 +30,12 @@
                 </wkWebView>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tM2-KC-iR4">
                     <rect key="frame" x="352" y="59" width="32" height="32"/>
-                    <state key="normal" image="icon_outline_14px_close@2x.png"/>
                     <connections>
                         <action selector="closeBtnAction:" destination="-1" eventType="touchUpInside" id="TYT-rf-FbN"/>
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XYZ-AB-CD1">
                     <rect key="frame" x="30" y="59" width="32" height="32"/>
-                    <state key="normal" image="icon_outline_14px_close@2x.png"/>
                     <connections>
                         <action selector="closeBtnAction:" destination="-1" eventType="touchUpInside" id="ABC-DE-FG2"/>
                     </connections>
@@ -58,7 +56,4 @@
             <point key="canvasLocation" x="137.68115942028987" y="126.5625"/>
         </view>
     </objects>
-    <resources>
-        <image name="icon_outline_14px_close@2x.png" width="16" height="16"/>
-    </resources>
 </document>
