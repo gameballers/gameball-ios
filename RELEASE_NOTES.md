@@ -4,15 +4,34 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.2.0
+## Latest Release: v3.2.1
 
-**Release Date**: 2026-06-17
-**Version**: 3.2.0
-**Type**: Minor Release
+**Release Date**: 2026-07-02
+**Version**: 3.2.1
+**Type**: Patch Release
+
+v3.2.1 is a maintenance release: the widget's close button is now a crisp drawn vector, and 70 unused bundled image assets have been removed. No API changes — every v3.2.0 and v3.1.x integration works unchanged.
+
+### Vector Close Button
+
+The widget's close "X" is now drawn as a stroked template image instead of a bundled PNG, so it stays sharp at any scale and is tinted by `closeButtonColor` (default `#CECECE`). No integration change; existing `closeButtonColor` values are honored.
+
+### Lighter Footprint
+
+Removed 70 unreferenced bundled PNGs (and the matching `Package.swift` resource entry). Nothing in the SDK loaded these, so there is no behavior or API change — just a smaller package.
+
+### Installation
+
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.1")
+```
 
 ---
 
-## 🎉 What's New
+## v3.2.0
+
+**Release Date**: 2026-06-17
+**Type**: Minor Release
 
 v3.2.0 introduces a **widget event channel** so your app can react to what customers do inside the widget, **dismissal controls** for both the widget and the host app, **external-link handling**, optional **channel-merging parameters**, and internal **diagnostic logging**. All v3.1.x code continues to work without modification — every addition is backward compatible.
 
@@ -98,9 +117,7 @@ GameballApp.getInstance().showProfile(request)
 
 The SDK now records internal diagnostic logs to aid troubleshooting. This is automatic and requires no integration changes.
 
----
-
-## 🔄 Changes
+### Changes
 
 - Added `ShowProfileRequest.widgetEventCallback: (([String: Any]?) -> Void)?`
 - Added `ShowProfileRequest.externalLinkCallback: ((String) -> Void)?`
@@ -110,9 +127,7 @@ The SDK now records internal diagnostic logs to aid troubleshooting. This is aut
 - Added internal SDK diagnostic logging
 - Unified the `x-gb-agent` header format to `GB/<sdkType>/<version>`
 
----
-
-## Usage Examples
+### Usage Examples
 
 **React to a reward and refresh the wallet:**
 ```swift
@@ -148,19 +163,12 @@ func logout() {
 
 ---
 
-## Migration
+## Previous Release: v3.1.1
 
-No changes required — all v3.1.x and v3.0.0 code works without modification. The new callbacks, parameters, and `hideProfile()` are additive. Diagnostic logging is automatic and requires no integration changes.
+**Release Date**: 2025-12-15
+**Type**: Patch Release
 
-See [MIGRATION.md](MIGRATION.md) for details.
-
----
-
-## Installation
-
-```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.0")
-```
+Guest mode support — the profile widget can be shown without customer authentication, and `ShowProfileRequest` became non-throwing with an optional `customerId`. See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ---
 
@@ -169,12 +177,3 @@ See [MIGRATION.md](MIGRATION.md) for details.
 - 📧 Email: support@gameball.co
 - 📖 Documentation: https://developer.gameball.co/
 - 🐛 Issues: https://github.com/gameballers/gameball-ios/issues
-
----
-
-## Previous Release: v3.1.1
-
-**Release Date**: 2025-12-15
-**Type**: Patch Release
-
-Guest mode support — the profile widget can be shown without customer authentication, and `ShowProfileRequest` became non-throwing with an optional `customerId`. See [CHANGELOG.md](CHANGELOG.md) for the full history.
