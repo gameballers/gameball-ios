@@ -26,7 +26,6 @@ let package = Package(
             name: "Gameball",
             dependencies: [],
             resources: [
-                Resource.process("Resources/Assets/Images"),
                 .process("Resources/PrivacyInfo.xcprivacy")
             ]
         ),
