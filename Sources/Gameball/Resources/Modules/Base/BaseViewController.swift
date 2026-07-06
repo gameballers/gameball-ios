@@ -65,10 +65,10 @@ public class BaseViewController: UIViewController {
     func setupViewLanguage(){
 
         if GB_Localizator.sharedInstance.language == Languages.arabic {
-            UIView.appearance().semanticContentAttribute = .forceRightToLeft
+            view.semanticContentAttribute = .forceRightToLeft
 
         } else {
-            UIView.appearance().semanticContentAttribute = .forceLeftToRight
+            view.semanticContentAttribute = .forceLeftToRight
 
         }
     }
