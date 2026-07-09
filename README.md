@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.2.2-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -31,14 +31,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.1")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.2")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.2.1` or later
+3. Select version: `3.2.2` or later
 
 ## Quick Start
 
