@@ -3,6 +3,14 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.2.2] - 2026-07-09 🔧
+
+> **Patch Release**: RTL layout no longer leaks into the host app
+
+### 🐛 Fixed
+- 🔧 **RTL Layout Leak**: scoped the widget's right-to-left layout direction to the widget's own view instead of the global `UIView.appearance()` proxy — opening the widget in Arabic no longer flips the host app's own layout
+
+
 ## [3.2.1] - 2026-07-02 🔧
 
 > **Patch Release**: Vector close button and bundled-asset cleanup

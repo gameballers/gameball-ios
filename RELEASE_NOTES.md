@@ -4,10 +4,31 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.2.1
+## Latest Release: v3.2.2
+
+**Release Date**: 2026-07-09
+**Version**: 3.2.2
+**Type**: Patch Release
+
+v3.2.2 is a maintenance release fixing a right-to-left layout leak. No API changes — every v3.2.x and v3.1.x integration works unchanged.
+
+### RTL Layout No Longer Leaks Into the Host App
+
+When the widget was shown in Arabic, the SDK set the right-to-left layout direction on the global `UIView.appearance()` proxy, which flipped the host app's own views too — and left them flipped after the widget was dismissed. The layout direction is now applied to the widget's own view only, so the host app's layout is untouched.
+
+No integration change: Arabic widgets still render right-to-left.
+
+### Installation
+
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.2")
+```
+
+---
+
+## v3.2.1
 
 **Release Date**: 2026-07-02
-**Version**: 3.2.1
 **Type**: Patch Release
 
 v3.2.1 is a maintenance release: the widget's close button is now a crisp drawn vector, and 70 unused bundled image assets have been removed. No API changes — every v3.2.0 and v3.1.x integration works unchanged.
@@ -19,12 +40,6 @@ The widget's close "X" is now drawn as a stroked template image instead of a bun
 ### Lighter Footprint
 
 Removed 70 unreferenced bundled PNGs (and the matching `Package.swift` resource entry). Nothing in the SDK loaded these, so there is no behavior or API change — just a smaller package.
-
-### Installation
-
-```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.1")
-```
 
 ---
 
