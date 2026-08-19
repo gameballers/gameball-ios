@@ -41,14 +41,9 @@ final class MessageViewController: UIViewController {
         let exclusive = context.message.type != .slideup
         view.accessibilityViewIsModal = exclusive
 
-        messageView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(messageView)
-        NSLayoutConstraint.activate([
-            messageView.topAnchor.constraint(equalTo: view.topAnchor),
-            messageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            messageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            messageView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
+        // The view installs itself: only it knows whether it should fill the root or occupy
+        // a band. See `InAppMessageView.install(in:)`.
+        messageView.install(in: view)
     }
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {

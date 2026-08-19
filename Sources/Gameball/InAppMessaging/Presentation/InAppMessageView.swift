@@ -28,7 +28,20 @@ protocol InAppMessageView: UIView {
     var coordinator: MessageViewCoordinating? { get }
     func present(completion: (() -> Void)?)
     func dismiss(completion: (() -> Void)?)
+    /// Installs this view in the window's root view with the constraints its type needs.
+    ///
+    /// The view decides its own extent because `MessageWindow.hitTest` captures a touch
+    /// only when it lands on the message view. A slideup must therefore occupy *only* its
+    /// band — pinning every type to fill the root would make a slideup swallow every touch
+    /// in the app and silently undo the passthrough rule.
+    func install(in container: UIView)
 }
+
+/// Whether the platform is asking for reduced motion.
+///
+/// Indirected through a closure because `UIAccessibility.isReduceMotionEnabled` cannot be set
+/// from a test, and "the entrance is skipped" is a rule worth asserting rather than assuming.
+var iamReduceMotionEnabled: () -> Bool = { UIAccessibility.isReduceMotionEnabled }
 
 extension InAppMessageView {
 

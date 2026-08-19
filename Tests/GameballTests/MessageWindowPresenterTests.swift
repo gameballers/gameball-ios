@@ -22,6 +22,11 @@ final class StubMessageView: UIView, InAppMessageView {
 
     required init?(coder: NSCoder) { return nil }
 
+    /// Keeps the frame it was built with, so the passthrough tests can position it as a band.
+    func install(in container: UIView) {
+        container.addSubview(self)
+    }
+
     func present(completion: (() -> Void)?) {
         willPresent()
         presented = true

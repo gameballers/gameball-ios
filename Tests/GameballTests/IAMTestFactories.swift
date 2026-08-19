@@ -100,3 +100,27 @@ func makeCampaign(campaignId: Int = 1,
 /// Every campaign's artwork counts as ready. Passed explicitly by tests that are not about
 /// artwork, so the evaluator's purity stays visible at the call site.
 let artworkAlwaysReady: (InAppMessageCampaign) -> Bool = { _ in true }
+
+/// Invokes a control's registered `.touchUpInside` actions directly.
+///
+/// `UIControl.sendActions(for:)` dispatches through `UIApplication.sendAction(_:to:from:for:)`,
+/// which does not deliver inside a unit-test bundle — verified: a plain `UIButton` with one
+/// registered target reports `allTargets.count == 1` and still never fires. Calling the
+/// registered selectors is therefore the only reliable way to simulate a tap here.
+func simulateTap(_ control: UIControl) {
+    for target in control.allTargets {
+        let selectors = control.actions(forTarget: target,
+                                        forControlEvent: .touchUpInside) ?? []
+        for name in selectors {
+            let object = target as AnyObject
+            let selector = Selector(name)
+            guard object.responds(to: selector) else { continue }
+            // A selector with no colon takes no argument; passing one would corrupt the frame.
+            if name.contains(":") {
+                _ = object.perform(selector, with: control)
+            } else {
+                _ = object.perform(selector)
+            }
+        }
+    }
+}
