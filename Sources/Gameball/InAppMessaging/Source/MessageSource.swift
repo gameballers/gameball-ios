@@ -26,3 +26,39 @@ struct SyncResult {
                                  cooldown: defaultDisplayCooldown,
                                  rawPayload: nil)
 }
+
+/// Where campaigns come from.
+///
+/// A protocol so the orchestrator can be driven from a fixture in tests without a network,
+/// and so a cache read and a live fetch are interchangeable at the call site.
+protocol MessageSource: AnyObject {
+    /// Always calls back exactly once. Never throws.
+    func fetch(customerId: String, completion: @escaping (Result<SyncResult, Error>) -> Void)
+}
+
+/// Why a sync did not produce campaigns.
+///
+/// Both cases surface to the caller as a plain failure — the caller's response is the same,
+/// fall back to cache — but the distinction is kept for diagnostics.
+enum IAMSyncError: Error {
+    case permanent(status: Int)
+    case retryable(status: Int?)
+    case unreadablePayload
+}
+
+/// Replays a fixed result and counts how many times it was asked.
+final class StubMessageSource: MessageSource {
+    private let result: Result<SyncResult, Error>
+    private var fetches = 0
+
+    init(result: Result<SyncResult, Error>) {
+        self.result = result
+    }
+
+    var fetchCount: Int { return fetches }
+
+    func fetch(customerId: String, completion: @escaping (Result<SyncResult, Error>) -> Void) {
+        fetches += 1
+        completion(result)
+    }
+}
