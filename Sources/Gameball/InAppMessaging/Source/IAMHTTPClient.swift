@@ -51,8 +51,13 @@ final class IAMHTTPClient: IAMTransport {
 
     /// Credentials arrive as closures so the client reads current SDK configuration at
     /// request time, rather than capturing a key that may not have been registered yet.
+    ///
+    /// The base URL default reads `NetworkManager`'s *current* value rather than the
+    /// `APIEndPoints.base_URL` constant, because `GameballConfig.apiPrefix` redirects the SDK to
+    /// another environment at `init` time. Reading the constant would send the widget to staging and
+    /// in-app messaging to production — a split that syncs successfully and shows nothing.
     init(session: URLSession = .shared,
-         baseURL: @escaping () -> String = { APIEndPoints.base_URL },
+         baseURL: @escaping () -> String = { NetworkManager.shared().baseUrl },
          apiKey: @escaping () -> String,
          language: @escaping () -> String) {
         self.session = session
