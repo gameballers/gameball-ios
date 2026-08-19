@@ -96,12 +96,12 @@ Every path below is new except the two noted in Task 16.
 - `func iamLog(_ message: String)` — prints `[GameballIAM] <message>`
 - `enum IAMFixture { static func data(_ name: String) -> Data }` — loads a fixture from the test bundle
 
-- [ ] **Step 1: Confirm the current failure**
+- [x] **Step 1: Confirm the current failure**
 
 Run: `./Scripts/test.sh test`
 Expected: `error: cannot call value of non-function type 'module<Gameball>'` at `GameballTests.swift:9`. This is the pre-existing breakage; there is no green baseline.
 
-- [ ] **Step 2: Replace the broken stub with a real test**
+- [x] **Step 2: Replace the broken stub with a real test**
 
 `Tests/GameballTests/GameballTests.swift`:
 
@@ -116,7 +116,7 @@ final class GameballTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 3: Write `IAMLog.swift`**
+- [x] **Step 3: Write `IAMLog.swift`**
 
 ```swift
 import Foundation
@@ -132,7 +132,7 @@ func iamLog(_ message: String) {
 }
 ```
 
-- [ ] **Step 4: Copy the fixture and add the loader**
+- [x] **Step 4: Copy the fixture and add the loader**
 
 ```bash
 mkdir -p Tests/GameballTests/Fixtures
@@ -169,12 +169,12 @@ Add to `Package.swift`'s testTarget only — the library target is untouched:
 ),
 ```
 
-- [ ] **Step 5: Verify green**
+- [x] **Step 5: Verify green**
 
 Run: `./Scripts/test.sh test`
 Expected: `** TEST SUCCEEDED **`. This is the first green baseline the repo has had.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add Scripts/test.sh Sources/Gameball/InAppMessaging/IAMLog.swift Tests/ Package.swift
@@ -294,7 +294,7 @@ struct InAppMessageCampaign {
 }
 ```
 
-- [ ] **Step 1: Write the failing filter tests**
+- [x] **Step 1: Write the failing filter tests**
 
 `PropertyFilterTests.swift` — one test per row:
 
@@ -314,12 +314,12 @@ struct InAppMessageCampaign {
 
 The missing-property case is the one to get right: a filter is a *requirement*, so absence is failure even for a negative operator. Port spec §3.7.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
 Run: `./Scripts/test.sh test -only-testing:GameballTests/PropertyFilterTests`
 Expected: compile failure — the types do not exist.
 
-- [ ] **Step 3: Implement the models**
+- [x] **Step 3: Implement the models**
 
 Numeric comparison helper, because JSON numbers arrive as `Int`, `Double` or `NSNumber` and string comparison of `"100"` vs `"100.0"` would fail:
 
@@ -371,9 +371,9 @@ func matches(properties: [String: Any]) -> Bool {
 
 `GameballMessageType(rawValue:)` maps 1/2/3 and sends **4, 5 and everything else** to `.unsupported` — types 4 and 5 are out of scope and must arrive as no-ops, not errors.
 
-- [ ] **Step 4: Verify green** — `./Scripts/test.sh test -only-testing:GameballTests/PropertyFilterTests`
+- [x] **Step 4: Verify green** — `./Scripts/test.sh test -only-testing:GameballTests/PropertyFilterTests`
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): message, campaign, trigger and filter models"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): message, campaign, trigger and filter models"`
 
 ---
 
@@ -394,7 +394,7 @@ enum MessageParser {
 }
 ```
 
-- [ ] **Step 1: Write the failing parser tests**
+- [x] **Step 1: Write the failing parser tests**
 
 Every row is a rule from port spec §3. Write them all before implementing.
 
@@ -438,11 +438,11 @@ Every row is a rule from port spec §3. Write them all before implementing.
 | `testCooldownDefaultsToThirtySeconds` | absent `cooldownSeconds` → 30 |
 | `testResponseIndexFollowsPayloadOrder` | 0, 1, 2… |
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
 Run: `./Scripts/test.sh test -only-testing:GameballTests/MessageParserTests`
 
-- [ ] **Step 3: Implement the parser**
+- [x] **Step 3: Implement the parser**
 
 Structure: `parseSyncResponse` → `JSONSerialization`, read `cooldownSeconds` (default 30) and `messages`, map with index, `compactMap` through `parseCampaign`. Retain the raw `Data` on the result so the cache stores bytes, not objects.
 
@@ -562,13 +562,13 @@ if type == .slideup && !hasText {
 }
 ```
 
-- [ ] **Step 4: Verify green** — all `MessageParserTests` pass
+- [x] **Step 4: Verify green** — all `MessageParserTests` pass
 
-- [ ] **Step 5: Add the live-payload test**
+- [x] **Step 5: Add the live-payload test**
 
 `Tests/GameballTests/RealSyncResponseTests.swift` — parse `IAMFixture.data("v4-sync-response")` and assert a non-empty campaign list, that every campaign has a non-zero `campaignId`, and that no campaign has `.unsupported` unless the payload's `messageType` is 4 or 5. Reading the documentation is not a substitute for parsing what the backend actually sent.
 
-- [ ] **Step 6: Commit** — `git commit -m "feat(iam): sync payload parser with the leniency rules"`
+- [x] **Step 6: Commit** — `git commit -m "feat(iam): sync payload parser with the leniency rules"`
 
 ---
 
