@@ -32,7 +32,7 @@ Pod::Spec.new do |s|
 
 
   # 7
-  s.framework = 'UIKit'
+  s.frameworks = 'UIKit', 'SafariServices'
   s.static_framework = true
   s.dependency 'Firebase'
   s.dependency 'Firebase/Core'

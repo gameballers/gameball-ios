@@ -29,8 +29,9 @@ final class ArtworkPrefetcher {
 
     /// Warms every campaign's artwork concurrently, then calls back exactly once.
     ///
-    /// The callback is bounded: a single hung request must not stall the session forever, so
-    /// the group wait has a deadline of its own on top of the per-request timeout.
+    /// The callback is bounded without blocking anything: the group finishing races a deadline of
+    /// its own, layered over the per-request timeout, so a single hung request cannot stall the
+    /// session forever.
     func warm(campaigns: [InAppMessageCampaign], completion: @escaping () -> Void) {
         var urls: [URL] = []
         var seen: Set<URL> = []
@@ -52,16 +53,31 @@ final class ArtworkPrefetcher {
             load(url) { group.leave() }
         }
 
-        // A grace period over the per-request timeout, so a protocol that ignores the request
-        // timeout still cannot pin the callback.
-        let deadline = DispatchTime.now() + timeout + 1
-        DispatchQueue.global(qos: .utility).async {
-            if group.wait(timeout: deadline) == .timedOut {
+        // The group finishing and the deadline expiring race each other, and whichever arrives
+        // first delivers the callback. Both land on `queue`, which is serial, so the guard below
+        // needs no lock.
+        //
+        // Deliberately *not* `group.wait(timeout:)` on a global queue: that blocks a pool thread
+        // for the whole grace period, and blocking pool threads is what causes the thread
+        // starvation that then delays the very block doing the waiting — a bounded wait measured
+        // at 6.5s against a 1.5s deadline under load. Nothing here blocks.
+        var hasDelivered = false
+        let deliver: (Bool) -> Void = { [weak self] timedOut in
+            guard let self = self, !hasDelivered else { return }
+            hasDelivered = true
+            if timedOut {
                 iamLog("artwork warm-up hit its \(Int(self.timeout))s bound; campaigns whose "
                      + "artwork is still missing will be skipped")
             }
-            completion()
+            // Handed off rather than run on `queue`: the caller's completion leads back into
+            // `isReady`, which takes `queue.sync`, and re-entering a serial queue deadlocks.
+            DispatchQueue.global(qos: .userInitiated).async { completion() }
         }
+
+        group.notify(queue: queue) { deliver(false) }
+        // A grace period over the per-request timeout, so a protocol or proxy that ignores the
+        // request timeout still cannot pin the callback.
+        queue.asyncAfter(deadline: .now() + timeout + 1) { deliver(true) }
     }
 
     func isReady(_ campaign: InAppMessageCampaign) -> Bool {

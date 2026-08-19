@@ -88,7 +88,17 @@ final class InAppMessagingCoordinator {
     }
 
     func start(customerId explicitId: String?) {
-        let resolved = explicitId ?? GameballApp.getInstance().currentCustomerId
+        // Spelled out rather than written as `explicitId ?? GameballApp...currentCustomerId`.
+        // That property synchronises on the app's own serial queue, and `notifyCustomerChanged`
+        // runs *inside* that queue — reading it there deadlocks. `??` happens to short-circuit,
+        // so the terse version is correct today, but it leaves the next edit one keystroke away
+        // from a hang that only reproduces for customers who opted in.
+        let resolved: String?
+        if let explicitId = explicitId {
+            resolved = explicitId
+        } else {
+            resolved = GameballApp.getInstance().currentCustomerId
+        }
 
         lock.lock()
         wantsToStart = true
