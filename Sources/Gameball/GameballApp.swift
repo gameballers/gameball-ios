@@ -127,6 +127,9 @@ public class GameballApp {
 
             self.customerId = request.customerId
 
+            // In-app messaging: additive and guarded. No-op unless startInAppMessaging ran.
+            InAppMessagingCoordinator.shared.notifyCustomerChanged(request.customerId)
+
             // Save customer preferred language if provided
             if let preferredLanguage = request.customerAttributes?.preferredLanguage,
                !preferredLanguage.isEmpty,
@@ -344,6 +347,9 @@ extension GameballApp {
                     completion(success, error?.description)
                 }
             }
+
+            // In-app messaging: additive and guarded. No-op unless startInAppMessaging ran.
+            InAppMessagingCoordinator.shared.notifyEvents(event.events)
             // Fire telemetry immediately after dispatching the request.
             self.logger.log("sdk.sendEvent", params: GameballLogger.dict(event))
         }
