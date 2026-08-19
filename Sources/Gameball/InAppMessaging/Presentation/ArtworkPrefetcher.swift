@@ -110,14 +110,14 @@ final class ArtworkPrefetcher {
 
             if let error = error {
                 iamLog("artwork failed to load from \(url): \(error.localizedDescription)")
-                self.queue.sync { self.failed.insert(url) }
+                self.queue.sync { _ = self.failed.insert(url) }
                 completion()
                 return
             }
 
             guard let data = data, let image = UIImage(data: data) else {
                 iamLog("artwork at \(url) is not a decodable image")
-                self.queue.sync { self.failed.insert(url) }
+                self.queue.sync { _ = self.failed.insert(url) }
                 completion()
                 return
             }
