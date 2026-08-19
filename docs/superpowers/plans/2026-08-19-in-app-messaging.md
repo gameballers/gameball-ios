@@ -611,7 +611,7 @@ final class FrequencyCap {
 
 `isArtworkReady` is injected as a closure so the evaluator stays pure — it must not reach for the prefetcher.
 
-- [ ] **Step 1: Write the failing evaluator tests**
+- [x] **Step 1: Write the failing evaluator tests**
 
 | Test | Asserts |
 |---|---|
@@ -636,9 +636,9 @@ final class FrequencyCap {
 
 The stability test needs the repetition: Swift's `sort` is not guaranteed stable, so a single run can pass by luck.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```swift
 func selectCampaign(occurrence: TriggerOccurrence,
@@ -693,7 +693,7 @@ func selectCampaign(occurrence: TriggerOccurrence,
 
 `FrequencyCap` persists `CapState` as JSON via `IAMStore`, stamped with the customer id and discarded on mismatch at read. History is **not pruned** — the backend stops returning a non-repeatable campaign once its impression lands, so forgetting it could show a once-ever message twice.
 
-- [ ] **Step 4: Write the failing cap tests**
+- [x] **Step 4: Write the failing cap tests**
 
 | Test | Asserts |
 |---|---|
@@ -703,9 +703,9 @@ func selectCampaign(occurrence: TriggerOccurrence,
 | `testResetClearsHistory` | empty |
 | `testHistoryIsNotPrunedByCampaignCount` | 200 entries all retained |
 
-- [ ] **Step 5: Verify green** — both suites
+- [x] **Step 5: Verify green** — both suites
 
-- [ ] **Step 6: Commit** — `git commit -m "feat(iam): pure trigger evaluator and persisted frequency cap"`
+- [x] **Step 6: Commit** — `git commit -m "feat(iam): pure trigger evaluator and persisted frequency cap"`
 
 ---
 
@@ -749,15 +749,15 @@ struct CustomerScoped<T: Codable>: Codable {
 
 A dedicated suite keeps the module's data out of the host's preferences plist. The protocol is what lets every later suite inject `InMemoryIAMStore`, so the real suite is never touched by tests.
 
-- [ ] **Step 1: Write failing tests** — round-trip; overwrite; `nil` removes; `removeAll` empties; `CustomerScoped` decode returns nil value on customer mismatch; the `UserDefaults` implementation writes to its suite and **not** to `UserDefaults.standard`.
+- [x] **Step 1: Write failing tests** — round-trip; overwrite; `nil` removes; `removeAll` empties; `CustomerScoped` decode returns nil value on customer mismatch; the `UserDefaults` implementation writes to its suite and **not** to `UserDefaults.standard`.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** `UserDefaultsIAMStore` holds a `UserDefaults(suiteName:)`, falling back to `.standard` only if the suite cannot be created, with a log. No read timeout: port spec §10 requires one because Flutter's `shared_preferences` crosses a platform channel that can wedge; `UserDefaults` is in-process and synchronous.
+- [x] **Step 3: Implement.** `UserDefaultsIAMStore` holds a `UserDefaults(suiteName:)`, falling back to `.standard` only if the suite cannot be created, with a log. No read timeout: port spec §10 requires one because Flutter's `shared_preferences` crosses a platform channel that can wedge; `UserDefaults` is in-process and synchronous.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): customer-scoped key-value store behind a protocol"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): customer-scoped key-value store behind a protocol"`
 
 ---
 
@@ -817,7 +817,7 @@ final class StubMessageSource: MessageSource {
 
 `baseURL`, `apiKey` and `language` are closures so the client reads current SDK configuration at request time without importing `NetworkManager`'s mutable singleton state into its own initialiser.
 
-- [ ] **Step 1: Write the failing client tests** using a `URLProtocol` stub
+- [x] **Step 1: Write the failing client tests** using a `URLProtocol` stub
 
 | Test | Asserts |
 |---|---|
@@ -833,15 +833,15 @@ final class StubMessageSource: MessageSource {
 | `test404WithEmptyBodyIsLoggedAsNotDeployed` | distinguishable from a 404 with an `ErrorResponse` body |
 | `testNonSerialisableBodyDoesNotCrash` | no `try!` — returns a failure |
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** Build `URLRequest` by hand — do **not** use `NetworkManager`'s `URL`/`URLRequest` extensions, which force-unwrap and switch to v4.1. Serialise with `JSONSerialization.data(withJSONObject:)` inside a `do`/`catch`. Status mapping exactly as the tests specify.
+- [x] **Step 3: Implement.** Build `URLRequest` by hand — do **not** use `NetworkManager`'s `URL`/`URLRequest` extensions, which force-unwrap and switch to v4.1. Serialise with `JSONSerialization.data(withJSONObject:)` inside a `do`/`catch`. Status mapping exactly as the tests specify.
 
-- [ ] **Step 4: Write `HTTPMessageSource` tests** — success parses via `MessageParser`; permanent and retryable failures both surface as `.failure` so the caller falls back to cache; the raw payload is retained on success.
+- [x] **Step 4: Write `HTTPMessageSource` tests** — success parses via `MessageParser`; permanent and retryable failures both surface as `.failure` so the caller falls back to cache; the raw payload is retained on success.
 
-- [ ] **Step 5: Verify green**
+- [x] **Step 5: Verify green**
 
-- [ ] **Step 6: Commit** — `git commit -m "feat(iam): v4.0-pinned HTTP client and sync source"`
+- [x] **Step 6: Commit** — `git commit -m "feat(iam): v4.0-pinned HTTP client and sync source"`
 
 ---
 
@@ -864,15 +864,15 @@ final class CampaignCache {
 }
 ```
 
-- [ ] **Step 1: Write failing tests** — round-trip through the parser; a different customer yields nil; corrupt bytes yield nil without throwing; **campaigns already past `expiresAt` are excluded on load**; `clear` empties.
+- [x] **Step 1: Write failing tests** — round-trip through the parser; a different customer yields nil; corrupt bytes yield nil without throwing; **campaigns already past `expiresAt` are excluded on load**; `clear` empties.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** Store the raw payload wrapped in `CustomerScoped<Data>`; on load, re-parse and filter expired.
+- [x] **Step 3: Implement.** Store the raw payload wrapped in `CustomerScoped<Data>`; on load, re-parse and filter expired.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): campaign cache storing the raw payload"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): campaign cache storing the raw payload"`
 
 ---
 
@@ -921,11 +921,11 @@ final class BatchedMessageAnalytics: MessageAnalytics {
 }
 ```
 
-- [ ] **Step 1: Write failing event tests** — `eventUid` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`; `occurredAt` serialises as ISO-8601 UTC; `buttonId` and `url` omitted when nil.
+- [x] **Step 1: Write failing event tests** — `eventUid` matches `^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`; `occurredAt` serialises as ISO-8601 UTC; `buttonId` and `url` omitted when nil.
 
 The UUID shape assertion is deliberate: a non-GUID is a hard 400 that discards the entire batch, so a future refactor must not be able to break ingestion silently.
 
-- [ ] **Step 2: Write failing outbox tests**
+- [x] **Step 2: Write failing outbox tests**
 
 | Test | Asserts |
 |---|---|
@@ -947,13 +947,13 @@ The UUID shape assertion is deliberate: a non-GUID is a hard 400 that discards t
 
 The poison-batch test is the important one: the outbox is FIFO, so one permanently-rejected batch at the head would otherwise take every event behind it down until the ceiling rotated it out.
 
-- [ ] **Step 3: Run and watch them fail**
+- [x] **Step 3: Run and watch them fail**
 
-- [ ] **Step 4: Implement.** In-memory array persisted after every mutation, serial queue, `Timer` for the interval, `isSending` guard for the single in-flight request. Status handling: `.success` → drop the sent slice; `.permanentFailure` → drop the slice and log loudly; `.retryableFailure` → keep.
+- [x] **Step 4: Implement.** In-memory array persisted after every mutation, serial queue, `Timer` for the interval, `isSending` guard for the single in-flight request. Status handling: `.success` → drop the sent slice; `.permanentFailure` → drop the slice and log loudly; `.retryableFailure` → keep.
 
-- [ ] **Step 5: Verify green**
+- [x] **Step 5: Verify green**
 
-- [ ] **Step 6: Commit** — `git commit -m "feat(iam): batched analytics outbox with retry and discard semantics"`
+- [x] **Step 6: Commit** — `git commit -m "feat(iam): batched analytics outbox with retry and discard semantics"`
 
 ---
 
@@ -976,15 +976,15 @@ final class ArtworkPrefetcher {
 }
 ```
 
-- [ ] **Step 1: Write failing tests** — every campaign warmed, not just the first; a failed load makes `isReady` false; a campaign with no artwork is ready; concurrency (8 images at 300ms complete in well under 2.4s); a hung load is bounded by the timeout and the campaign is not ready; `reset` clears readiness so the next sync re-evaluates.
+- [x] **Step 1: Write failing tests** — every campaign warmed, not just the first; a failed load makes `isReady` false; a campaign with no artwork is ready; concurrency (8 images at 300ms complete in well under 2.4s); a hung load is bounded by the timeout and the campaign is not ready; `reset` clears readiness so the next sync re-evaluates.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** `DispatchGroup` over all URLs, `URLSession` data tasks with the timeout on the request, decoded images into an `NSCache`, a `Set<URL>` of failures guarded by the serial queue. Warm the whole set — an event trigger fires with no warning and no time to fetch.
+- [x] **Step 3: Implement.** `DispatchGroup` over all URLs, `URLSession` data tasks with the timeout on the request, decoded images into an `NSCache`, a `Set<URL>` of failures guarded by the serial queue. Warm the whole set — an event trigger fires with no warning and no time to fetch.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): bounded concurrent artwork prefetcher"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): bounded concurrent artwork prefetcher"`
 
 ---
 
@@ -1055,7 +1055,7 @@ final class MessageWindowPresenter: MessagePresenting {
 
 `present` returns an optional obstacle rather than throwing — that return value is what feeds the deferral in the orchestrator.
 
-- [ ] **Step 1: Write the `MessageWindow` hitTest test first**
+- [x] **Step 1: Write the `MessageWindow` hitTest test first**
 
 This is the single rule that makes a slideup non-blocking and a modal blocking, with no per-type branch:
 
@@ -1075,9 +1075,9 @@ func testHitTestPassesThroughOutsideTheMessageView() {
 }
 ```
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement `MessageWindow`**
+- [x] **Step 3: Implement `MessageWindow`**
 
 ```swift
 final class MessageWindow: UIWindow {
@@ -1097,15 +1097,15 @@ final class MessageWindow: UIWindow {
 }
 ```
 
-- [ ] **Step 4: Implement the view protocol extension**
+- [x] **Step 4: Implement the view protocol extension**
 
 `coordinator` is a `weak` reference injected at init and stored on each concrete view, exposed through the protocol. `didPresent()` posts `UIAccessibility.post(notification: .screenChanged, argument: self)` so VoiceOver moves focus, then calls `coordinator?.viewDidPresent()`.
 
-- [ ] **Step 5: Implement `MessageViewController`**
+- [x] **Step 5: Implement `MessageViewController`**
 
 Owns `supportedInterfaceOrientations` derived from `context.message.orientation` (`.portrait` → `.portrait`, `.landscape` → `.landscape`, `.any` → `.all`), `preferredInterfaceOrientationForPresentation` from `context.preferredOrientation`, and observes `UIDevice.orientationDidChangeNotification`. Sets `view.backgroundColor = .clear`. This constrains orientation rather than deferring on mismatch — divergence D2 in the design.
 
-- [ ] **Step 6: Implement `MessageWindowPresenter`**
+- [x] **Step 6: Implement `MessageWindowPresenter`**
 
 Validation chain, each step logging its own reason: main thread → not already showing → a surface exists (unless `headless`). Then build the window (`MessageWindow(windowScene:)` on iOS 13+ via the `Any?` cast, `MessageWindow(frame: UIScreen.main.bounds)` below), set `accessibilityViewIsModal` (true for modal/fullscreen, false for slideup), `windowLevel = context.windowLevel`, `rootViewController`, then `window.isHidden = false` — **never** `makeKeyAndVisible`, so the host keeps its keyboard and first responder.
 
@@ -1113,7 +1113,7 @@ Auto-dismiss `Timer` is scheduled in `viewDidPresent()`, not at window-show, so 
 
 Teardown in `viewDidDismiss()`: invalidate the timer, nil the scene on iOS 13+, nil the window, call `handlers.onDismissed`. The window is rebuilt per presentation, so a stale surface handle cannot survive.
 
-- [ ] **Step 7: Write the presenter tests**
+- [x] **Step 7: Write the presenter tests**
 
 | Test | Asserts |
 |---|---|
@@ -1127,9 +1127,9 @@ Teardown in `viewDidDismiss()`: invalidate the timer, nil the scene on iOS 13+, 
 | `testWindowLevelIsNormal` | `.normal` |
 | `testSlideupWindowIsNotAccessibilityModal` | false; modal true |
 
-- [ ] **Step 8: Verify green**
+- [x] **Step 8: Verify green**
 
-- [ ] **Step 9: Commit** — `git commit -m "feat(iam): message window, view controller and presenter"`
+- [x] **Step 9: Commit** — `git commit -m "feat(iam): message window, view controller and presenter"`
 
 ---
 
@@ -1182,7 +1182,7 @@ Each view's initialiser takes `(message: GameballInAppMessage, attributes: Messa
 
 Five classes rather than three with a layout flag: `image_only` is a genuinely different composition, not the other one with text hidden.
 
-- [ ] **Step 1: Write the failing layout-resilience tests first**
+- [x] **Step 1: Write the failing layout-resilience tests first**
 
 These are the tests that catch the defects ranked most expensive in the port spec's trap list. Write them before any view exists.
 
@@ -1210,9 +1210,9 @@ private func traits(contentSize: UIContentSizeCategory) -> UITraitCollection {
 
 `testRTLDoesNotMutateGlobalAppearance` exists because this repo shipped exactly that bug in `BaseViewController` and fixed it in `8f8f368`.
 
-- [ ] **Step 2: Run and watch them fail**
+- [x] **Step 2: Run and watch them fail**
 
-- [ ] **Step 3: Implement the views**
+- [x] **Step 3: Implement the views**
 
 Rules that apply to all five:
 - Text lives in a `UIScrollView` so copy scrolls rather than clips; the scroll view's height is constrained `<=` the available space with a lower-priority `==` content-height constraint, so a short message stays short.
@@ -1224,11 +1224,11 @@ Rules that apply to all five:
 - Slideup: no scrim, swipe-to-dismiss via a `UIPanGestureRecognizer` restricted to its own edge axis, no buttons, whole surface tappable, no gesture that competes with host scroll views.
 - Modal/fullscreen: a scrim subview *inside* the message view, tappable only when `message.dismissOnScrimTap`.
 
-- [ ] **Step 4: Write `MessageViewTests`** — button tap calls `logClick` with the button id; surface tap calls it without; a nil `clickAction` leaves the surface inert; close button dismisses; scrim tap honours `dismissOnScrimTap`.
+- [x] **Step 4: Write `MessageViewTests`** — button tap calls `logClick` with the button id; surface tap calls it without; a nil `clickAction` leaves the surface inert; close button dismisses; scrim tap honours `dismissOnScrimTap`.
 
-- [ ] **Step 5: Verify green**
+- [x] **Step 5: Verify green**
 
-- [ ] **Step 6: Commit** — `git commit -m "feat(iam): slideup, modal and fullscreen message views"`
+- [x] **Step 6: Commit** — `git commit -m "feat(iam): slideup, modal and fullscreen message views"`
 
 ---
 
@@ -1250,15 +1250,15 @@ final class MessageActionRouter {
 }
 ```
 
-- [ ] **Step 1: Write failing tests** — `.dismiss` dismisses; `.openURL(external: false)` opens in-app and returns the url string; `.openURL(external: true)` opens the OS browser; `.navigate` forwards route and arguments untouched and does not dismiss; `.unsupported` logs and does nothing.
+- [x] **Step 1: Write failing tests** — `.dismiss` dismisses; `.openURL(external: false)` opens in-app and returns the url string; `.openURL(external: true)` opens the OS browser; `.navigate` forwards route and arguments untouched and does not dismiss; `.unsupported` logs and does nothing.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** The in-app browser is `SFSafariViewController` presented from the topmost view controller; external is `UIApplication.shared.openURL` (iOS 11 — `open(_:options:completionHandler:)` is available from iOS 10, use that).
+- [x] **Step 3: Implement.** The in-app browser is `SFSafariViewController` presented from the topmost view controller; external is `UIApplication.shared.openURL` (iOS 11 — `open(_:options:completionHandler:)` is available from iOS 10, use that).
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): click action router"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): click action router"`
 
 ---
 
@@ -1283,7 +1283,7 @@ enum TokenSubstitution {
 }
 ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 | Test | Asserts |
 |---|---|
@@ -1298,13 +1298,13 @@ enum TokenSubstitution {
 | `testContainsTokenIsFalseForPlainText` | false |
 | `testTokensInMessageCollectsFromAllFields` | header + body + buttons |
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** `NSRegularExpression` built once as a `static let`. Substitute by walking matches in reverse so ranges stay valid, replacing only when the key exists. Strictness matters twice over: a loose pattern lets a value map mangle ordinary copy, and it is also what keeps the feature inert today.
+- [x] **Step 3: Implement.** `NSRegularExpression` built once as a `static let`. Substitute by walking matches in reverse so ranges stay valid, replacing only when the key exists. Strictness matters twice over: a loose pattern lets a value map mangle ordinary copy, and it is also what keeps the feature inert today.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): strict single-pass token substitution"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): strict single-pass token substitution"`
 
 ---
 
@@ -1331,7 +1331,7 @@ final class VariableSource {
 }
 ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 | Test | Asserts |
 |---|---|
@@ -1348,13 +1348,13 @@ final class VariableSource {
 
 The last test encodes a race that was real: a check performed *before* the await always passes, because the clear has not been issued yet.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement.** Serial queue; in-memory `[String: String]` plus a fetch timestamp; persisted copy filtered to `persistableTokens`. Re-read the current customer id from the instance *after* the transport completion fires, before writing.
+- [x] **Step 3: Implement.** Serial queue; in-memory `[String: String]` plus a fetch timestamp; persisted copy filtered to `persistableTokens`. Re-read the current customer id from the instance *after* the transport completion fires, before writing.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): variable source with TTL cache and PII-filtered persistence"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): variable source with TTL cache and PII-filtered persistence"`
 
 ---
 
@@ -1399,7 +1399,7 @@ final class InAppMessagingService {
 }
 ```
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 | Test | Asserts |
 |---|---|
@@ -1430,15 +1430,15 @@ final class InAppMessagingService {
 | `testThrowingHooksAreContained` | a hook that traps is not called; a hook returning garbage does not break the feature |
 | `testPurchaseFiresExactlyOneOccurrence` | one evaluation — divergence D3 |
 
-- [ ] **Step 2: Run and watch them fail**
+- [x] **Step 2: Run and watch them fail**
 
-- [ ] **Step 3: Implement.** One serial `DispatchQueue` owns campaigns, cooldown, the deferred stack and session timestamps. Sync and the cap load are dispatched concurrently; the cache is applied only in the sync-failure branch. `_evaluate(occurrence)` calls `selectCampaign`, notifies `onMessageSelected`, consults `beforeDisplay`, resolves tokens when needed, then presents — mapping a returned obstacle onto the stack. Presentation work hops to main.
+- [x] **Step 3: Implement.** One serial `DispatchQueue` owns campaigns, cooldown, the deferred stack and session timestamps. Sync and the cap load are dispatched concurrently; the cache is applied only in the sync-failure branch. `_evaluate(occurrence)` calls `selectCampaign`, notifies `onMessageSelected`, consults `beforeDisplay`, resolves tokens when needed, then presents — mapping a returned obstacle onto the stack. Presentation work hops to main.
 
 Deferral uses a stack with dedup-and-move-to-top (divergence D1). Retry triggers: dismissal, foreground, and a surface appearing.
 
-- [ ] **Step 4: Verify green**
+- [x] **Step 4: Verify green**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(iam): orchestrator with deferral stack and display accounting"`
+- [x] **Step 5: Commit** — `git commit -m "feat(iam): orchestrator with deferral stack and display accounting"`
 
 ---
 
@@ -1451,13 +1451,13 @@ Deferral uses a stack with dedup-and-move-to-top (divergence D1). Retry triggers
 
 **Interfaces produced:** the public surface from design §9, verbatim.
 
-- [ ] **Step 1: Write failing tests** — `isInAppMessagingStarted` false initially; `startInAppMessaging` flips it; delegate assignment before start is honoured; `stopInAppMessaging` flips it back; starting twice for the same customer is idempotent; starting for a different customer resets state; the delegate is held **weakly** (assign a local object, let it deallocate, assert nil); `logPurchase` produces one `purchase` occurrence with the four properties folded in.
+- [x] **Step 1: Write failing tests** — `isInAppMessagingStarted` false initially; `startInAppMessaging` flips it; delegate assignment before start is honoured; `stopInAppMessaging` flips it back; starting twice for the same customer is idempotent; starting for a different customer resets state; the delegate is held **weakly** (assign a local object, let it deallocate, assert nil); `logPurchase` produces one `purchase` occurrence with the four properties folded in.
 
 The weak-delegate test matters: `GameballApp` is an immortal singleton, so a strong reference would leak the host's view controller for the life of the app.
 
-- [ ] **Step 2: Run and watch it fail**
+- [x] **Step 2: Run and watch it fail**
 
-- [ ] **Step 3: Implement the extension**
+- [x] **Step 3: Implement the extension**
 
 The delegate cannot be a stored property in an extension, and a computed property cannot be `weak`. So an internal coordinator owns it:
 
@@ -1474,7 +1474,7 @@ final class InAppMessagingCoordinator {
 
 Delegate methods are bridged to the service's closures inside `startInAppMessaging`, each call individually guarded and hopping to main.
 
-- [ ] **Step 4: Add the two hooks to `GameballApp.swift`**
+- [x] **Step 4: Add the two hooks to `GameballApp.swift`**
 
 These are the *only* edits to pre-existing source. Both no-op entirely when the module was never started, so a widget-only integrator is unaffected. Both sit **outside** the existing completion chains, so a fault in our addition cannot escape into the widget's code path.
 
@@ -1494,16 +1494,16 @@ InAppMessagingCoordinator.shared.notifyEvents(event.events)
 
 Both coordinator methods begin `guard let service = service, service.isStarted else { return }` and wrap their body so nothing can propagate.
 
-- [ ] **Step 5: Register lifecycle observers**
+- [x] **Step 5: Register lifecycle observers**
 
 On first `startInAppMessaging`, observe `UIApplication.didBecomeActiveNotification` and `didEnterBackgroundNotification`. The iOS SDK has no lifecycle observer today, so this is new internal machinery. Backgrounding forces an analytics flush.
 
-- [ ] **Step 6: Verify green, and verify the widget path is untouched**
+- [x] **Step 6: Verify green, and verify the widget path is untouched**
 
 Run: `./Scripts/test.sh test`
 Then confirm by inspection that `git diff` against pre-existing files shows only the two added hook lines plus their comments.
 
-- [ ] **Step 7: Commit** — `git commit -m "feat(iam): public API, delegate and guarded host wiring"`
+- [x] **Step 7: Commit** — `git commit -m "feat(iam): public API, delegate and guarded host wiring"`
 
 ---
 
@@ -1512,11 +1512,11 @@ Then confirm by inspection that `git diff` against pre-existing files shows only
 **Files:**
 - Test: `Tests/GameballTests/EndToEndTests.swift`, `Tests/GameballTests/CompatibilityTests.swift`
 
-- [ ] **Step 1: Write the end-to-end test**
+- [x] **Step 1: Write the end-to-end test**
 
 Drive the whole module through the **public API only**, against `StubMessageSource` and a headless presenter: start → a session-start campaign renders → tap the button → it dismisses → assert an `impression` and a `click` were reported with the right campaign and button ids. This is the test that catches wiring mistakes every unit test passes — the port spec's trap list has a case where filters were fully unit-tested and completely dead because the event hook never passed properties through.
 
-- [ ] **Step 2: Write the compatibility tests**
+- [x] **Step 2: Write the compatibility tests**
 
 | Test | Asserts |
 |---|---|
@@ -1525,9 +1525,9 @@ Drive the whole module through the **public API only**, against `StubMessageSour
 | `testIAMStorageIsInItsOwnSuite` | `UserDefaults.standard` has no `gameball_iam_*` keys |
 | `testNoIAMTimersBeforeStart` | none |
 
-- [ ] **Step 3: Run the full suite** — `./Scripts/test.sh test`
+- [x] **Step 3: Run the full suite** — `./Scripts/test.sh test`
 
-- [ ] **Step 4: Commit** — `git commit -m "test(iam): end-to-end and widget-compatibility coverage"`
+- [x] **Step 4: Commit** — `git commit -m "test(iam): end-to-end and widget-compatibility coverage"`
 
 ---
 
@@ -1538,15 +1538,15 @@ Drive the whole module through the **public API only**, against `StubMessageSour
 - Modify: `Sources/Gameball/Constants.swift` — `SDKInfo.version` to `3.3.0`
 - Modify: `Gameball.podspec` — `s.version` to `3.3.0`
 
-- [ ] **Step 1: Document the public API** — `startInAppMessaging`, `stopInAppMessaging`, `isInAppMessagingStarted`, `inAppMessagingDelegate`, `logPurchase`, the four delegate methods with their defaults, and a worked example. State plainly that the module is opt-in and that existing widget integrations are unaffected by upgrading.
+- [x] **Step 1: Document the public API** — `startInAppMessaging`, `stopInAppMessaging`, `isInAppMessagingStarted`, `inAppMessagingDelegate`, `logPurchase`, the four delegate methods with their defaults, and a worked example. State plainly that the module is opt-in and that existing widget integrations are unaffected by upgrading.
 
-- [ ] **Step 2: Changelog and migration** — a `3.3.0` entry describing the new module; in `MIGRATION.md`, note that no migration is required and nothing changes for widget-only integrators.
+- [x] **Step 2: Changelog and migration** — a `3.3.0` entry describing the new module; in `MIGRATION.md`, note that no migration is required and nothing changes for widget-only integrators.
 
-- [ ] **Step 3: Bump the version in both places** — `Constants.swift` and the podspec must agree; `sdkVersion` in the sync body reads from `SDKInfo.version`.
+- [x] **Step 3: Bump the version in both places** — `Constants.swift` and the podspec must agree; `sdkVersion` in the sync body reads from `SDKInfo.version`.
 
-- [ ] **Step 4: Full suite green** — `./Scripts/test.sh test`
+- [x] **Step 4: Full suite green** — `./Scripts/test.sh test`
 
-- [ ] **Step 5: Commit** — `git commit -m "docs: document in-app messaging and bump to 3.3.0"`
+- [x] **Step 5: Commit** — `git commit -m "docs: document in-app messaging and bump to 3.3.0"`
 
 ---
 

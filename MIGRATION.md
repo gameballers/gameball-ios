@@ -4,6 +4,20 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
+## Upgrading to 3.3.0
+
+**No migration is required, and nothing changes for widget-only integrations.**
+
+3.3.0 adds an opt-in in-app messaging module. It is dormant until you call
+`startInAppMessaging`: before that it issues no requests, schedules no timers, writes no
+storage and draws nothing. Existing `init`, `initializeCustomer`, `sendEvent`, `showProfile`
+and `hideProfile` behaviour is unchanged.
+
+To adopt it, see the In-App Messaging section of the README. To ignore it, do nothing.
+
+---
+
+
 ## v3.1.1 → v3.2.0 (Non-Breaking)
 
 ### Overview

@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.2.2-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -12,6 +12,7 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 - 🎯 **Customer Management** - Initialize and manage customer profiles
 - 📊 **Event Tracking** - Track user actions and behaviors with flexible metadata
 - 🎁 **Profile Widget** - Display customer loyalty information in customizable UI
+- 📬 **In-App Messaging** - Opt-in slideup, modal and fullscreen campaigns evaluated on-device
 - 🔧 **Modern Architecture** - Built with iOS best practices and Swift concurrency
 - 🛡️ **Type Safety** - Compile-time validation with Swift's type system
 - ⚡ **Async-Ready** - Modern async architecture with proper callback handling
@@ -31,14 +32,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.2")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.0")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.2.2` or later
+3. Select version: `3.3.0` or later
 
 ## Quick Start
 
@@ -263,6 +264,125 @@ GameballApp.getInstance().showProfile(request)
 ```
 
 The SDK also records internal diagnostic logs automatically to aid troubleshooting.
+
+## In-App Messaging (v3.3.0+)
+
+Campaigns authored in the Gameball dashboard, drawn above your app. The module is **opt-in** and
+dormant until you start it: before then it makes no requests, schedules no timers, writes no
+storage and draws nothing. Upgrading to 3.3.0 changes nothing for a widget-only integration.
+
+### Getting started
+
+```swift
+let gameball = GameballApp.getInstance()
+
+// After initializeCustomer, or before it — ordering does not matter.
+gameball.startInAppMessaging()
+```
+
+`startInAppMessaging()` uses the customer already identified with the SDK. Call it before
+`initializeCustomer` and the module starts as soon as a customer is identified. Pass an id
+explicitly if you prefer:
+
+```swift
+gameball.startInAppMessaging(customerId: "customer-123")
+```
+
+It is idempotent for the same customer. Starting for a **different** customer refetches campaigns
+and resets frequency caps, so you never need to stop first.
+
+```swift
+gameball.stopInAppMessaging()        // dismiss, flush telemetry, clear per-customer state
+gameball.isInAppMessagingStarted     // Bool
+```
+
+Events you already send drive the triggers — there is nothing extra to call:
+
+```swift
+let event = try Event(events: ["place_order": ["price": 150, "currency": "USD"]],
+                      customerId: "customer-123")
+gameball.sendEvent(event) { success, error in }
+```
+
+Purchases get a dedicated entry point, because campaigns filter on their fields:
+
+```swift
+gameball.logPurchase(productId: "sku-1",
+                     price: 150,
+                     currency: "USD",
+                     quantity: 2,
+                     properties: ["source": "app"])
+```
+
+This reaches campaigns as an event named `purchase`, with `productId`, `price`, `currency` and
+`quantity` folded into its properties.
+
+### Delegate
+
+Every method has a default, so implement only what you need. The delegate is held **weakly** — keep
+your own strong reference.
+
+```swift
+final class MessagingCoordinator: GameballInAppMessagingDelegate {
+
+    init() {
+        GameballApp.getInstance().inAppMessagingDelegate = self
+    }
+
+    // Called immediately before a message would display.
+    func gameballShouldDisplay(_ message: GameballInAppMessage) -> GameballDisplayDecision {
+        if isCheckingOut { return .later }   // held, retried at the next opportunity
+        return .show
+    }
+
+    // Return true when you handled the tap yourself; the SDK then does nothing further.
+    // `button` is nil for a tap on the message surface.
+    func gameballDidHandleAction(_ message: GameballInAppMessage,
+                                button: GameballMessageButton?,
+                                action: GameballClickAction) -> Bool {
+        return false
+    }
+
+    // Called for every message selected, whatever happens to it next.
+    func gameballDidSelectMessage(_ message: GameballInAppMessage) {}
+
+    // Called for a `navigate` action, so your own router drives the transition.
+    func gameballShouldNavigate(route: String, arguments: [String: Any]?) {
+        router.push(route, arguments)
+    }
+}
+```
+
+| Method | Default | Notes |
+|---|---|---|
+| `gameballShouldDisplay(_:)` | `.show` | `.later` holds the message and retries; `.discard` spends the occurrence |
+| `gameballDidHandleAction(_:button:action:)` | `false` | `true` suppresses the SDK's own handling |
+| `gameballDidSelectMessage(_:)` | no-op | Observation only |
+| `gameballShouldNavigate(route:arguments:)` | no-op | `route` is a bare name, no leading slash |
+
+**The hooks replace the action, never the bookkeeping.** The impression, the click and the
+dismissal are reported whatever a hook returns.
+
+### What you get
+
+- **Three message types** — slideup (a non-blocking band that passes touches through), modal (a
+  card over a scrim) and fullscreen, each in a text-with-artwork and an artwork-only composition.
+- **On-device triggers** — `session_start` and named events, with metadata filters.
+- **Frequency control** — a global display floor set from the dashboard, plus per-campaign repeat
+  rules. Both survive a restart.
+- **Accessibility** — Dynamic Type throughout, a 44pt close target, VoiceOver focus moved to the
+  message, and entrance animations skipped when Reduce Motion is on.
+- **Right-to-left** — mirrored through directional constraints. The SDK never touches
+  `UIView.appearance()`.
+
+### Notes
+
+- The module draws in its own `UIWindow` at `.normal` level and never takes key window status, so
+  your keyboard and first responder are left alone.
+- Diagnostics are printed with a `[GameballIAM]` prefix. If a campaign does not appear, that log
+  says why — it is never posted to the backend.
+- Storage lives in its own `UserDefaults` suite (`co.gameball.inappmessaging`), not your app's
+  preferences.
 
 ## API Methods
 

@@ -4,10 +4,53 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.2.2
+## Latest Release: v3.3.0
+
+**Release Date**: 2026-08-19
+**Version**: 3.3.0
+**Type**: Minor Release
+
+v3.3.0 adds an opt-in in-app messaging module. **Nothing changes for existing integrations** — the module is dormant until you call `startInAppMessaging`, and before that it issues no requests, schedules no timers, writes no storage and draws nothing.
+
+### In-App Messaging
+
+Campaigns authored in the Gameball dashboard are now drawn above your app. Three message types — slideup (a non-blocking band that passes touches through to your UI), modal (a card over a scrim) and fullscreen — each in a text-with-artwork and an artwork-only composition.
+
+Triggers are evaluated on the device, so a message appears the moment the event happens with no round trip: `session_start` plus any named event, narrowed by metadata filters on the event's own properties. Frequency is controlled by a global display floor set from the dashboard and per-campaign repeat rules, both persisted so they survive a restart.
+
+```swift
+let gameball = GameballApp.getInstance()
+gameball.inAppMessagingDelegate = myCoordinator   // optional, held weakly
+gameball.startInAppMessaging()
+```
+
+The events you already send drive the triggers — there is nothing extra to call. Purchases get their own entry point, because campaigns filter on their fields:
+
+```swift
+gameball.logPurchase(productId: "sku-1", price: 150, currency: "USD", quantity: 2)
+```
+
+Four optional delegate methods let you defer a message while the customer is mid-checkout, handle a tap yourself, observe every selection, or route a `navigate` action through your own router. Each has a default, so implement only what you need. The hooks replace the *action*, never the bookkeeping: the impression, click and dismissal are reported whatever a hook returns.
+
+Accessibility is covered throughout: Dynamic Type, a 44pt close target, VoiceOver focus moved to the message, entrance animations skipped under Reduce Motion, and right-to-left mirroring via directional constraints — the SDK never touches `UIView.appearance()`.
+
+See the In-App Messaging section of the [README](README.md) for the full surface.
+
+### A Working Test Harness
+
+`Scripts/test.sh` gives the package a build and test entry point that works. `swift test` cannot build it — the target imports UIKit, which is absent from the macOS SDK — and a bare `xcodebuild` from the repository root picks up a stale tracked `_Pods.xcodeproj` instead of the package.
+
+### Installation
+
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.0")
+```
+
+---
+
+## v3.2.2
 
 **Release Date**: 2026-07-09
-**Version**: 3.2.2
 **Type**: Patch Release
 
 v3.2.2 is a maintenance release fixing a right-to-left layout leak. No API changes — every v3.2.x and v3.1.x integration works unchanged.
