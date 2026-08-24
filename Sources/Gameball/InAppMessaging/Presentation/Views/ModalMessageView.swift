@@ -35,6 +35,7 @@ final class ModalMessageView: UIView, InAppMessageView {
     required init?(coder: NSCoder) { return nil }
 
     private func build() {
+        accessibilityIdentifier = GameballAccessibility.surface(for: .modal)
         backgroundColor = MessageTheme.scrim
         if message.dismissOnScrimTap {
             addGestureRecognizer(UITapGestureRecognizer(target: self,
@@ -48,6 +49,7 @@ final class ModalMessageView: UIView, InAppMessageView {
             card.layer.borderColor = border.cgColor
             card.layer.borderWidth = 1
         }
+        card.accessibilityIdentifier = GameballAccessibility.card
         card.translatesAutoresizingMaskIntoConstraints = false
         addSubview(card)
 

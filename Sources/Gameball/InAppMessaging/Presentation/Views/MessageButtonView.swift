@@ -25,6 +25,7 @@ final class MessageButtonView: UIButton {
         }
         layer.cornerRadius = 8
 
+        accessibilityIdentifier = GameballAccessibility.button(button.id)
         titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
         titleLabel?.adjustsFontForContentSizeCategory = true
         // Wrapping rather than truncating: a button whose label is cut off is a button whose

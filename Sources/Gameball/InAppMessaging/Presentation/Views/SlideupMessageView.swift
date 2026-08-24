@@ -37,6 +37,7 @@ final class SlideupMessageView: UIView, InAppMessageView {
     // MARK: - Composition
 
     private func build() {
+        accessibilityIdentifier = GameballAccessibility.surface(for: .slideup)
         backgroundColor = message.style.backgroundColor ?? MessageTheme.background
         layer.cornerRadius = attributes.cornerRadius
         clipsToBounds = true

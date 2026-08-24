@@ -21,6 +21,8 @@ final class MessageCloseButton: UIButton {
         backgroundColor = .clear
         isOpaque = false
         accessibilityLabel = "Close"
+        // Stable across campaigns, so a host UI test can find it without knowing the copy.
+        accessibilityIdentifier = GameballAccessibility.closeButton
         translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             widthAnchor.constraint(greaterThanOrEqualToConstant: 44),

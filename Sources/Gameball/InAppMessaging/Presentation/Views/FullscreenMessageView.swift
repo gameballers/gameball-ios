@@ -32,6 +32,7 @@ final class FullscreenMessageView: UIView, InAppMessageView {
     required init?(coder: NSCoder) { return nil }
 
     private func build() {
+        accessibilityIdentifier = GameballAccessibility.surface(for: .fullscreen)
         backgroundColor = message.style.backgroundColor ?? MessageTheme.background
 
         let content = UIStackView()
