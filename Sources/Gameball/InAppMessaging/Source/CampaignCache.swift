@@ -50,7 +50,8 @@ final class CampaignCache {
                  + "the cache")
         }
 
-        return SyncResult(campaigns: live, cooldown: parsed.cooldown, rawPayload: nil)
+        return SyncResult(campaigns: live, cooldown: parsed.cooldown,
+                          quietHours: parsed.quietHours, rawPayload: nil)
     }
 
     func clear() {

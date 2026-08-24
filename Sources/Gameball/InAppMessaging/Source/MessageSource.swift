@@ -17,10 +17,27 @@ struct SyncResult {
     let campaigns: [InAppMessageCampaign]
     let cooldown: TimeInterval
 
+    /// The account's quiet window, or `nil` when it has none or sent one we cannot read.
+    /// Both cases mean the same thing to every caller: do not suppress on time of day.
+    let quietHours: QuietHours?
+
     /// The exact payload the backend sent, retained so the cache stores bytes rather than
     /// objects and can re-parse on read. `nil` when this result *came from* the cache, so
     /// a cache hit can never be written back over itself.
     let rawPayload: Data?
+
+    /// Written out rather than left to the memberwise init so `quietHours` can default.
+    /// Most accounts never configure a window, and every call site that predates the
+    /// feature means `nil` by omission.
+    init(campaigns: [InAppMessageCampaign],
+         cooldown: TimeInterval,
+         quietHours: QuietHours? = nil,
+         rawPayload: Data?) {
+        self.campaigns = campaigns
+        self.cooldown = cooldown
+        self.quietHours = quietHours
+        self.rawPayload = rawPayload
+    }
 
     static let empty = SyncResult(campaigns: [],
                                  cooldown: defaultDisplayCooldown,

@@ -35,9 +35,17 @@ enum MessageParser {
 
         let cooldown = doubleValue(json["cooldownSeconds"]) ?? defaultDisplayCooldown
 
+        // Absent for most accounts. `QuietHours` logs its own reason when a window is
+        // present but unreadable, so there is nothing to report here.
+        let quietHours = QuietHours(json: json["quietHours"])
+        if let quietHours = quietHours, quietHours.enabled {
+            iamLog("quiet hours are active for this account: \(quietHours.diagnosticDescription)")
+        }
+
         guard let messages = json["messages"] as? [[String: Any]] else {
             // Not an error: a customer with no live campaigns gets no `messages` key.
-            return SyncResult(campaigns: [], cooldown: cooldown, rawPayload: data)
+            return SyncResult(campaigns: [], cooldown: cooldown,
+                              quietHours: quietHours, rawPayload: data)
         }
 
         // `responseIndex` is the payload position, assigned before any campaign is
@@ -49,7 +57,8 @@ enum MessageParser {
             }
         }
 
-        return SyncResult(campaigns: campaigns, cooldown: cooldown, rawPayload: data)
+        return SyncResult(campaigns: campaigns, cooldown: cooldown,
+                          quietHours: quietHours, rawPayload: data)
     }
 
     /// Parses one campaign. Returns `nil` when it cannot be evaluated or rendered, always

@@ -120,8 +120,31 @@ final class InAppMessagingServiceTests: XCTestCase {
     }
 
     private func result(_ campaigns: [InAppMessageCampaign],
-                        cooldown: TimeInterval = 0) -> SyncResult {
-        return SyncResult(campaigns: campaigns, cooldown: cooldown, rawPayload: nil)
+                        cooldown: TimeInterval = 0,
+                        quietHours: QuietHours? = nil) -> SyncResult {
+        return SyncResult(campaigns: campaigns, cooldown: cooldown,
+                          quietHours: quietHours, rawPayload: nil)
+    }
+
+    /// The live account's window, which is the one worth testing against.
+    private var nightlyQuietHours: QuietHours {
+        return QuietHours(json: ["enabled": true, "start": "22:00", "end": "08:00"])!
+    }
+
+    /// An instant on a fixed day, named by its UTC wall clock. The default `clock` is
+    /// 22:13 UTC, which is *inside* the nightly window — so every test below sets it.
+    ///
+    /// `dayOffset` matters more than it looks: the window wraps midnight, so "the morning
+    /// after 22:30" is a different day, and reusing the same one sends the clock backwards.
+    /// A backwards clock reads as inside the display floor and holds the message for a
+    /// reason that has nothing to do with quiet hours.
+    private func utc(_ hour: Int, _ minute: Int = 0, dayOffset: Int = 0) -> Date {
+        var components = DateComponents()
+        components.year = 2023; components.month = 11; components.day = 14 + dayOffset
+        components.hour = hour; components.minute = minute
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        return calendar.date(from: components)!
     }
 
     /// Alternates draining the service queue and the main queue until both are quiet.
@@ -736,5 +759,151 @@ final class InAppMessagingServiceTests: XCTestCase {
         XCTAssertNil(store.data(forKey: IAMStoreKey.displayHistory))
         XCTAssertNil(store.data(forKey: IAMStoreKey.campaignCache))
         XCTAssertNil(store.data(forKey: IAMStoreKey.variables))
+    }
+
+    // MARK: - Quiet hours
+
+    func testQuietHoursSuppressSessionStart() {
+        clock = utc(23, 0)
+        let source = StubMessageSource(result: .success(
+            result([makeCampaign(campaignId: 7)], quietHours: nightlyQuietHours)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty,
+                      "nothing displays inside the account's quiet window")
+        XCTAssertTrue(service.deferredMessages.isEmpty,
+                      "suppression is not a deferral: the occurrence is spent, not queued")
+        XCTAssertTrue(analytics.events.isEmpty, "a message that never showed reports nothing")
+    }
+
+    func testOutsideQuietHoursSessionStartPresents() {
+        clock = utc(12, 0)
+        let source = StubMessageSource(result: .success(
+            result([makeCampaign(campaignId: 7)], quietHours: nightlyQuietHours)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+    }
+
+    /// The window ends at 08:00 exclusive, so 08:00 itself is the first minute a message may
+    /// display. An off-by-one here costs a customer their morning message.
+    func testTheFirstMinuteAfterTheWindowPresents() {
+        clock = utc(8, 0)
+        let source = StubMessageSource(result: .success(
+            result([makeCampaign(campaignId: 7)], quietHours: nightlyQuietHours)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+    }
+
+    /// A session that starts before 22:00 holds its campaigns for the whole session, so the
+    /// gate cannot live at fetch time — it has to be re-asked at every display decision.
+    func testASessionThatCrossesIntoTheWindowStopsDisplaying() {
+        clock = utc(21, 30)
+        let campaigns = [makeCampaign(campaignId: 1),
+                         makeCampaign(campaignId: 2,
+                                      trigger: .event(name: "e", filters: []))]
+        let source = StubMessageSource(result: .success(
+            result(campaigns, quietHours: nightlyQuietHours)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "21:30 is outside the window")
+
+        presenter.reportShown()
+        drain(service)
+        presenter.reportDismissed()
+        drain(service)
+
+        // Same session, same held campaigns, thirty-one minutes later.
+        clock = utc(22, 1)
+        service.onCustomEvent(name: "e", properties: [:])
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1,
+                       "the session crossed into quiet hours and must stop displaying")
+    }
+
+    /// The replay path has its own gate, and this is the case that needs it: a message
+    /// deferred at 21:59 and released by a dismissal at 22:01 would otherwise be the one
+    /// thing quiet hours cannot stop.
+    func testADeferredMessageIsHeldInsideQuietHoursAndReleasedAfter() {
+        clock = utc(21, 30)
+        let campaigns = [makeCampaign(campaignId: 1, priority: 9, responseIndex: 0),
+                         makeCampaign(campaignId: 2, priority: 1,
+                                      trigger: .event(name: "e", filters: []),
+                                      responseIndex: 1)]
+        let source = StubMessageSource(result: .success(
+            result(campaigns, quietHours: nightlyQuietHours)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+
+        // Campaign 2 is selected while campaign 1 is up, so it is deferred rather than shown.
+        service.onCustomEvent(name: "e", properties: [:])
+        drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.campaignId }, [2])
+
+        presenter.reportShown()
+        drain(service)
+
+        // The clock crosses into the window *before* the dismissal that would release the
+        // deferral. Ordering is the whole point: released at 21:30 the message is entitled to
+        // display, and a version of this test that dismissed first passed against a gate that
+        // was never consulted.
+        clock = utc(22, 30)
+        presenter.reportDismissed()
+        drain(service)
+
+        // The cooldown is zero, so the display floor cannot be what holds it.
+        service.onDisplayOpportunity()
+        drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1,
+                       "the deferred message slipped through inside quiet hours")
+        XCTAssertEqual(service.deferredMessages.map { $0.campaignId }, [2],
+                       "held, not dropped — the window ends")
+
+        // And once it ends — the next morning, not the same one — the next opportunity
+        // releases it.
+        clock = utc(8, 0, dayOffset: 1)
+        service.onDisplayOpportunity()
+        drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 2)
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// A sync failure falls back to the cache, and the window has to come back with the
+    /// campaigns — otherwise an offline launch at 3am displays everything.
+    func testQuietHoursSurviveACacheFallback() {
+        clock = utc(12, 0)
+        let payload = IAMFixture.data("v4-sync-quiet-hours")
+
+        // First run: a successful sync writes the payload to the cache.
+        let live = StubMessageSource(result: .success(
+            MessageParser.parseSyncResponse(payload)))
+        let first = makeService(source: live)
+        first.start()
+        drain(first)
+        XCTAssertNotNil(store.data(forKey: IAMStoreKey.campaignCache))
+
+        // Second run, inside the window, with a sync that fails. The presenter is shared
+        // across both services, so the assertion is on the delta rather than on emptiness.
+        clock = utc(23, 0)
+        let shownBefore = presenter.presentedMessages.count
+        let offline = StubMessageSource(
+            result: .failure(IAMSyncError.retryable(status: nil)))
+        let second = makeService(source: offline)
+        second.start()
+        drain(second)
+
+        XCTAssertEqual(presenter.presentedMessages.count, shownBefore,
+                       "the cached window must suppress just as the fetched one does")
     }
 }

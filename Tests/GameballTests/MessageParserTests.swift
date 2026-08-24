@@ -510,9 +510,11 @@ final class MessageParserTests: XCTestCase {
         XCTAssertTrue(MessageParser.parseSyncResponse(data).campaigns.isEmpty)
     }
 
+    /// `quietHours` used to be listed here as an example of a key the parser ignores, with
+    /// a `from`/`to` shape the backend never sent. It is now parsed — see QuietHoursTests —
+    /// so the example had to be replaced with keys that really are unread.
     func testUnknownRootKeysAreIgnored() {
         let data = payload([campaignJSON()], root: [
-            "quietHours": ["from": "22:00", "to": "08:00"],
             "campaignOrdering": "priority",
             "somethingInventedNextQuarter": true
         ])

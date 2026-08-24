@@ -52,6 +52,9 @@ final class InAppMessagingService {
     private var started = false
     private var campaigns: [InAppMessageCampaign] = []
     private var cooldown: TimeInterval = defaultDisplayCooldown
+    /// The account's quiet window. `nil` until a sync says otherwise, which is also the
+    /// value that means "never suppress on time of day".
+    private var quietHours: QuietHours?
     /// Newest last. A stack rather than the specification's single slot (divergence D1): a
     /// deferral is cheap to keep, and losing an older message because a newer one arrived first
     /// is a silent drop nobody can debug.
@@ -240,6 +243,7 @@ final class InAppMessagingService {
             // were switched off must stop seeing them.
             campaigns = value.campaigns
             cooldown = value.cooldown
+            quietHours = value.quietHours
             if let payload = value.rawPayload {
                 cache.save(payload: payload, customerId: customerId)
             }
@@ -251,6 +255,7 @@ final class InAppMessagingService {
             if let cached = cache.load(customerId: customerId, now: now()) {
                 campaigns = cached.campaigns
                 cooldown = cached.cooldown
+                quietHours = cached.quietHours
             }
         }
 
@@ -279,6 +284,7 @@ final class InAppMessagingService {
                                             capState: cap.state,
                                             now: now(),
                                             cooldown: cooldown,
+                                            quietHours: quietHours,
                                             isArtworkReady: { [weak self] campaign in
                                                 self?.prefetcher.isReady(campaign) ?? false
                                             }) else {
@@ -413,6 +419,13 @@ final class InAppMessagingService {
             // Kept, not dropped: a message deferred before another displayed must not slip
             // through inside the floor, but it deserves the next opportunity.
             iamLog("holding deferred campaign \(candidate.campaignId): inside the display floor")
+            return
+        }
+        // The replay path needs its own gate. A message deferred at 21:59 and released by a
+        // dismissal at 22:01 would otherwise be the one thing quiet hours cannot stop. Held
+        // rather than dropped, for the same reason as the floor above: the window ends.
+        if let quietHours = quietHours, quietHours.contains(now()) {
+            iamLog("holding deferred campaign \(candidate.campaignId): inside quiet hours")
             return
         }
 

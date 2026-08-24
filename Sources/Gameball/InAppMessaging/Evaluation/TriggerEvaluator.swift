@@ -16,6 +16,7 @@ func selectCampaign(occurrence: TriggerOccurrence,
                     capState: CapState,
                     now: Date,
                     cooldown: TimeInterval = defaultDisplayCooldown,
+                    quietHours: QuietHours? = nil,
                     isArtworkReady: (InAppMessageCampaign) -> Bool) -> InAppMessageCampaign? {
     var eligible: [InAppMessageCampaign] = []
     for candidate in campaigns {
@@ -50,6 +51,17 @@ func selectCampaign(occurrence: TriggerOccurrence,
     // consume the decision.
     if isWithinFloor(capState: capState, now: now, cooldown: cooldown) {
         iamLog("suppressed: inside the \(Int(cooldown))s display floor")
+        return nil
+    }
+
+    // Account-wide, like the floor, and checked in the same place for the same reason: a
+    // campaign that was never eligible must not be the one reported as suppressed.
+    //
+    // Deliberately *not* also checked at fetch time. Campaigns are held for the session,
+    // so a session that starts at 21:59 crosses into the window while running — the gate
+    // has to sit on the display decision, which is the only thing that happens repeatedly.
+    if let quietHours = quietHours, quietHours.contains(now) {
+        iamLog("suppressed: inside quiet hours \(quietHours.diagnosticDescription)")
         return nil
     }
 
