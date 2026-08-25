@@ -32,7 +32,16 @@ final class FullscreenImageMessageView: UIView, InAppMessageView {
         accessibilityIdentifier = GameballAccessibility.surface(for: .fullscreen)
         backgroundColor = message.style.backgroundColor ?? MessageTheme.background
 
-        imageView.contentMode = .scaleAspectFill
+        // Fit, not fill, and for the same reason `ModalImageMessageView` does: in an image-only
+        // campaign the artwork *is* the message, and there is no copy to carry it if the artwork is
+        // cropped. A 1200x628 banner — the ordinary shape of marketing artwork — keeps 24% of
+        // itself under aspect-fill on a portrait screen. Letterboxing against the background is
+        // the lesser cost by a wide margin.
+        //
+        // The text-and-image compositions keep `.scaleAspectFill` deliberately: there the artwork
+        // is decorative, the copy carries the message, and letterboxing every hero image would
+        // put background bars on the common case to protect the rare one.
+        imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = true
         imageView.isAccessibilityElement = true
         imageView.accessibilityTraits = UIAccessibilityTraits.image

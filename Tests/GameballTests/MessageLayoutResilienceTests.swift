@@ -152,6 +152,142 @@ final class MessageLayoutResilienceTests: XCTestCase {
         XCTAssertLessThanOrEqual(view.bounds.height, smallScreen.height + 0.5)
     }
 
+    // MARK: - Artwork must not be cropped when the artwork *is* the message
+
+    private func imageViews(in view: UIView) -> [UIImageView] {
+        var found: [UIImageView] = []
+        for subview in view.subviews {
+            if let image = subview as? UIImageView { found.append(image) }
+            found.append(contentsOf: imageViews(in: subview))
+        }
+        return found
+    }
+
+    /// A solid image of a given size, so the aspect ratio under test is the one intended rather
+    /// than whatever a fixture happens to be.
+    private func image(width: CGFloat, height: CGFloat) -> UIImage {
+        let size = CGSize(width: width, height: height)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.systemTeal.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+        }
+    }
+
+    /// How much of the asset survives, given the mode the SDK chose and the bounds it laid out.
+    /// `1.0` is the whole image; `0.24` means three quarters of it was cropped away.
+    private func visibleFraction(of image: UIImage, in view: UIImageView) -> CGFloat {
+        let bounds = view.bounds.size
+        let asset = image.size
+        guard bounds.width > 0, bounds.height > 0, asset.width > 0, asset.height > 0 else { return 0 }
+        switch view.contentMode {
+        case .scaleAspectFit:
+            return 1
+        case .scaleAspectFill:
+            let scale = max(bounds.width / asset.width, bounds.height / asset.height)
+            let visible = CGSize(width: min(asset.width, bounds.width / scale),
+                                 height: min(asset.height, bounds.height / scale))
+            return (visible.width * visible.height) / (asset.width * asset.height)
+        default:
+            return 1
+        }
+    }
+
+    /// The inconsistency at the heart of IAM-8. `ModalImageMessageView` and
+    /// `FullscreenImageMessageView` render the same thing — a campaign whose artwork carries the
+    /// whole message, with no copy to fall back on — and they disagreed: fit in one, fill in the
+    /// other. The same asset showed completely as a modal and cropped as a fullscreen.
+    func testTheTwoImageOnlyViewsAgreeOnHowToScale() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+        let fullscreen = FullscreenImageMessageView(
+            message: makeMessage(type: .fullscreen, layout: .imageOnly),
+            attributes: .defaults, image: image(width: 1200, height: 628),
+            icon: nil, coordinator: nil)
+        host.install(fullscreen)
+
+        let modalHost = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+        let modal = ModalImageMessageView(
+            message: makeMessage(type: .modal, layout: .imageOnly),
+            attributes: .defaults, image: image(width: 1200, height: 628),
+            icon: nil, coordinator: nil)
+        modalHost.install(modal)
+
+        guard let fullscreenImage = imageViews(in: fullscreen).first,
+              let modalImage = imageViews(in: modal).first else {
+            return XCTFail("expected an image view in each")
+        }
+        XCTAssertEqual(fullscreenImage.contentMode, modalImage.contentMode,
+                       "the same campaign asset must scale the same way in both image-only views")
+    }
+
+    /// And the consequence, measured. A 1200x628 banner — the ordinary shape of marketing artwork —
+    /// in a portrait fullscreen keeps about a quarter of itself under aspect-fill. Anything baked
+    /// into the asset, which for an image-only campaign is the entire message, is gone.
+    func testAWideAssetIsNotCroppedAwayInAnImageOnlyFullscreen() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+        let asset = image(width: 1200, height: 628)
+        let view = FullscreenImageMessageView(
+            message: makeMessage(type: .fullscreen, layout: .imageOnly),
+            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
+        host.install(view)
+
+        guard let imageView = imageViews(in: view).first else {
+            return XCTFail("no image view")
+        }
+        let visible = visibleFraction(of: asset, in: imageView)
+        XCTAssertGreaterThan(visible, 0.95,
+                             "only \(Int(visible * 100))% of the asset is visible; an image-only "
+                           + "campaign has no copy to carry the message instead")
+    }
+
+    /// A tall asset in a wide-ish container is the same defect mirrored, and a fix that special-cased
+    /// landscape assets would pass the test above and fail this one.
+    func testATallAssetIsNotCroppedAwayEither() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 400))
+        let asset = image(width: 400, height: 1600)
+        let view = FullscreenImageMessageView(
+            message: makeMessage(type: .fullscreen, layout: .imageOnly),
+            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
+        host.install(view)
+
+        guard let imageView = imageViews(in: view).first else {
+            return XCTFail("no image view")
+        }
+        XCTAssertGreaterThan(visibleFraction(of: asset, in: imageView), 0.95)
+    }
+
+    /// The modal already behaved. Asserted so a change to the shared code cannot regress it.
+    func testTheImageOnlyModalShowsTheWholeAsset() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+        let asset = image(width: 1200, height: 628)
+        let view = ModalImageMessageView(
+            message: makeMessage(type: .modal, layout: .imageOnly),
+            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
+        host.install(view)
+
+        guard let imageView = imageViews(in: view).first else {
+            return XCTFail("no image view")
+        }
+        XCTAssertGreaterThan(visibleFraction(of: asset, in: imageView), 0.95)
+    }
+
+    /// The deliberate exception, asserted so nobody "fixes" it by sweeping every view at once. A
+    /// slideup icon is a small square thumbnail: filling its box is correct, and fitting would
+    /// letterbox a 44pt icon with dead space.
+    func testTheSlideupIconDeliberatelyFillsItsBox() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+        let view = SlideupMessageView(
+            message: makeMessage(type: .slideup, iconURL: URL(string: "https://e.com/i.png")),
+            attributes: .defaults, image: nil, icon: image(width: 200, height: 200),
+            coordinator: nil)
+        host.install(view)
+
+        guard let imageView = imageViews(in: view).first else {
+            return XCTFail("no icon view")
+        }
+        XCTAssertEqual(imageView.contentMode, .scaleAspectFill,
+                       "an icon fills its box on purpose; this is not the IAM-8 case")
+    }
+
     // MARK: - Buttons are sized to their content, not to the leftover space
 
     /// Finds every `MessageButtonView` under a view, at any depth.
