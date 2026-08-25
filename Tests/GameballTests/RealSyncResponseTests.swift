@@ -17,6 +17,13 @@ final class RealSyncResponseTests: XCTestCase {
         return MessageParser.parseSyncResponse(IAMFixture.data("v4-sync-response"))
     }
 
+    /// The 2026-08-24 capture, taken from moaty-survey-2. Kept alongside the older one rather
+    /// than replacing it: the two payloads differ in ways worth keeping under test, and this is
+    /// the one that carries a quiet window and a priority tie.
+    private func parsedAugust() -> SyncResult {
+        return MessageParser.parseSyncResponse(IAMFixture.data("v4-sync-quiet-hours"))
+    }
+
     func testLivePayloadYieldsCampaigns() {
         let result = parsed()
         XCTAssertFalse(result.campaigns.isEmpty, "the captured payload must produce campaigns")
@@ -144,5 +151,41 @@ final class RealSyncResponseTests: XCTestCase {
             XCTAssertNil(campaign.expiresAt)
             XCTAssertFalse(campaign.hasExpired(at: Date()))
         }
+    }
+
+    // MARK: - The tie-break, against real data
+
+    /// The captured payload contains a genuine tie: campaigns 2041 and 2046 are both
+    /// session_start at priority 9, and 2041 comes first. Five of the ten live identities are
+    /// in this state, so this is the ordinary case rather than a contrived one.
+    ///
+    /// The contract is that the backend has already ordered `messages` the way the campaigns are
+    /// configured, so a tie is settled by payload position. Asserting it here rather than only in
+    /// `TriggerEvaluatorTests` is the point: those tests build their own campaigns and could agree
+    /// with each other while disagreeing with the wire.
+    func testAPriorityTieIsSettledByPayloadOrder() {
+        let campaigns = parsedAugust().campaigns
+        let sessionStart = campaigns.filter {
+            if case .sessionStart = $0.trigger { return true }
+            return false
+        }
+        guard let top = sessionStart.map({ $0.priority }).max() else {
+            return XCTFail("the capture has no session_start campaign")
+        }
+        let tied = sessionStart.filter { $0.priority == top }
+        XCTAssertGreaterThan(tied.count, 1,
+                             "this test is only meaningful while the capture contains a tie")
+
+        let winner = selectCampaign(occurrence: .sessionStart,
+                                    campaigns: campaigns,
+                                    capState: .empty,
+                                    now: Date(timeIntervalSince1970: 1_700_000_000),
+                                    cooldown: 0,
+                                    isArtworkReady: { _ in true })
+
+        let expected = tied.min { $0.responseIndex < $1.responseIndex }
+        XCTAssertEqual(winner?.campaignId, expected?.campaignId)
+        XCTAssertEqual(winner?.campaignId, 2041,
+                       "2041 and 2046 tie at priority 9; 2041 is first in the payload")
     }
 }
