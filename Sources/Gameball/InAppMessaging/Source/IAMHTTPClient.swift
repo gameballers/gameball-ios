@@ -119,14 +119,31 @@ final class IAMHTTPClient: IAMTransport {
 
         session.dataTask(with: request) { data, response, error in
             completion(IAMHTTPClient.outcome(data: data, response: response,
-                                             error: error, path: path))
+                                             error: error, path: path, url: url))
         }.resume()
+    }
+
+    /// Whether a 404 body says the customer is not there *yet*.
+    ///
+    /// The backend answers `{"code":7000,"type":"CUSTOMER_ERROR"}` while a customer is still
+    /// being created, and the SDK's own registration call can still be in flight when sync runs.
+    /// Both markers are checked so a rename of either does not silently turn a transient failure
+    /// back into a permanent one.
+    private static func namesAMissingCustomer(_ data: Data?) -> Bool {
+        guard let data = data, !data.isEmpty,
+              let root = (try? JSONSerialization.jsonObject(with: data, options: []))
+                as? [String: Any] else { return false }
+        if let type = root["type"] as? String,
+           type.uppercased() == "CUSTOMER_ERROR" { return true }
+        if let code = root["code"] as? Int, code == 7000 { return true }
+        return false
     }
 
     private static func outcome(data: Data?,
                                 response: URLResponse?,
                                 error: Error?,
-                                path: String) -> IAMHTTPOutcome {
+                                path: String,
+                                url: URL) -> IAMHTTPOutcome {
         if let error = error {
             iamLog("\(path) failed in transport: \(error.localizedDescription)")
             return .retryableFailure(status: nil)
@@ -148,11 +165,26 @@ final class IAMHTTPClient: IAMTransport {
             return .retryableFailure(status: status)
         }
 
-        // A bodyless 404 means the endpoint is not deployed for this tenant, which is a
-        // different conversation from a 404 that came back with an error document.
+        // Two kinds of 404, and they need opposite handling.
+        //
+        // With a `CUSTOMER_ERROR` document the customer is not there *yet* — the SDK's own
+        // registration call can still be in flight when sync runs — and asking again is exactly
+        // what fixes it.
+        if status == 404 && namesAMissingCustomer(data) {
+            iamLog("\(path) returned 404: the customer does not exist yet, which usually means "
+                 + "registration has not landed. Retrying.")
+            return .retryableFailure(status: status)
+        }
+
+        // With no body the request never reached a route that exists. Naming one cause here was
+        // worse than naming none: the endpoints *are* deployed, so the guess sent readers looking
+        // in the wrong place, and the URL — the one fact that separates the two causes, and the
+        // one the SDK knows and the reader may not — was withheld.
         if status == 404 && (data?.isEmpty ?? true) {
-            iamLog("\(path) returned 404 with no body — the in-app messaging endpoints are "
-                 + "most likely not deployed for this account")
+            iamLog("\(url) returned 404 with no body. Either the in-app messaging endpoints are "
+                 + "not deployed on that host, or the SDK is pointed at the wrong environment — "
+                 + "check that GameballConfig.apiPrefix matches the environment the API key "
+                 + "belongs to.")
         } else {
             iamLog("\(path) returned \(status); not retrying")
         }

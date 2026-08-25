@@ -190,6 +190,73 @@ final class IAMHTTPClientTests: XCTestCase {
         XCTAssertNil(status)
     }
 
+    // MARK: - The two kinds of 404
+
+    /// The backend answers `404` with a `CUSTOMER_ERROR` document while a customer is still
+    /// being created — and the SDK's own registration call can still be in flight when sync
+    /// runs. Asking again is exactly what fixes it, so it is retryable.
+    func testA404ForAMissingCustomerIsRetryable() {
+        let body = Data("""
+        {"code":7000,"type":"CUSTOMER_ERROR","message":"customer does not exist"}
+        """.utf8)
+        IAMHTTPStub.replies = [.status(404, body: body)]
+        guard case .some(.retryableFailure(let status)) = post(makeClient()) else {
+            return XCTFail("a customer-not-yet-created 404 should be retryable")
+        }
+        XCTAssertEqual(status, 404)
+    }
+
+    /// Either marker is enough. Keying on both means a rename of one does not silently turn a
+    /// transient failure back into a permanent one.
+    func testEitherCustomerErrorMarkerIsEnough() {
+        for body in ["{\"type\":\"CUSTOMER_ERROR\"}", "{\"code\":7000}"] {
+            IAMHTTPStub.reset()
+            IAMHTTPStub.replies = [.status(404, body: Data(body.utf8))]
+            guard case .some(.retryableFailure) = post(makeClient()) else {
+                XCTFail("should be retryable: \(body)")
+                continue
+            }
+        }
+    }
+
+    /// The other kind. No body means the request never reached a route that exists — the
+    /// endpoint is not deployed on that host, or the SDK is pointed at the wrong one. Neither
+    /// is fixed by asking again.
+    func testABodylessA404IsPermanent() {
+        IAMHTTPStub.replies = [.status(404, body: Data())]
+        guard case .some(.permanentFailure(let status)) = post(makeClient()) else {
+            return XCTFail("a bodyless 404 should stay permanent")
+        }
+        XCTAssertEqual(status, 404)
+    }
+
+    /// Conservative on purpose: only a 404 that names the customer problem is retried. Some
+    /// other error document is a real refusal and retrying it is just cost.
+    func testA404WithAnUnrelatedBodyIsPermanent() {
+        IAMHTTPStub.replies = [.status(404, body: Data("{\"type\":\"PLAN_ERROR\"}".utf8))]
+        guard case .some(.permanentFailure) = post(makeClient()) else {
+            return XCTFail("an unrelated 404 should be permanent")
+        }
+    }
+
+    /// The diagnostic is read by someone who is already stuck, so it must not name one cause of
+    /// two — and it must carry the URL, which is the fact that distinguishes them and the one
+    /// thing the SDK knows that the reader may not.
+    func testTheBodylessA404DiagnosticNamesBothCausesAndTheURL() {
+        IAMHTTPStub.replies = [.status(404, body: Data())]
+        let logs = capturingIAMLog { _ = post(makeClient()) }
+        let line = logs.first { $0.contains("404") } ?? ""
+
+        XCTAssertTrue(line.contains("https://api.gameball.co"),
+                      "the resolved URL is missing: \(line)")
+        XCTAssertTrue(line.lowercased().contains("deployed"),
+                      "the not-deployed cause is missing: \(line)")
+        XCTAssertTrue(line.lowercased().contains("environment")
+                        || line.lowercased().contains("wrong host")
+                        || line.lowercased().contains("apiprefix"),
+                      "the wrong-host cause is missing: \(line)")
+    }
+
     /// A 404 with no body means the endpoint is not deployed for this tenant, which is a
     /// different conversation from a 404 that came back with an error document.
     func test404WithEmptyBodyIsLoggedAsNotDeployed() {
