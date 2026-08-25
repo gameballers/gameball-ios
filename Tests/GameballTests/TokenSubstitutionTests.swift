@@ -20,6 +20,40 @@ final class TokenSubstitutionTests: XCTestCase {
 
     /// Blanking it would delete copy a marketer wrote; leaving it at least makes the
     /// misconfiguration visible.
+    /// An empty value is a value, and it substitutes as one. The result reads badly — "Welcome
+    /// {player_name}!" becomes "Welcome !" — and that is the agreed contract across every
+    /// Gameball SDK, not a defect: the backend returns "" when a customer has no name on file,
+    /// and supplying a default belongs in the campaign, not in the client.
+    ///
+    /// Pinned by a test because it is the kind of behaviour a future reader "fixes" on sight.
+    /// Changing it here without changing it in the Flutter, Android and Web SDKs is what makes
+    /// the same campaign render differently per platform.
+    func testEmptyValueSubstitutesAsEmpty() {
+        XCTAssertEqual(
+            TokenSubstitution.substitute("Welcome {player_name}!", values: ["player_name": ""]),
+            "Welcome !")
+        XCTAssertEqual(
+            TokenSubstitution.substitute("Hi {player_name}, you have {points} points",
+                                         values: ["player_name": "", "points": "0"]),
+            "Hi , you have 0 points")
+    }
+
+    /// The distinction the rule turns on: *absent* leaves the placeholder, *empty* removes it.
+    /// Collapsing the two in either direction is wrong — an absent token means the SDK could not
+    /// resolve it, an empty one means the backend resolved it to nothing.
+    func testEmptyIsNotTreatedAsAbsent() {
+        let empty = TokenSubstitution.substitute("Welcome {name}!", values: ["name": ""])
+        let absent = TokenSubstitution.substitute("Welcome {name}!", values: [:])
+        XCTAssertEqual(empty, "Welcome !")
+        XCTAssertEqual(absent, "Welcome {name}!")
+        XCTAssertNotEqual(empty, absent)
+    }
+
+    /// Whitespace is content, not emptiness. Trimming here would be the SDK editing copy.
+    func testWhitespaceValueIsInsertedAsGiven() {
+        XCTAssertEqual(TokenSubstitution.substitute("[{x}]", values: ["x": "  "]), "[  ]")
+    }
+
     func testUnknownTokenIsLeftExactlyAsWritten() {
         XCTAssertEqual(TokenSubstitution.substitute("Hello {mystery}", values: values),
                        "Hello {mystery}")

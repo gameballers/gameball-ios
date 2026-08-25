@@ -906,4 +906,126 @@ final class InAppMessagingServiceTests: XCTestCase {
         XCTAssertEqual(presenter.presentedMessages.count, shownBefore,
                        "the cached window must suppress just as the fetched one does")
     }
+
+    // MARK: - Personalisation is fetched per trigger
+
+    private func variableFetches() -> Int {
+        return variablesTransport.allPaths.filter { $0.contains("variables") }.count
+    }
+
+    private func personalisedCampaign(_ id: Int = 1,
+                                      trigger: MessageTrigger = .sessionStart)
+        -> InAppMessageCampaign {
+        return makeCampaign(campaignId: id, trigger: trigger,
+                            message: makeMessage(id: "\(id)", type: .modal,
+                                                 body: "Hi {player_name}"))
+    }
+
+    private func variablePayload(_ name: String) -> Data {
+        return try! JSONSerialization.data(withJSONObject: ["variables": ["player_name": name]])
+    }
+
+    /// Substitution moved from the backend into the SDK when the variables endpoint deployed, and
+    /// the contract that came with it is that the endpoint is asked **per trigger**. A campaign
+    /// with no token still asks nothing — that part is unchanged.
+    func testASessionStartFetchesVariables() {
+        variablesTransport.script([.success(variablePayload("Ada"))])
+        let source = StubMessageSource(result: .success(result([personalisedCampaign()])))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(variableFetches(), 1)
+        XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi Ada")
+    }
+
+    /// The gap this closes. A 30s session timeout sits inside a 60s value cache, so a customer who
+    /// backgrounds the app for 31 seconds gets a *new session* served from *old values* — and
+    /// anything that happened in between, including points earned on another channel, is invisible.
+    func testANewSessionRefetchesVariables() {
+        variablesTransport.script([.success(variablePayload("Ada")),
+                                   .success(variablePayload("Grace"))])
+        let campaigns = [personalisedCampaign(1)]
+        let source = StubMessageSource(result: .success(result(campaigns)))
+        let service = makeService(source: source, sessionTimeout: 30)
+        service.start()
+        drain(service)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.body }, ["Hi Ada"])
+
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        // Backgrounded past the session timeout but inside the value cache's TTL.
+        service.onBackground(); drain(service)
+        clock = clock.addingTimeInterval(31)
+        service.onForeground(); drain(service)
+
+        XCTAssertEqual(variableFetches(), 2,
+                       "a new session must ask the endpoint again")
+        XCTAssertEqual(presenter.presentedMessages.map { $0.body }, ["Hi Ada", "Hi Grace"],
+                       "the second session served stale values")
+    }
+
+    /// A warm resume is not a new session, so it must not spend a request. The distinction is the
+    /// whole reason the session timeout exists.
+    func testAWarmResumeDoesNotRefetchVariables() {
+        variablesTransport.script([.success(variablePayload("Ada")),
+                                   .success(variablePayload("Grace"))])
+        let source = StubMessageSource(result: .success(result([personalisedCampaign()])))
+        let service = makeService(source: source, sessionTimeout: 30)
+        service.start()
+        drain(service)
+        let afterFirst = variableFetches()
+
+        service.onBackground(); drain(service)
+        clock = clock.addingTimeInterval(5)      // well inside the timeout
+        service.onForeground(); drain(service)
+
+        XCTAssertEqual(variableFetches(), afterFirst)
+    }
+
+    /// Already true before this change, and asserted so it stays true: values can change between
+    /// two events in one session, which is the case the whole feature exists for.
+    func testAnEventRefetchesVariables() {
+        variablesTransport.script([.success(variablePayload("Ada")),
+                                   .success(variablePayload("Grace"))])
+        let campaigns = [personalisedCampaign(1),
+                         personalisedCampaign(2, trigger: .event(name: "e", filters: []))]
+        let source = StubMessageSource(result: .success(result(campaigns)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        service.onCustomEvent(name: "e", properties: [:])
+        drain(service)
+
+        XCTAssertEqual(variableFetches(), 2)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.body }, ["Hi Ada", "Hi Grace"])
+    }
+
+    /// The cheap path stays cheap: no token, no request, whatever the trigger.
+    func testACampaignWithoutTokensNeverAsks() {
+        let source = StubMessageSource(result: .success(result([makeCampaign(campaignId: 1)])))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+        XCTAssertEqual(variableFetches(), 0)
+    }
+
+    /// An empty value is substituted as empty, end to end. The unit-level contract is in
+    /// TokenSubstitutionTests; this is the same rule asserted through the service, because that is
+    /// where a well-meaning change would most likely reintroduce a fallback.
+    func testAnEmptyValueReachesTheMessageAsEmpty() {
+        variablesTransport.script([.success(variablePayload(""))])
+        let source = StubMessageSource(result: .success(result([personalisedCampaign()])))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi ")
+    }
 }

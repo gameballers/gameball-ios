@@ -11,8 +11,11 @@ import Foundation
 /// — resolves to whatever values are already held, which may be none. The caller's correct
 /// response to all of them is identical, so there is nothing worth distinguishing.
 ///
-/// The endpoint is not deployed as of 2026-08-18 and answers 404 with an empty body. This is
-/// built to do nothing gracefully until it is.
+/// Deployed since 2026-08-24. It answers 200 with a `variables` object of pre-formatted strings,
+/// and returns `""` for a field the customer has not set — `player_name` for a customer with no
+/// name on file. An empty value is substituted as empty and is **not** a missing value: supplying
+/// a default belongs in the campaign, and the behaviour matches the other Gameball SDKs. See
+/// `TokenSubstitutionTests.testEmptyValueSubstitutesAsEmpty`.
 final class VariableSource {
 
     private let transport: IAMTransport
@@ -65,8 +68,13 @@ final class VariableSource {
         }
     }
 
-    /// Called on every event and purchase, never on session start: a balance can change between
-    /// two events within one session, but nothing can have changed before the session began.
+    /// Called at every trigger — session start, event and purchase alike — because substitution
+    /// moved from the backend into the SDK and the contract that came with it is that the endpoint
+    /// answers for the moment the message displays.
+    ///
+    /// The remaining TTL is not dead weight: it collapses the several lookups a single trigger can
+    /// make when more than one campaign is evaluated, without letting a value outlive the trigger
+    /// that asked for it.
     func forgetCachedValues() {
         queue.async { self.fetchedAt = nil }
     }

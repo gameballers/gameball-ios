@@ -197,8 +197,8 @@ final class InAppMessagingService {
     func onCustomEvent(name: String, properties: [String: Any]) {
         perform {
             guard self.started else { return }
-            // Values can change between two events in a session, so the cache is dropped here —
-            // but never on session start, where nothing can have changed yet.
+            // Values can change between two events in a session, so the cache is dropped here
+            // as well as at the start of every session.
             self.variables.forgetCachedValues()
             self.evaluate(.event(name: name, properties: properties))
         }
@@ -226,6 +226,15 @@ final class InAppMessagingService {
 
     /// Must run on `queue`.
     private func beginSession() {
+        // Personalisation is resolved per trigger, and a new session is a trigger. Dropping the
+        // cache here matters for exactly one case, which is also the common one: a customer who
+        // backgrounds the app for longer than the session timeout and comes back. The session
+        // timeout is 30s and the value cache lives 60s, so without this the second session is
+        // served from the first session's values — and anything earned in between, including on
+        // another channel, is invisible. On a cold launch there is nothing cached and this costs
+        // nothing.
+        variables.forgetCachedValues()
+
         // Issued first so the request is in flight while local state is read: the stored history
         // gates the decision, not the request.
         source.fetch(customerId: customerId) { [weak self] result in

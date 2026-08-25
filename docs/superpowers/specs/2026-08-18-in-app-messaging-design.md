@@ -282,8 +282,16 @@ every event behind it down until the ceiling rotates it out.
 
 ## 7. Personalisation
 
-Currently inert — the backend substitutes at sync, so no live message carries a token. Built anyway;
-it activates by itself.
+**Updated 2026-08-25.** This section was written when the backend substituted at sync and no live
+message carried a token, and it described the module as "currently inert, built anyway; it activates
+by itself". It has since activated. The variables endpoint deployed on 2026-08-24, sync stopped
+substituting, and five of the fifteen live campaigns now ship raw tokens — so substitution is the
+SDK's job and the endpoint is asked **once per trigger**, not once per session.
+
+A value the backend returns as `""` is substituted as empty. That is deliberate and shared across
+every Gameball SDK: `Welcome {player_name}!` renders as `Welcome !` for a customer with no name on
+file. Supplying a default belongs in the campaign, not in the client — a later enhancement, not a
+client-side workaround.
 
 Tokens are `{name}` — single braces, `[A-Za-z_][A-Za-z0-9_]*`, matched strictly so `{ spaced }`,
 `{2}` and a lone `{` are not tokens. A cheap `{` scan precedes the regex, so a message with no token
@@ -471,7 +479,7 @@ follow its platform.
 |---|---|---|
 | O22 | What to do with a token still unresolved after substitution. Port spec §8.4 says do not decide per SDK. Assumption: match Flutter's fail-open (display raw text), the only choice that avoids the divergence §8.4 warns about. Needs product sign-off. | nothing now |
 | O19 | The V4 endpoints are on alpha only; production returns a bare 404. **An alpha API key and base URL are needed** to verify the wire contract. Phases 1–4 build against the captured fixture and a stub source. | phase 2 verification |
-| O13/O21 | Sync will stop substituting variables. If that lands before the variables endpoint deploys, every personalised campaign shows raw braces. | nothing in our control |
+| O13/O21 | Sync will stop substituting variables. If that lands before the variables endpoint deploys, every personalised campaign shows raw braces. | **Occurred 2026-08-24, without the gap** — the endpoint deployed alongside, so tokens resolve. See §7. |
 | O20 | `quietHours` model still to come. A message caught by a window must be **suppressed, not deferred** — "retry when it ends" would never fire from an in-memory stack. | future work |
 | — | D1/D2 above: confirm the divergences, or hold Flutter parity. | phase 3 |
 
