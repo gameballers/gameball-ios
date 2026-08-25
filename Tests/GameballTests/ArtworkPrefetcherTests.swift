@@ -264,6 +264,44 @@ final class ArtworkPrefetcherTests: XCTestCase {
         XCTAssertNil(prefetcher.image(for: URL(string: "https://example.com/hero.png")!))
     }
 
+    /// The property that made the `failed` set unnecessary, and which was an untested inference
+    /// when IAM-7 was filed: a URL that failed is retried on the **next warm**, with no reset in
+    /// between. `load` consults the image cache only, and a failure puts nothing in it.
+    ///
+    /// This is the behaviour the module wants — a failure is more often the network than the
+    /// asset — so recording failures in order to skip them later would have contradicted it.
+    func testAFailedURLIsRetriedOnTheNextWarm() {
+        let target = campaign(1, image: "https://example.com/flaky.png")
+        let prefetcher = makePrefetcher()
+
+        warm(prefetcher, [target])
+        XCTAssertFalse(prefetcher.isReady(target), "no reply was set, so the load fails")
+        let afterFirst = IAMImageStub.requestedURLs.filter { $0.hasSuffix("flaky.png") }.count
+        XCTAssertEqual(afterFirst, 1)
+
+        // Same prefetcher, no reset. The asset is now available.
+        IAMImageStub.set(.init(data: png), for: "https://example.com/flaky.png")
+        warm(prefetcher, [target])
+
+        XCTAssertTrue(prefetcher.isReady(target), "the retry must be allowed to succeed")
+        XCTAssertEqual(IAMImageStub.requestedURLs.filter { $0.hasSuffix("flaky.png") }.count, 2,
+                       "the second warm must actually re-request it")
+    }
+
+    /// The complement: a URL that succeeded is *not* re-requested on the next warm, so the retry
+    /// above is a property of failure rather than the cache being ignored altogether.
+    func testASucceededURLIsNotRefetchedOnTheNextWarm() {
+        IAMImageStub.set(.init(data: png), for: "https://example.com/hero.png")
+        let target = campaign(1, image: "https://example.com/hero.png")
+        let prefetcher = makePrefetcher()
+
+        warm(prefetcher, [target])
+        warm(prefetcher, [target])
+
+        XCTAssertEqual(IAMImageStub.requestedURLs.filter { $0.hasSuffix("hero.png") }.count, 1)
+        XCTAssertTrue(prefetcher.isReady(target))
+    }
+
     /// A previously failed URL is retried after a reset — the failure may have been the
     /// network rather than the asset.
     func testResetAllowsAFailedURLToBeRetried() {

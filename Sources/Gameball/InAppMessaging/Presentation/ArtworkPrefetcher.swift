@@ -14,13 +14,18 @@ import UIKit
 /// Readiness is defined as "every URL this campaign needs has a decoded image". A failed load,
 /// a load that never happened, and bytes that are not an image all read the same way — not
 /// ready — because the only sensible response to all three is to skip the campaign.
+///
+/// Nothing records *which* URLs failed, deliberately. There used to be a `failed` set, written on
+/// every failure and read by nothing: the only thing such a record could be used for is skipping a
+/// URL that failed before, and that is the opposite of what this wants — a failure is more often
+/// the network than the asset, so the next warm should try again. `load` consults the image cache
+/// alone, which gives that behaviour for free and has no second source of truth to keep in step.
 final class ArtworkPrefetcher {
     private let session: URLSession
     private let timeout: TimeInterval
 
     private let queue = DispatchQueue(label: "co.gameball.inappmessaging.artwork")
     private let cache = NSCache<NSURL, UIImage>()
-    private var failed: Set<URL> = []
 
     init(session: URLSession = .shared, timeout: TimeInterval = 5) {
         self.session = session
@@ -93,13 +98,9 @@ final class ArtworkPrefetcher {
         return queue.sync { cache.object(forKey: url as NSURL) }
     }
 
-    /// Clears readiness so the next sync re-evaluates. Previously failed URLs are retried —
-    /// the failure may have been the network rather than the asset.
+    /// Clears readiness so the next sync re-evaluates.
     func reset() {
-        queue.sync {
-            cache.removeAllObjects()
-            failed.removeAll()
-        }
+        queue.sync { cache.removeAllObjects() }
     }
 
     // MARK: - Internals
@@ -126,22 +127,17 @@ final class ArtworkPrefetcher {
 
             if let error = error {
                 iamLog("artwork failed to load from \(url): \(error.localizedDescription)")
-                self.queue.sync { _ = self.failed.insert(url) }
                 completion()
                 return
             }
 
             guard let data = data, let image = UIImage(data: data) else {
                 iamLog("artwork at \(url) is not a decodable image")
-                self.queue.sync { _ = self.failed.insert(url) }
                 completion()
                 return
             }
 
-            self.queue.sync {
-                self.cache.setObject(image, forKey: url as NSURL)
-                self.failed.remove(url)
-            }
+            self.queue.sync { self.cache.setObject(image, forKey: url as NSURL) }
             completion()
         }.resume()
     }
