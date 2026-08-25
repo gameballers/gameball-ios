@@ -37,6 +37,18 @@ final class MessageButtonView: UIButton {
         translatesAutoresizingMaskIntoConstraints = false
         heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
 
+        // A call to action is sized by its label. Without this it is sized by whatever is left
+        // over: in the fullscreen composition the content stack is pinned to both the top and
+        // the bottom of the screen, and the button was the view that absorbed the difference —
+        // 69% of a 667pt screen with no artwork, 26% with.
+        //
+        // It has to be set *here* rather than on the enclosing stack. Content hugging only
+        // produces a constraint where there is an intrinsic size to hug, and `UIStackView` and
+        // `UIScrollView` have none — so hugging set on either of those is silently inert. This
+        // button has an intrinsic height, so `.required` here becomes a real `height <=
+        // intrinsic` that a parent's fill distribution cannot override.
+        setContentHuggingPriority(.required, for: .vertical)
+
         addTarget(self, action: #selector(handleTap), for: .touchUpInside)
     }
 

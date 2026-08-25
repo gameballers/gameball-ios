@@ -152,6 +152,156 @@ final class MessageLayoutResilienceTests: XCTestCase {
         XCTAssertLessThanOrEqual(view.bounds.height, smallScreen.height + 0.5)
     }
 
+    // MARK: - Buttons are sized to their content, not to the leftover space
+
+    /// Finds every `MessageButtonView` under a view, at any depth.
+    private func buttonViews(in view: UIView) -> [MessageButtonView] {
+        var found: [MessageButtonView] = []
+        for subview in view.subviews {
+            if let button = subview as? MessageButtonView { found.append(button) }
+            found.append(contentsOf: buttonViews(in: subview))
+        }
+        return found
+    }
+
+    private func fullscreen(buttons: [GameballMessageButton],
+                            body: String? = "Body",
+                            size: CGSize,
+                            contentSize: UIContentSizeCategory? = nil)
+        -> (IAMLayoutHost, FullscreenMessageView) {
+        let host = IAMLayoutHost(size: size, contentSize: contentSize)
+        let view = FullscreenMessageView(message: makeMessage(type: .fullscreen,
+                                                              body: body,
+                                                              buttons: buttons),
+                                         attributes: .defaults,
+                                         image: nil,
+                                         icon: nil,
+                                         coordinator: nil)
+        host.install(view)
+        return (host, view)
+    }
+
+    /// The defect: the fullscreen content stack is pinned to both the top and the bottom of the
+    /// screen, so something has to absorb the leftover height. The copy block pins its own height
+    /// to its content at priority 250 and will not grow, and the button stack has no intrinsic
+    /// size at all — so the buttons absorbed the difference. 465pt of a 667pt screen here, and
+    /// 26% on a device, where artwork had already taken its share.
+    ///
+    /// **One button, specifically.** With two arranged buttons the stack resolves to its content
+    /// height on its own, which is why the sibling two-button test below passes with or without
+    /// the fix. The live campaign that showed this — 2055, "Track my order" — has exactly one.
+    ///
+    /// A single-line button is about 47pt against a 667pt screen: 7%. The bound is 15%, loose
+    /// enough to survive a font change and tight enough to catch a stretch.
+    func testFullscreenButtonIsSizedToItsContent() {
+        let (_, view) = fullscreen(buttons: [makeButton()], size: CGSize(width: 375, height: 667))
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the fullscreen view has no button")
+        }
+        let share = button.bounds.height / view.bounds.height
+        XCTAssertLessThan(share, 0.15,
+                          "button is \(Int(share * 100))% of the screen "
+                        + "(\(Int(button.bounds.height))pt of \(Int(view.bounds.height))pt)")
+    }
+
+    /// A small screen has less slack to hand out, so a version of this that only checked a large
+    /// screen could pass while the bug was still there.
+    func testFullscreenButtonIsSizedToItsContentOnASmallScreen() {
+        let (_, view) = fullscreen(buttons: [makeButton()], size: smallScreen)
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the fullscreen view has no button")
+        }
+        XCTAssertLessThan(button.bounds.height / view.bounds.height, 0.15)
+    }
+
+    /// Short copy is the worst case: the less room the text needs, the more is left to absorb.
+    func testShortCopyDoesNotInflateTheButton() {
+        let (_, view) = fullscreen(buttons: [makeButton()], body: "Hi",
+                                   size: CGSize(width: 375, height: 812))
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the fullscreen view has no button")
+        }
+        XCTAssertLessThan(button.bounds.height / view.bounds.height, 0.15)
+    }
+
+    /// A regression guard, not a proof: this passed before the fix as well, because the
+    /// stretch only ever happened with a single button. Kept so a future change to the button
+    /// stack cannot break the two-button case unnoticed.
+    func testTwoFullscreenButtonsAreBothSizedToTheirContent() {
+        let (_, view) = fullscreen(buttons: [makeButton(id: "a", text: "Yes"),
+                                             makeButton(id: "b", text: "No")],
+                                   size: CGSize(width: 375, height: 667))
+
+        let buttons = buttonViews(in: view)
+        XCTAssertEqual(buttons.count, 2)
+        for button in buttons {
+            XCTAssertLessThan(button.bounds.height / view.bounds.height, 0.15)
+        }
+    }
+
+    /// The slack has to go somewhere. It belongs to the copy, which can scroll — not to the
+    /// button, which cannot. This is the positive half of the assertion above: without it, a
+    /// fix that shrank the button and left a hole in the middle would pass.
+    func testTheCopyAbsorbsTheLeftoverHeight() {
+        let (_, view) = fullscreen(buttons: [makeButton()], body: "Hi",
+                                   size: CGSize(width: 375, height: 812))
+
+        guard let scroll = firstScrollView(in: view),
+              let button = buttonViews(in: view).first else {
+            return XCTFail("expected both a copy area and a button")
+        }
+        XCTAssertGreaterThan(scroll.bounds.height, button.bounds.height * 2,
+                             "the copy area should take the slack, not the button")
+    }
+
+    /// Sizing to content must not shrink the button below the 44pt touch target — the fix for
+    /// one accessibility problem must not create another.
+    func testAContentSizedButtonStillMeetsTheTouchTarget() {
+        let (_, view) = fullscreen(buttons: [makeButton()], size: CGSize(width: 375, height: 667))
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the fullscreen view has no button")
+        }
+        XCTAssertGreaterThanOrEqual(button.bounds.height, 44)
+    }
+
+    /// At the largest accessibility size the label wraps and the button legitimately grows. It
+    /// still must not be claiming the leftover space, so the bound is looser rather than absent.
+    func testAtTheLargestTextSizeTheButtonGrowsButDoesNotStretch() {
+        let (_, view) = fullscreen(buttons: [makeButton(text: "Claim your reward now")],
+                                   size: CGSize(width: 375, height: 667),
+                                   contentSize: .accessibilityExtraExtraExtraLarge)
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the fullscreen view has no button")
+        }
+        XCTAssertGreaterThanOrEqual(button.bounds.height, 44)
+        XCTAssertLessThan(button.bounds.height / view.bounds.height, 0.40)
+    }
+
+    /// The modal sizes its card to its content, so its buttons were never stretched. Asserted
+    /// anyway: the fix touches shared button views, and a change that fixed fullscreen by
+    /// pinning a height would break this.
+    func testModalButtonsRemainSizedToTheirContent() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 667))
+        let view = ModalMessageView(message: makeMessage(type: .modal,
+                                                         buttons: [makeButton()]),
+                                    attributes: .defaults,
+                                    image: nil,
+                                    icon: nil,
+                                    coordinator: nil)
+        host.install(view)
+
+        guard let button = buttonViews(in: view).first else {
+            return XCTFail("the modal has no button")
+        }
+        XCTAssertGreaterThanOrEqual(button.bounds.height, 44)
+        XCTAssertLessThan(button.bounds.height, 120)
+    }
+
     // MARK: - Buttons
 
     func testButtonsWrapRatherThanOverflow() {

@@ -38,6 +38,12 @@ final class FullscreenMessageView: UIView, InAppMessageView {
         let content = UIStackView()
         content.axis = .vertical
         content.spacing = attributes.spacing
+        // Stated rather than inherited. `.fill` stretches whichever arranged view hugs least,
+        // and this stack is pinned to both the top and the bottom of the screen — so on any
+        // screen taller than its content, something is going to be stretched. Which one is
+        // decided by the hugging priorities set below, not left to the UIKit default where the
+        // copy and the buttons both sit at 250 and the winner is undefined.
+        content.distribution = .fill
         content.translatesAutoresizingMaskIntoConstraints = false
 
         if let image = image {
@@ -61,6 +67,10 @@ final class FullscreenMessageView: UIView, InAppMessageView {
                                             headerAlignment: message.style.headerAlignment.textAlignment,
                                             bodyAlignment: message.style.bodyAlignment.textAlignment,
                                             spacing: attributes.labelsSpacing) {
+            // The copy takes the slack, and takes it without anything set here: the block
+            // carries its own `height == content` at priority 250, which is the lowest-priority
+            // height constraint in the stack and so the first to yield. Setting hugging on it
+            // would do nothing — a scroll view has no intrinsic size to hug.
             content.addArrangedSubview(text)
         }
 
