@@ -43,6 +43,11 @@ final class InAppMessagingService {
     private let router: MessageActionRouter
     private let now: () -> Date
     private let sessionTimeout: TimeInterval
+    /// Backoff for a sync that failed in a way that could plausibly succeed. Empty disables the
+    /// retry entirely, which is what a host that never wants a second request would pass.
+    private let syncRetryDelays: [TimeInterval]
+    /// Retries taken for the current session. Reset when a session begins and when a sync lands.
+    private var syncAttempt = 0
 
     // MARK: - State, confined to `queue`
 
@@ -82,7 +87,8 @@ final class InAppMessagingService {
          variables: VariableSource,
          router: MessageActionRouter,
          now: @escaping () -> Date = Date.init,
-         sessionTimeout: TimeInterval = iamSessionTimeout) {
+         sessionTimeout: TimeInterval = iamSessionTimeout,
+         syncRetryDelays: [TimeInterval] = defaultSyncRetryDelays) {
         self.customerId = customerId
         self.source = source
         self.presenter = presenter
@@ -94,6 +100,7 @@ final class InAppMessagingService {
         self.router = router
         self.now = now
         self.sessionTimeout = sessionTimeout
+        self.syncRetryDelays = syncRetryDelays
         queue.setSpecific(key: queueKey, value: 1)
     }
 
@@ -225,7 +232,52 @@ final class InAppMessagingService {
     // MARK: - Session
 
     /// Must run on `queue`.
+    /// Asks again for a sync that failed in a way that asking again could fix.
+    ///
+    /// Deliberately narrow on three axes, because the exposure it covers is itself narrow:
+    ///
+    /// * **Only retryable failures.** `IAMHTTPClient` already separates 408/429/5xx and transport
+    ///   errors from the 4xx that cannot change their answer. That classification was computed,
+    ///   carried through two layers, and then read by nothing; this is the thing that reads it.
+    /// * **Only when the session has nothing to show.** A cache hit means the session is not dark,
+    ///   and retrying then would buy fresher campaigns at the price of a second session-start
+    ///   occurrence — which can display a second message for one session start. Staleness is the
+    ///   cheaper cost, and the next session clears it.
+    /// * **Only twice.** A backend that is down stays down. Past the bound this stops and says so.
+    ///
+    /// Costs nothing on the happy path: no timer is scheduled when a sync succeeds.
+    ///
+    /// Must run on `queue`.
+    private func scheduleSyncRetry(after error: Error) {
+        guard let syncError = error as? IAMSyncError, case .retryable = syncError else { return }
+
+        // The cushion. `campaigns` is whatever survived the cache fallback just above.
+        guard campaigns.isEmpty else { return }
+
+        guard syncAttempt < syncRetryDelays.count else {
+            iamLog("sync has failed \(syncAttempt + 1) times and the session has no campaigns; "
+                 + "leaving it to the next session")
+            return
+        }
+
+        let delay = syncRetryDelays[syncAttempt]
+        syncAttempt += 1
+        let attempt = syncAttempt
+        iamLog("sync failed and nothing is cached; retrying in \(delay)s (attempt \(attempt + 1))")
+
+        queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self, self.started else { return }
+            self.source.fetch(customerId: self.customerId) { [weak self] result in
+                self?.perform { self?.applySync(result) }
+            }
+        }
+    }
+
     private func beginSession() {
+        // A new session starts the count over: the previous session's failures say nothing about
+        // this one, and a customer who relaunches after an outage deserves the full allowance.
+        syncAttempt = 0
+
         // Personalisation is resolved per trigger, and a new session is a trigger. Dropping the
         // cache here matters for exactly one case, which is also the common one: a customer who
         // backgrounds the app for longer than the session timeout and comes back. The session
@@ -253,6 +305,7 @@ final class InAppMessagingService {
             campaigns = value.campaigns
             cooldown = value.cooldown
             quietHours = value.quietHours
+            syncAttempt = 0
             if let payload = value.rawPayload {
                 cache.save(payload: payload, customerId: customerId)
             }
@@ -266,6 +319,7 @@ final class InAppMessagingService {
                 cooldown = cached.cooldown
                 quietHours = cached.quietHours
             }
+            scheduleSyncRetry(after: error)
         }
 
         // Narrow what personalisation may write to disk to the tokens actually referenced.

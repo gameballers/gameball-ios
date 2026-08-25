@@ -90,7 +90,9 @@ final class InAppMessagingServiceTests: XCTestCase {
 
     private func makeService(source: MessageSource,
                              customerId: String = "cust-1",
-                             sessionTimeout: TimeInterval = 30) -> InAppMessagingService {
+                             sessionTimeout: TimeInterval = 30,
+                             syncRetryDelays: [TimeInterval] = [0.02, 0.04])
+        -> InAppMessagingService {
         let router = MessageActionRouter(openURL: { url, external in
             self.routedActions.append(.openURL(url: url, external: external))
         }, navigate: { route, arguments in
@@ -116,7 +118,8 @@ final class InAppMessagingServiceTests: XCTestCase {
                                       now: { self.clock }),
             router: router,
             now: { self.clock },
-            sessionTimeout: sessionTimeout)
+            sessionTimeout: sessionTimeout,
+            syncRetryDelays: syncRetryDelays)
     }
 
     private func result(_ campaigns: [InAppMessageCampaign],
@@ -1134,6 +1137,150 @@ final class InAppMessagingServiceTests: XCTestCase {
         drain(service)
 
         XCTAssertTrue(service.deferredMessages.isEmpty, "a discarded retry must not stay queued")
+        XCTAssertTrue(presenter.presentedMessages.isEmpty)
+    }
+
+    // MARK: - A failed sync is retried within the session
+
+    /// Replays a scripted sequence of results, one per fetch, so a retry can be given a different
+    /// answer from the attempt before it.
+    private final class ScriptedMessageSource: MessageSource {
+        private let lock = NSLock()
+        private var scripted: [Result<SyncResult, Error>]
+        private var calls = 0
+
+        init(_ scripted: [Result<SyncResult, Error>]) {
+            self.scripted = scripted
+        }
+
+        var fetchCount: Int {
+            lock.lock(); defer { lock.unlock() }
+            return calls
+        }
+
+        func fetch(customerId: String, completion: @escaping (Result<SyncResult, Error>) -> Void) {
+            lock.lock()
+            let index = min(calls, scripted.count - 1)
+            calls += 1
+            let answer = scripted[index]
+            lock.unlock()
+            completion(answer)
+        }
+    }
+
+    /// Lets the retry's `asyncAfter` actually elapse. The delays under test are hundredths of a
+    /// second, so this costs nothing.
+    private func settleRetries(_ service: InAppMessagingService, for seconds: TimeInterval = 0.3) {
+        let deadline = expectation(description: "retries settled")
+        DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { deadline.fulfill() }
+        wait(for: [deadline], timeout: seconds + 3)
+        drain(service)
+    }
+
+    /// The case the retry exists for: the session has nothing to show, and a transient failure
+    /// would otherwise cost it every campaign until the next session.
+    func testARetryableFailureWithNothingToShowIsRetried() {
+        let source = ScriptedMessageSource([
+            .failure(IAMSyncError.retryable(status: 503)),
+            .success(result([makeCampaign(campaignId: 7)]))
+        ])
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "the first attempt failed")
+
+        settleRetries(service)
+
+        XCTAssertGreaterThanOrEqual(source.fetchCount, 2, "the failure must be retried")
+        XCTAssertEqual(presenter.presentedMessages.count, 1,
+                       "a late success must still be able to display")
+    }
+
+    /// A permanent failure cannot succeed by being asked again, so asking again is only cost.
+    func testAPermanentFailureIsNotRetried() {
+        let source = ScriptedMessageSource([
+            .failure(IAMSyncError.permanent(status: 401)),
+            .success(result([makeCampaign(campaignId: 7)]))
+        ])
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        settleRetries(service)
+
+        XCTAssertEqual(source.fetchCount, 1)
+        XCTAssertTrue(presenter.presentedMessages.isEmpty)
+    }
+
+    /// The cushion that keeps this small. If the cache answered, the session is not dark, and a
+    /// retry would buy fresher campaigns at the cost of a second session-start occurrence — which
+    /// could show a second message for one session.
+    func testAFailureTheCacheCoveredIsNotRetried() {
+        // Seed the cache with a successful run.
+        let warm = StubMessageSource(result: .success(
+            SyncResult(campaigns: [makeCampaign(campaignId: 7)], cooldown: 0,
+                       rawPayload: try! JSONSerialization.data(withJSONObject: [
+                           "cooldownSeconds": 0,
+                           "messages": [[
+                               "campaignId": 7, "messageType": 2, "priority": 0,
+                               "trigger": ["type": "session_start"],
+                               "content": [:], "locale": ["header": "H", "message": "B"]
+                           ]]
+                       ]))))
+        let first = makeService(source: warm)
+        first.start()
+        drain(first)
+        XCTAssertNotNil(store.data(forKey: IAMStoreKey.campaignCache))
+        first.stop()
+        drain(first)
+
+        let source = ScriptedMessageSource([.failure(IAMSyncError.retryable(status: nil))])
+        let second = makeService(source: source)
+        second.start()
+        drain(second)
+        settleRetries(second)
+
+        XCTAssertEqual(source.fetchCount, 1,
+                       "the cache covered the session, so nothing needed retrying")
+    }
+
+    /// Bounded. A backend that is down stays down, and the SDK must not keep asking for the life
+    /// of the session.
+    func testRetriesAreBounded() {
+        let source = ScriptedMessageSource([.failure(IAMSyncError.retryable(status: 503))])
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        settleRetries(service, for: 0.5)
+
+        XCTAssertEqual(source.fetchCount, 3, "one attempt plus two retries, then stop")
+    }
+
+    /// Nothing is scheduled when the first attempt works — the happy path must cost nothing.
+    func testASuccessfulSyncSchedulesNoRetry() {
+        let source = ScriptedMessageSource([.success(result([makeCampaign(campaignId: 7)]))])
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        settleRetries(service)
+
+        XCTAssertEqual(source.fetchCount, 1)
+    }
+
+    /// A retry in flight when the host stops messaging must not land afterwards.
+    func testAPendingRetryIsAbandonedOnStop() {
+        let source = ScriptedMessageSource([
+            .failure(IAMSyncError.retryable(status: 503)),
+            .success(result([makeCampaign(campaignId: 7)]))
+        ])
+        let service = makeService(source: source, syncRetryDelays: [0.15, 0.3])
+        service.start()
+        drain(service)
+
+        service.stop()
+        drain(service)
+        settleRetries(service, for: 0.5)
+
+        XCTAssertEqual(source.fetchCount, 1, "the retry must not fire after stop")
         XCTAssertTrue(presenter.presentedMessages.isEmpty)
     }
 }

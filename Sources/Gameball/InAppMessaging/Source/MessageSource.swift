@@ -29,6 +29,14 @@ let defaultDisplayCooldown: TimeInterval = 30
 /// would pull content the customer is reading.
 let defaultSlideupAutoDismiss: TimeInterval = 7
 
+/// Backoff for retrying a sync that failed in a way that could plausibly succeed.
+///
+/// Two attempts, roughly a second and then three. Long enough to outlast the radio waking from
+/// idle or a cell handoff — the failures that actually happen at launch, which is exactly when
+/// sync runs — and short enough that a session-start message still arrives while the session is
+/// worth showing one in.
+let defaultSyncRetryDelays: [TimeInterval] = [1, 3]
+
 /// The outcome of one sync: the campaigns to hold for this session, the display floor
 /// they are subject to, and the bytes that produced them.
 struct SyncResult {
