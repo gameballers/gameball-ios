@@ -1028,4 +1028,112 @@ final class InAppMessagingServiceTests: XCTestCase {
 
         XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi ")
     }
+
+    // MARK: - The host is only asked about messages that can actually display
+
+    /// The hook's contract is "what the host wants done with a message that is **about to
+    /// display**". A message that cannot display is not about to display.
+    ///
+    /// The ordering was: select, ask the host, fetch personalisation, *then* discover the slot was
+    /// taken and defer. So the host ran its side effects, its answer was thrown away, and a
+    /// variables request was spent, all for a message that was never going to appear.
+    func testTheHostIsNotAskedWhileAnotherMessageIsShowing() {
+        var asked: [String] = []
+        let campaigns = [makeCampaign(campaignId: 1, priority: 9, responseIndex: 0),
+                         makeCampaign(campaignId: 2, priority: 1,
+                                      trigger: .event(name: "e", filters: []),
+                                      responseIndex: 1)]
+        let source = StubMessageSource(result: .success(result(campaigns)))
+        let service = makeService(source: source)
+        service.beforeDisplay = { message in
+            asked.append(message.id)
+            return .show
+        }
+        service.start()
+        drain(service)
+        XCTAssertEqual(asked, ["1"], "precondition: asked about the first message only")
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+
+        // Campaign 1 is on screen. Campaign 2 is selected by the event but cannot display.
+        service.onCustomEvent(name: "e", properties: [:])
+        drain(service)
+
+        XCTAssertEqual(asked, ["1"],
+                       "the host must not be asked about a message that cannot display")
+        XCTAssertEqual(service.deferredMessages.map { $0.campaignId }, [2],
+                       "it should still be held for the next opportunity")
+    }
+
+    /// And the request that decision would have triggered is not spent either.
+    func testNoPersonalisationIsFetchedForAMessageThatCannotDisplay() {
+        variablesTransport.script([.success(try! JSONSerialization.data(
+            withJSONObject: ["variables": ["player_name": "Ada"]]))])
+        let campaigns = [makeCampaign(campaignId: 1, priority: 9, responseIndex: 0),
+                         personalisedCampaign(2, trigger: .event(name: "e", filters: []))]
+        let source = StubMessageSource(result: .success(result(campaigns)))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+        let before = variableFetches()
+
+        service.onCustomEvent(name: "e", properties: [:])
+        drain(service)
+
+        XCTAssertEqual(variableFetches(), before,
+                       "a message that cannot display must not spend a variables request")
+    }
+
+    /// `.later` is documented as "hold it and retry at the next opportunity — the host is
+    /// mid-checkout, say". The retry consulted nobody, so a host that was *still* mid-checkout got
+    /// the message anyway: the answer was honoured exactly once, which is the one thing the case
+    /// exists to prevent.
+    func testALaterDeferralAsksAgainOnRetry() {
+        var asked = 0
+        var busy = true
+        let source = StubMessageSource(result: .success(result([makeCampaign(campaignId: 7)])))
+        let service = makeService(source: source)
+        service.beforeDisplay = { _ in
+            asked += 1
+            return busy ? .later : .show
+        }
+        service.start()
+        drain(service)
+        XCTAssertEqual(asked, 1)
+        XCTAssertTrue(presenter.presentedMessages.isEmpty)
+
+        // Still busy. The next opportunity must ask, and must take no for an answer.
+        service.onDisplayOpportunity()
+        drain(service)
+        XCTAssertEqual(asked, 2, "the retry must consult the host again")
+        XCTAssertTrue(presenter.presentedMessages.isEmpty,
+                      "the host is still busy and the message displayed anyway")
+        XCTAssertEqual(service.deferredMessages.map { $0.campaignId }, [7])
+
+        // Now free.
+        busy = false
+        service.onDisplayOpportunity()
+        drain(service)
+        XCTAssertEqual(asked, 3)
+        XCTAssertEqual(presenter.presentedMessages.count, 1)
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// A host that answers `.discard` on the retry gets the message dropped rather than held
+    /// forever — otherwise `.later` would be a one-way door into a queue nothing can empty.
+    func testADiscardOnRetryDropsTheDeferral() {
+        var answer = GameballDisplayDecision.later
+        let source = StubMessageSource(result: .success(result([makeCampaign(campaignId: 7)])))
+        let service = makeService(source: source)
+        service.beforeDisplay = { _ in answer }
+        service.start()
+        drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.campaignId }, [7])
+
+        answer = .discard
+        service.onDisplayOpportunity()
+        drain(service)
+
+        XCTAssertTrue(service.deferredMessages.isEmpty, "a discarded retry must not stay queued")
+        XCTAssertTrue(presenter.presentedMessages.isEmpty)
+    }
 }

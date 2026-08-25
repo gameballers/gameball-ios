@@ -300,19 +300,41 @@ final class InAppMessagingService {
             return
         }
 
+        // Selection happened, so the host is told about it either way — and told once, because
+        // the retry path below does not re-announce.
         notifySelected(selected.message)
 
-        resolveDecision(for: selected.message) { [weak self] decision in
+        // Asked *before* the host, not after. The hook's contract is "what the host wants done
+        // with a message that is about to display", and a message that cannot have the slot is not
+        // about to display: consulting anyway runs the host's side effects, discards its answer,
+        // and spends a personalisation request, all for a message that was never going to appear.
+        guard showing == nil else {
+            deferCampaign(selected, because: "another message is showing")
+            return
+        }
+
+        decideThenPresent(selected)
+    }
+
+    /// Consults the host, then acts on the answer.
+    ///
+    /// Shared by the first evaluation and by every retry. A deferral used to bypass this and
+    /// present directly, which honoured `.later` exactly once — so a host that was still busy at
+    /// the retry got the message anyway, which is the one thing `.later` exists to prevent.
+    ///
+    /// Must run on `queue`.
+    private func decideThenPresent(_ campaign: InAppMessageCampaign) {
+        resolveDecision(for: campaign.message) { [weak self] decision in
             guard let self = self else { return }
             switch decision {
             case .show:
-                self.resolveTokensThenPresent(selected)
+                self.resolveTokensThenPresent(campaign)
             case .later:
-                self.deferCampaign(selected, because: "the host asked to show it later")
+                self.deferCampaign(campaign, because: "the host asked to show it later")
             case .discard:
                 // Spent, not held: nothing retries, and because the cap is only recorded at
                 // impression it is eligible again next session with no manual reset.
-                iamLog("campaign \(selected.campaignId) discarded by the host")
+                iamLog("campaign \(campaign.campaignId) discarded by the host")
             }
         }
     }
@@ -438,8 +460,18 @@ final class InAppMessagingService {
             return
         }
 
+        // The same rule as the first evaluation: do not consult the host about a slot that is
+        // already taken. Held rather than removed, so the campaign keeps its place in the stack.
+        guard showing == nil else {
+            iamLog("holding deferred campaign \(candidate.campaignId): another message is showing")
+            return
+        }
+
+        // Removed before the decision, which is asynchronous: the removal is the claim on this
+        // candidate, and `deferCampaign` de-duplicates by campaign id if the host says `.later`
+        // again and it goes back on the stack.
         deferred.removeLast()
-        resolveTokensThenPresent(candidate)
+        decideThenPresent(candidate)
     }
 
     // MARK: - Presentation callbacks
