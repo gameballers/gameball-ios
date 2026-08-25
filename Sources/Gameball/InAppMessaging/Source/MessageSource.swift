@@ -11,6 +11,24 @@ import Foundation
 /// carries `cooldownSeconds`, and the parser needs the default before a cap exists.
 let defaultDisplayCooldown: TimeInterval = 30
 
+/// How long a slideup stays up when the campaign does not say.
+///
+/// Six of the seven campaigns on the reference account send no `autoDismissSeconds`, no
+/// `closeBehaviour` and no buttons, which means the default *is* the behaviour for almost every
+/// slideup in the wild. A swipe is always available, but a swipe is a gesture nobody announces,
+/// so without a timer the banner sits over the host app for the rest of the session.
+///
+/// Seven seconds is roughly one to notice the animation, four and a half to read a fifteen-word
+/// slideup at a cautious 200 words per minute, and a second and a half to decide and reach for
+/// it. It sits between Braze's five-second slideup default and Material's ten-second "long"
+/// snackbar, and just under the eight seconds chosen by the one campaign on the account that
+/// asked for a duration at all — so a campaign that wants longer still gets a visible difference
+/// by saying so.
+///
+/// Slideups only. A modal or a fullscreen takes the screen deliberately, and timing one out
+/// would pull content the customer is reading.
+let defaultSlideupAutoDismiss: TimeInterval = 7
+
 /// The outcome of one sync: the campaigns to hold for this session, the display floor
 /// they are subject to, and the bytes that produced them.
 struct SyncResult {

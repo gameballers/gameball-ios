@@ -113,16 +113,29 @@ final class RealSyncResponseTests: XCTestCase {
         XCTAssertNotNil(campaign.message.body)
     }
 
-    /// A null `closeBehaviour` must enable both affordances, or these campaigns ship with
-    /// no way for the customer to close them.
+    /// A null `closeBehaviour` must still leave every campaign closable, or these ship with no
+    /// way out. The rule is per type, which is what this originally missed: it asserted a close
+    /// button on 2042, a *slideup*, which has never rendered one.
+    ///
+    /// Slideup: the swipe (unconditional, added by the view) and the default timer.
+    /// Modal and fullscreen: the close button.
     func testCampaignsWithNullCloseBehaviourAreClosable() {
         let ids = [2042, 2058, 2059, 2060, 2061]
         let campaigns = parsed().campaigns.filter { ids.contains($0.campaignId) }
         XCTAssertEqual(campaigns.count, ids.count)
         for campaign in campaigns {
-            XCTAssertTrue(campaign.message.showCloseButton,
-                          "campaign \(campaign.campaignId) has no close affordance")
-            XCTAssertTrue(campaign.message.dismissOnScrimTap,
+            let message = campaign.message
+            switch message.type {
+            case .slideup:
+                XCTAssertNotNil(message.autoDismissAfter,
+                                "slideup \(campaign.campaignId) would stay up all session")
+                XCTAssertFalse(message.showCloseButton,
+                               "slideup \(campaign.campaignId) must not claim a close button")
+            default:
+                XCTAssertTrue(message.showCloseButton,
+                              "campaign \(campaign.campaignId) has no close affordance")
+            }
+            XCTAssertTrue(message.dismissOnScrimTap,
                           "campaign \(campaign.campaignId) cannot be dismissed by scrim")
         }
     }

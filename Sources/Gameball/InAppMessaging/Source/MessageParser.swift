@@ -128,9 +128,18 @@ enum MessageParser {
             clickAction: parseAction(content["action"], owner: campaignId),
             buttons: parseButtons(content: content, locale: locale,
                                   type: type, campaignId: campaignId),
-            showCloseButton: closeBehaviour.contains("button") || closeBehaviour.contains("both"),
+            // Reported as `false` for a slideup whatever the campaign asks for. A slideup has
+            // never rendered a close button — its dismissal is the swipe and the timer, and the
+            // whole surface is the affordance — so claiming one described something that does not
+            // happen. Missing `closeBehaviour` defaults to "both", which meant every slideup on
+            // the account claimed a button it would never show.
+            showCloseButton: type != .slideup
+                && (closeBehaviour.contains("button") || closeBehaviour.contains("both")),
             dismissOnScrimTap: closeBehaviour.contains("swipe") || closeBehaviour.contains("both"),
-            autoDismissAfter: positiveInterval(content["autoDismissSeconds"]),
+            // A slideup left without a duration gets the default. See `defaultSlideupAutoDismiss`
+            // for the number and why the other two types are excluded.
+            autoDismissAfter: positiveInterval(content["autoDismissSeconds"])
+                ?? (type == .slideup ? defaultSlideupAutoDismiss : nil),
             layout: parseLayout(content["layout"], type: type, campaignId: campaignId),
             orientation: parseOrientation(content["orientation"]),
             slidePosition: parseSlidePosition(content["slideFrom"]),

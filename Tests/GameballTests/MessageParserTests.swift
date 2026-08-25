@@ -493,6 +493,70 @@ final class MessageParserTests: XCTestCase {
         }
     }
 
+    // MARK: - Slideup dismissal
+
+    /// Six of the seven live slideups send no `closeBehaviour`, no `autoDismissSeconds` and no
+    /// buttons. A swipe is unconditional so none of them is *stuck*, but a swipe is a gesture
+    /// nobody announces — so without a default the banner sits over the host app for the rest of
+    /// the session. Auto-dismiss is the default across the Gameball SDKs, and this is Swift's.
+    func testSlideupWithoutADurationAutoDismissesByDefault() {
+        let message = parseOne(["messageType": 1], content: ["slideFrom": "bottom"])?.message
+        XCTAssertEqual(message?.type, .slideup)
+        XCTAssertEqual(message?.autoDismissAfter, defaultSlideupAutoDismiss)
+    }
+
+    /// A campaign that names a duration keeps it. The default is a floor for the unconfigured
+    /// case, not a cap — campaign 2054 asks for 8s and must get 8s.
+    func testAConfiguredDurationIsNotOverriddenByTheDefault() {
+        let message = parseOne(["messageType": 1],
+                               content: ["autoDismissSeconds": 8])?.message
+        XCTAssertEqual(message?.autoDismissAfter, 8)
+    }
+
+    /// The default belongs to the slideup, which is a transient surface by type. A modal and a
+    /// fullscreen take over the screen deliberately and must wait to be dismissed — timing one
+    /// out would yank content the customer is reading.
+    func testOnlySlideupsGetTheDefaultDuration() {
+        XCTAssertNil(parseOne(["messageType": 2])?.message.autoDismissAfter,
+                     "a modal must not auto-dismiss")
+        XCTAssertNil(parseOne(["messageType": 3])?.message.autoDismissAfter,
+                     "a fullscreen must not auto-dismiss")
+    }
+
+    /// A zero or negative duration is not a request for an instant dismissal — it is an
+    /// unconfigured field spelled badly, and it falls back like an absent one.
+    func testANonPositiveDurationFallsBackToTheDefault() {
+        for value in [0, -1] {
+            let message = parseOne(["messageType": 1],
+                                   content: ["autoDismissSeconds": value])?.message
+            XCTAssertEqual(message?.autoDismissAfter, defaultSlideupAutoDismiss,
+                           "autoDismissSeconds: \(value)")
+        }
+    }
+
+    /// `showCloseButton` used to be reported as `true` for every slideup, because a missing
+    /// `closeBehaviour` defaults to "both". No slideup has ever rendered one — dismissal is the
+    /// swipe and the timer — so the flag described something that never happened. Reporting it
+    /// honestly is the fix; making the view honour it would have put a close button on all six
+    /// live slideups.
+    func testSlideupNeverClaimsACloseButton() {
+        XCTAssertEqual(parseOne(["messageType": 1])?.message.showCloseButton, false,
+                       "no closeBehaviour sent")
+        XCTAssertEqual(parseOne(["messageType": 1],
+                                content: ["closeBehaviour": "button"])?.message.showCloseButton,
+                       false, "even when the campaign asks for one")
+    }
+
+    /// The other types still report it, so the change is scoped to the slideup.
+    func testModalStillHonoursCloseBehaviour() {
+        XCTAssertEqual(parseOne(["messageType": 2],
+                                content: ["closeBehaviour": "button"])?.message.showCloseButton,
+                       true)
+        XCTAssertEqual(parseOne(["messageType": 2],
+                                content: ["closeBehaviour": "swipe"])?.message.showCloseButton,
+                       false)
+    }
+
     // MARK: - Malformed input
 
     func testMalformedJSONYieldsEmptyResult() {
