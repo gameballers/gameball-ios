@@ -109,7 +109,10 @@ final class ModalImageMessageView: UIView, InAppMessageView {
             card.bottomAnchor.constraint(lessThanOrEqualTo: guide.bottomAnchor,
                                          constant: -attributes.margin.bottom),
             card.widthAnchor.constraint(lessThanOrEqualToConstant: attributes.maxWidth),
-            card.heightAnchor.constraint(lessThanOrEqualToConstant: attributes.maxHeight)
+            // The artwork is the whole card here, so its cap is a share of the screen rather
+            // than the copy reserve — past 65% the artwork crops instead of the card growing.
+            card.heightAnchor.constraint(lessThanOrEqualTo: guide.heightAnchor,
+                                         multiplier: attributes.imageOnlyHeightFraction)
         ])
     }
 

@@ -16,8 +16,8 @@ enum MessageTextBlock {
 
     static func make(header: String?,
                      body: String?,
-                     headerFont: UIFont,
-                     bodyFont: UIFont,
+                     headerTypography: MessageTypography,
+                     bodyTypography: MessageTypography,
                      headerColor: UIColor,
                      bodyColor: UIColor,
                      headerAlignment: NSTextAlignment,
@@ -25,12 +25,12 @@ enum MessageTextBlock {
                      spacing: CGFloat) -> UIScrollView? {
         var labels: [UILabel] = []
         if let header = header {
-            labels.append(label(header, font: headerFont, color: headerColor,
-                                alignment: headerAlignment))
+            labels.append(MessageLabel(text: header, typography: headerTypography,
+                                       color: headerColor, alignment: headerAlignment))
         }
         if let body = body {
-            labels.append(label(body, font: bodyFont, color: bodyColor,
-                                alignment: bodyAlignment))
+            labels.append(MessageLabel(text: body, typography: bodyTypography,
+                                       color: bodyColor, alignment: bodyAlignment))
         }
         guard !labels.isEmpty else { return nil }
 
@@ -62,18 +62,13 @@ enum MessageTextBlock {
         return scroll
     }
 
-    private static func label(_ text: String,
-                              font: UIFont,
-                              color: UIColor,
-                              alignment: NSTextAlignment) -> UILabel {
-        let label = UILabel()
-        label.text = text
-        label.font = font
-        label.textColor = color
-        label.textAlignment = alignment
-        label.numberOfLines = 0
-        // Dynamic Type without the host opting in.
-        label.adjustsFontForContentSizeCategory = true
-        return label
+    /// Kept for the slideup, which needs a single clamped label rather than a scrolling block.
+    static func label(_ text: String,
+                      typography: MessageTypography,
+                      color: UIColor,
+                      alignment: NSTextAlignment,
+                      numberOfLines: Int) -> UILabel {
+        return MessageLabel(text: text, typography: typography, color: color,
+                            alignment: alignment, numberOfLines: numberOfLines)
     }
 }

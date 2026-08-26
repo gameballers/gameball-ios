@@ -466,9 +466,15 @@ final class MessageLayoutResilienceTests: XCTestCase {
                                        coordinator: nil)
         host.install(view)
 
-        XCTAssertLessThanOrEqual(view.bounds.height,
-                                 MessageViewAttributes.Slideup.defaults.maxHeight + 0.5,
-                                 "the slideup grew past its band")
+        // The band is now bounded by the three-line clamp rather than a height cap: three lines of
+        // 20pt leading plus 12 top and bottom padding is about 84, and the label ellipsises rather
+        // than wrapping further. A cap would have hidden the overflow; the clamp prevents it.
+        let lines = MessageViewAttributes.Slideup.defaults.maxTextLines
+        let padding = MessageViewAttributes.Slideup.defaults.padding
+        let ceiling = CGFloat(lines) * MessageTypography.slideupCopy.lineHeight
+            + padding.top + padding.bottom
+        XCTAssertLessThanOrEqual(view.bounds.height, ceiling + 1,
+                                 "the slideup grew past three lines of copy")
         XCTAssertLessThan(view.bounds.height, smallScreen.height / 2)
         XCTAssertGreaterThan(view.bounds.height, 0)
     }
@@ -639,18 +645,52 @@ final class MessageLayoutResilienceTests: XCTestCase {
                       "no artwork view should be built when there is no image")
     }
 
-    func testLabelsOptIntoDynamicType() {
-        let host = IAMLayoutHost(size: smallScreen)
-        let view = modal()
+    /// Dynamic Type, asserted as behaviour rather than as a flag.
+    ///
+    /// The spec states each slot as an absolute size and line height, which needs attributed text —
+    /// and setting `attributedText` is exactly what turns `adjustsFontForContentSizeCategory` off.
+    /// `MessageLabel` rebuilds itself on a content-size change instead, so the flag is now the
+    /// wrong thing to check: what matters is that the type actually grows.
+    func testCopyGrowsWithTheContentSizeCategory() {
+        let small = IAMLayoutHost(size: CGSize(width: 375, height: 812),
+                                  contentSize: .small)
+        let smallView = modal()
+        small.install(smallView)
+
+        let large = IAMLayoutHost(size: CGSize(width: 375, height: 812),
+                                  contentSize: .accessibilityExtraExtraExtraLarge)
+        let largeView = modal()
+        large.install(largeView)
+
+        func pointSize(of view: UIView) -> CGFloat {
+            guard let label = copyLabels(in: view).first,
+                  let attributed = label.attributedText, attributed.length > 0,
+                  let font = attributed.attribute(.font, at: 0, effectiveRange: nil) as? UIFont
+            else { return 0 }
+            return font.pointSize
+        }
+
+        let smallSize = pointSize(of: smallView)
+        let largeSize = pointSize(of: largeView)
+        XCTAssertGreaterThan(smallSize, 0, "no scaled font was applied")
+        XCTAssertGreaterThan(largeSize, smallSize,
+                             "copy did not grow: \(smallSize) -> \(largeSize)")
+    }
+
+    /// And the spec's figures are the values at the *default* content size, which is the claim the
+    /// scaling rests on.
+    func testTheSpecsFiguresAreTheDefaultSizeValues() {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812), contentSize: .large)
+        let view = modal(header: "Header", body: "Body")
         host.install(view)
 
-        let labels = copyLabels(in: view)
-        XCTAssertFalse(labels.isEmpty)
-        for label in labels {
-            XCTAssertTrue(label.adjustsFontForContentSizeCategory,
-                          "a label does not follow Dynamic Type")
-            XCTAssertEqual(label.numberOfLines, 0, "a label can truncate")
+        let fonts = copyLabels(in: view).compactMap {
+            $0.attributedText?.attribute(.font, at: 0, effectiveRange: nil) as? UIFont
         }
+        XCTAssertTrue(fonts.contains { abs($0.pointSize - MessageTypography.modalHeader.size) < 0.5 },
+                      "no label is at the header's 22pt: \(fonts.map { $0.pointSize })")
+        XCTAssertTrue(fonts.contains { abs($0.pointSize - MessageTypography.modalBody.size) < 0.5 },
+                      "no label is at the body's 14pt: \(fonts.map { $0.pointSize })")
     }
 
     // MARK: - Helpers

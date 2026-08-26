@@ -37,7 +37,9 @@ final class FullscreenMessageView: UIView, InAppMessageView {
 
         let content = UIStackView()
         content.axis = .vertical
-        content.spacing = attributes.spacing
+        // Zero, for the same reason as the modal: the copy block and the button block carry
+        // their own insets (24/24/24/0 and 24/28/24/24), and the artwork runs flush.
+        content.spacing = 0
         // Stated rather than inherited. `.fill` stretches whichever arranged view hugs least,
         // and this stack is pinned to both the top and the bottom of the screen — so on any
         // screen taller than its content, something is going to be stretched. Which one is
@@ -57,8 +59,8 @@ final class FullscreenMessageView: UIView, InAppMessageView {
 
         if let text = MessageTextBlock.make(header: message.header,
                                             body: message.body,
-                                            headerFont: attributes.headerFont,
-                                            bodyFont: attributes.bodyFont,
+                                            headerTypography: .fullscreenHeader,
+                                            bodyTypography: .fullscreenBody,
                                             headerColor: message.style.headerColor
                                                 ?? message.style.textColor
                                                 ?? MessageTheme.primaryText,
@@ -71,23 +73,29 @@ final class FullscreenMessageView: UIView, InAppMessageView {
             // carries its own `height == content` at priority 250, which is the lowest-priority
             // height constraint in the stack and so the first to yield. Setting hugging on it
             // would do nothing — a scroll view has no intrinsic size to hug.
-            content.addArrangedSubview(text)
+            content.addArrangedSubview(MessageInset.wrap(text, insets: attributes.padding))
         }
 
         if !message.buttons.isEmpty {
             let buttons = MessageButtonStack()
-            buttons.axis = .horizontal
-            buttons.distribution = .fillEqually
-            buttons.spacing = 12
+            // Stacked and stretched full width, never side by side. A fullscreen surface has the
+            // room, and the modal's compact trailing row looks lost at this size.
+            buttons.axis = .vertical
+            buttons.distribution = .fill
+            buttons.alignment = .fill
+            buttons.spacing = attributes.buttonSpacing
             buttons.translatesAutoresizingMaskIntoConstraints = false
             for button in message.buttons {
-                let view = MessageButtonView(button: button, style: button.style)
+                let view = MessageButtonView(button: button, style: button.style,
+                                             typography: .fullscreenButton,
+                                             contentInsets: attributes.buttonPadding)
                 view.onTap = { [weak self] tapped in
                     self?.process(action: tapped.action, buttonId: tapped.id)
                 }
                 buttons.addArrangedSubview(view)
             }
-            content.addArrangedSubview(buttons)
+            content.addArrangedSubview(MessageInset.wrap(buttons,
+                                                         insets: attributes.buttonsPadding))
         }
 
         addSubview(content)
@@ -108,14 +116,10 @@ final class FullscreenMessageView: UIView, InAppMessageView {
         }
 
         NSLayoutConstraint.activate([
-            content.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor,
-                                         constant: attributes.padding.top),
-            content.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor,
-                                            constant: -attributes.padding.bottom),
-            content.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor,
-                                             constant: attributes.padding.left),
-            content.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor,
-                                              constant: -attributes.padding.right)
+            content.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            content.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor)
         ])
     }
 

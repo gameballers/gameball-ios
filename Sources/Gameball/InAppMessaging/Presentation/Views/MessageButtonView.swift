@@ -11,7 +11,10 @@ final class MessageButtonView: UIButton {
     private let button: GameballMessageButton
     var onTap: ((GameballMessageButton) -> Void)?
 
-    init(button: GameballMessageButton, style: GameballButtonStyle) {
+    init(button: GameballMessageButton,
+         style: GameballButtonStyle,
+         typography: MessageTypography = .modalButton,
+         contentInsets: UIEdgeInsets = UIEdgeInsets(top: 12, left: 20, bottom: 12, right: 20)) {
         self.button = button
         super.init(frame: .zero)
 
@@ -19,22 +22,26 @@ final class MessageButtonView: UIButton {
         setTitleColor(style.textColor ?? MessageTheme.onAccent, for: .normal)
         backgroundColor = style.backgroundColor ?? MessageTheme.accent
 
+        // Only when the campaign named one. There is no default outline — an unstyled button is a
+        // bare text button in the host's primary colour, which is what every live campaign renders
+        // as today.
         if let border = style.borderColor {
             layer.borderColor = border.cgColor
             layer.borderWidth = 1
         }
-        layer.cornerRadius = 8
+        layer.cornerRadius = MessageViewAttributes.buttonCornerRadius
 
         accessibilityIdentifier = GameballAccessibility.button(button.id)
-        titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+        titleLabel?.font = typography.font()
         titleLabel?.adjustsFontForContentSizeCategory = true
         // Wrapping rather than truncating: a button whose label is cut off is a button whose
         // consequence is a guess.
         titleLabel?.numberOfLines = 0
         titleLabel?.textAlignment = .center
 
-        contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
+        contentEdgeInsets = contentInsets
         translatesAutoresizingMaskIntoConstraints = false
+        // The insets already carry the spec's height; this is the accessibility floor beneath it.
         heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
 
         // A call to action is sized by its label. Without this it is sized by whatever is left

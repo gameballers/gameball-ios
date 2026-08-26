@@ -41,45 +41,62 @@ final class SlideupMessageView: UIView, InAppMessageView {
         backgroundColor = message.style.backgroundColor ?? MessageTheme.background
         layer.cornerRadius = attributes.cornerRadius
         clipsToBounds = true
-        // A slideup floats, so it needs its own separation from whatever is behind it.
+        // A slideup floats over app content with no scrim, so the shadow is what separates it.
+        // The spec calls for Material elevation 6, which is three stacked shadows; a `CALayer`
+        // carries one, so this is the closest single-layer approximation of that stack.
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.18
+        layer.shadowOpacity = 0.20
         layer.shadowRadius = 8
-        layer.shadowOffset = CGSize(width: 0, height: 2)
+        layer.shadowOffset = CGSize(width: 0, height: 3)
         layer.masksToBounds = false
 
         let row = UIStackView()
         row.axis = .horizontal
         row.alignment = .center
-        row.spacing = attributes.spacing
+        // Zero: the icon and chevron carry their own directional gaps, which differ (12 and 8)
+        // and must mirror under right-to-left.
+        row.spacing = 0
         row.translatesAutoresizingMaskIntoConstraints = false
 
         if let icon = icon {
             let imageView = UIImageView(image: icon)
             imageView.contentMode = .scaleAspectFill
             imageView.clipsToBounds = true
-            imageView.layer.cornerRadius = 6
+            imageView.layer.cornerRadius = attributes.iconCornerRadius
             imageView.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
                 imageView.widthAnchor.constraint(equalToConstant: attributes.iconSize.width),
                 imageView.heightAnchor.constraint(equalToConstant: attributes.iconSize.height)
             ])
             row.addArrangedSubview(imageView)
+            row.setCustomSpacing(attributes.iconSpacing, after: imageView)
         }
 
-        if let text = MessageTextBlock.make(header: message.header,
-                                            body: message.body,
-                                            headerFont: attributes.headerFont,
-                                            bodyFont: attributes.bodyFont,
-                                            headerColor: message.style.headerColor
-                                                ?? message.style.textColor
-                                                ?? MessageTheme.primaryText,
-                                            bodyColor: message.style.textColor
-                                                ?? MessageTheme.secondaryText,
-                                            headerAlignment: message.style.headerAlignment.textAlignment,
-                                            bodyAlignment: message.style.bodyAlignment.textAlignment,
-                                            spacing: attributes.labelsSpacing) {
-            row.addArrangedSubview(text)
+        // One line of copy, not a header and a body. A banner has no header row: it renders
+        // `locale.message` and falls back to `locale.header`, so a campaign that filled the wrong
+        // field still says something rather than showing an empty band.
+        if let copy = message.body ?? message.header {
+            let label = MessageTextBlock.label(copy,
+                                               typography: .slideupCopy,
+                                               color: message.style.textColor
+                                                   ?? MessageTheme.primaryText,
+                                               alignment: message.style.bodyAlignment.textAlignment,
+                                               numberOfLines: attributes.maxTextLines)
+            label.setContentHuggingPriority(UILayoutPriority(1), for: .horizontal)
+            label.setContentCompressionResistancePriority(UILayoutPriority(1), for: .horizontal)
+            row.addArrangedSubview(label)
+        }
+
+        // Drawn only when the campaign set a message action, so the affordance matches the
+        // behaviour. A chevron on an inert banner promises a tap that does nothing.
+        if message.clickAction != nil {
+            let chevron = SlideupChevron(
+                color: message.style.textColor ?? MessageTheme.secondaryText,
+                size: attributes.chevronSize)
+            row.addArrangedSubview(chevron)
+            if let copy = row.arrangedSubviews.dropLast().last {
+                row.setCustomSpacing(attributes.chevronSpacing, after: copy)
+            }
         }
 
         addSubview(row)
@@ -107,13 +124,24 @@ final class SlideupMessageView: UIView, InAppMessageView {
         container.addSubview(self)
 
         let guide = container.safeAreaLayoutGuide
+        // Centred with a width cap rather than pinned to both edges: on a phone the margins
+        // decide the width, and on a tablet the banner stops growing at 480 instead of stretching
+        // into a panel. Pinning both edges *and* capping the width is unsatisfiable once the
+        // screen is wider than the cap.
+        let preferred = widthAnchor.constraint(
+            equalTo: guide.widthAnchor,
+            constant: -(attributes.margin.left + attributes.margin.right))
+        preferred.priority = UILayoutPriority(750)
+
         var constraints = [
-            leadingAnchor.constraint(equalTo: guide.leadingAnchor,
+            centerXAnchor.constraint(equalTo: guide.centerXAnchor),
+            leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor,
                                      constant: attributes.margin.left),
-            trailingAnchor.constraint(equalTo: guide.trailingAnchor,
+            trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor,
                                       constant: -attributes.margin.right),
             // A band, not a panel. Beyond this it stops reading as non-blocking.
-            heightAnchor.constraint(lessThanOrEqualToConstant: attributes.maxHeight)
+            widthAnchor.constraint(lessThanOrEqualToConstant: attributes.maxWidth),
+            preferred
         ]
         switch message.slidePosition {
         case .top:

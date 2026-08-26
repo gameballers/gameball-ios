@@ -16,6 +16,16 @@ final class ModalMessageView: UIView, InAppMessageView {
 
     private let message: GameballInAppMessage
     private let attributes: MessageViewAttributes.Modal
+    /// The artwork and the constraint that sizes it.
+    ///
+    /// Resolved in `layoutSubviews` rather than declared, because the spec's rule is a literal
+    /// `min()` of three quantities and Auto Layout cannot express one. Declaring it as a ratio
+    /// plus two `<=` caps looks equivalent and is not: every term is relative to a width, so the
+    /// solver can satisfy all three by shrinking the card — which it did, collapsing a 0.5 poster
+    /// to a 40-point card.
+    private var artwork: UIImageView?
+    private var artworkHeight: NSLayoutConstraint?
+    private var artworkRatio: CGFloat = 0
     private let image: UIImage?
     private let card = UIView()
 
@@ -55,7 +65,10 @@ final class ModalMessageView: UIView, InAppMessageView {
 
         let content = UIStackView()
         content.axis = .vertical
-        content.spacing = attributes.spacing
+        // No spacing and no padding on the stack itself. The spec gives the copy block and the
+        // button block their own insets (20/20/20/0 and 20/20/20/16), and the artwork sits flush
+        // to the card's edges so its top corners round with it.
+        content.spacing = 0
         content.translatesAutoresizingMaskIntoConstraints = false
 
         // Skipped entirely when the artwork failed to load, so a dead URL costs the picture
@@ -68,14 +81,20 @@ final class ModalMessageView: UIView, InAppMessageView {
         imageView.contentMode = .scaleAspectFit
             imageView.clipsToBounds = true
             imageView.translatesAutoresizingMaskIntoConstraints = false
-            imageView.heightAnchor.constraint(equalToConstant: attributes.imageHeight).isActive = true
+            self.artwork = imageView
+            if image.size.width > 0 && image.size.height > 0 {
+                self.artworkRatio = image.size.width / image.size.height
+            }
+            let height = imageView.heightAnchor.constraint(equalToConstant: 0)
+            height.isActive = true
+            self.artworkHeight = height
             content.addArrangedSubview(imageView)
         }
 
         if let text = MessageTextBlock.make(header: message.header,
                                             body: message.body,
-                                            headerFont: attributes.headerFont,
-                                            bodyFont: attributes.bodyFont,
+                                            headerTypography: .modalHeader,
+                                            bodyTypography: .modalBody,
                                             headerColor: message.style.headerColor
                                                 ?? message.style.textColor
                                                 ?? MessageTheme.primaryText,
@@ -84,35 +103,38 @@ final class ModalMessageView: UIView, InAppMessageView {
                                             headerAlignment: message.style.headerAlignment.textAlignment,
                                             bodyAlignment: message.style.bodyAlignment.textAlignment,
                                             spacing: attributes.labelsSpacing) {
-            content.addArrangedSubview(text)
+            content.addArrangedSubview(MessageInset.wrap(text, insets: attributes.padding))
         }
 
         if !message.buttons.isEmpty {
             let buttons = MessageButtonStack()
             buttons.axis = .horizontal
-            buttons.distribution = .fillEqually
-            buttons.spacing = 12
+            // Trailing-aligned and sized to their labels, not stretched: a compact row at the
+            // card's trailing edge is the dialog convention. Fullscreen stretches instead.
+            buttons.distribution = .fill
+            buttons.alignment = .fill
+            buttons.spacing = attributes.buttonSpacing
             buttons.translatesAutoresizingMaskIntoConstraints = false
             for button in message.buttons {
-                let view = MessageButtonView(button: button, style: button.style)
+                let view = MessageButtonView(button: button, style: button.style,
+                                             typography: .modalButton,
+                                             contentInsets: attributes.buttonPadding)
                 view.onTap = { [weak self] tapped in
                     self?.process(action: tapped.action, buttonId: tapped.id)
                 }
                 buttons.addArrangedSubview(view)
             }
-            content.addArrangedSubview(buttons)
+            let row = MessageInset.wrap(buttons, insets: attributes.buttonsPadding,
+                                        alignment: .trailing)
+            content.addArrangedSubview(row)
         }
 
         card.addSubview(content)
         NSLayoutConstraint.activate([
-            content.topAnchor.constraint(equalTo: card.topAnchor,
-                                         constant: attributes.padding.top),
-            content.bottomAnchor.constraint(equalTo: card.bottomAnchor,
-                                            constant: -attributes.padding.bottom),
-            content.leadingAnchor.constraint(equalTo: card.leadingAnchor,
-                                             constant: attributes.padding.left),
-            content.trailingAnchor.constraint(equalTo: card.trailingAnchor,
-                                              constant: -attributes.padding.right)
+            content.topAnchor.constraint(equalTo: card.topAnchor),
+            content.bottomAnchor.constraint(equalTo: card.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: card.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: card.trailingAnchor)
         ])
 
         if message.showCloseButton {
@@ -132,6 +154,36 @@ final class ModalMessageView: UIView, InAppMessageView {
         }
     }
 
+    /// Sizes the artwork to the spec's rule, which is a `min()` of three quantities:
+    ///
+    /// * the artwork's **natural** height at the card's width — what it wants;
+    /// * `cardWidth ÷ minImageRatio` — a **shape** cap, so the crossover at 0.55 is the same on
+    ///   every device that has room for it;
+    /// * `available − copyReserve` — a **floor** under the copy and the call to action, which on a
+    ///   cramped screen binds before the shape does.
+    ///
+    /// Run here rather than declared because Auto Layout has no `min()`, and the obvious
+    /// encoding — a ratio plus two `<=` caps — is satisfiable by shrinking the card instead.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        guard let constraint = artworkHeight, artworkRatio > 0 else { return }
+        let cardWidth = card.bounds.width
+        guard cardWidth > 0 else { return }
+
+        let available = bounds.height - attributes.margin.top - attributes.margin.bottom
+        let natural = cardWidth / artworkRatio
+        let shapeCap = cardWidth / attributes.minImageRatio
+        let reserveCap = available - attributes.copyReserve
+
+        let height = min(natural, min(shapeCap, reserveCap))
+        // Guarded, or assigning inside a layout pass would loop forever.
+        if abs(constraint.constant - height) > 0.5 {
+            constraint.constant = height
+            setNeedsLayout()
+        }
+    }
+
     func install(in container: UIView) {
         translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(self)
@@ -144,8 +196,22 @@ final class ModalMessageView: UIView, InAppMessageView {
 
         let guide = container.safeAreaLayoutGuide
         let width = card.widthAnchor.constraint(lessThanOrEqualToConstant: attributes.maxWidth)
-        // Preferred width, yielding to the screen on a device narrower than `minWidth`.
-        let preferred = card.widthAnchor.constraint(greaterThanOrEqualToConstant: attributes.minWidth)
+        // The card takes the width the margins leave it, up to `maxWidth`. There is no minimum:
+        // the spec has none, and one would push the card past the margin on a narrow device.
+        // Just below required. On a cramped screen the copy and buttons can want a few points
+        // more than `copyReserve` allows for — the spec says the reserve binds first there — and
+        // the card absorbing that is better than the artwork losing a hundred points to it. The
+        // required top and bottom margin inequalities still stop the card leaving the screen.
+        let cardHeightCap = card.heightAnchor.constraint(
+            lessThanOrEqualTo: guide.heightAnchor,
+            constant: -(attributes.margin.top + attributes.margin.bottom))
+        cardHeightCap.priority = UILayoutPriority(999)
+
+        let preferred = card.widthAnchor.constraint(equalTo: guide.widthAnchor,
+                                                    constant: -(attributes.margin.left
+                                                                + attributes.margin.right))
+        // Above the artwork's natural ratio, so the card's width is settled first and the artwork
+        // clamps against it rather than the other way round.
         preferred.priority = UILayoutPriority(750)
 
         NSLayoutConstraint.activate([
@@ -161,8 +227,10 @@ final class ModalMessageView: UIView, InAppMessageView {
                                       constant: attributes.margin.top),
             card.bottomAnchor.constraint(lessThanOrEqualTo: guide.bottomAnchor,
                                          constant: -attributes.margin.bottom),
-            card.heightAnchor.constraint(lessThanOrEqualToConstant: attributes.maxHeight)
+            cardHeightCap
         ])
+
+
     }
 
     func present(completion: (() -> Void)?) {
