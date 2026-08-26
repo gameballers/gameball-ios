@@ -167,18 +167,10 @@ final class SlideupMessageView: UIView, InAppMessageView {
             completion?()
         }
 
-        guard !iamReduceMotionEnabled() else {
-            transform = .identity
-            settle()
-            return
-        }
-
         transform = offscreenTransform()
-        UIView.animate(withDuration: 0.2,
-                       delay: 0,
-                       options: [.curveEaseOut],
-                       animations: { self.transform = .identity },
-                       completion: { _ in settle() })
+        MessageMotion.animate(duration: MessageMotion.slideDuration,
+                              animations: { self.transform = .identity },
+                              completion: settle)
     }
 
     func dismiss(completion: (() -> Void)?) {

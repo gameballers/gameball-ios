@@ -134,8 +134,9 @@ final class ModalImageMessageView: UIView, InAppMessageView {
         }
 
         alpha = 0
-        UIView.animate(withDuration: 0.2, animations: { self.alpha = 1 },
-                       completion: { _ in settle() })
+        MessageMotion.animate(duration: MessageMotion.fadeDuration,
+                              animations: { self.alpha = 1 },
+                              completion: settle)
     }
 
     func dismiss(completion: (() -> Void)?) {
@@ -150,8 +151,10 @@ final class ModalImageMessageView: UIView, InAppMessageView {
             finish()
             return
         }
-        UIView.animate(withDuration: 0.2, animations: { self.alpha = 0 },
-                       completion: { _ in finish() })
+        // Immediate, per the spec: there is no exit animation on this type. A dismissal is a
+        // decision the customer already made, and animating it out delays the app coming back.
+        alpha = 0
+        finish()
     }
 
     @objc private func handleClose() {

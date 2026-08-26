@@ -244,23 +244,13 @@ final class ModalMessageView: UIView, InAppMessageView {
             completion?()
         }
 
-        guard !iamReduceMotionEnabled() else {
-            alpha = 1
-            card.transform = .identity
-            settle()
-            return
-        }
-
+        // Fade only. An earlier version also scaled the card from 0.94, which was this SDK's
+        // invention: neither Braze nor CleverTap scales anything, and a fade is the one motion
+        // property four platforms reproduce identically — a curve or a spring is not.
         alpha = 0
-        card.transform = CGAffineTransform(scaleX: 0.94, y: 0.94)
-        UIView.animate(withDuration: 0.2,
-                       delay: 0,
-                       options: [.curveEaseOut],
-                       animations: {
-                           self.alpha = 1
-                           self.card.transform = .identity
-                       },
-                       completion: { _ in settle() })
+        MessageMotion.animate(duration: MessageMotion.fadeDuration,
+                              animations: { self.alpha = 1 },
+                              completion: settle)
     }
 
     func dismiss(completion: (() -> Void)?) {
@@ -278,11 +268,9 @@ final class ModalMessageView: UIView, InAppMessageView {
             return
         }
 
-        UIView.animate(withDuration: 0.2,
-                       delay: 0,
-                       options: [.curveEaseIn],
-                       animations: { self.alpha = 0 },
-                       completion: { _ in finish() })
+        // Immediate, per the spec. See the fullscreen views for the reasoning.
+        alpha = 0
+        finish()
     }
 
     @objc private func handleClose() {

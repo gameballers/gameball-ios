@@ -162,7 +162,10 @@ final class FullscreenMessageView: UIView, InAppMessageView {
         }
 
         alpha = 0
-        UIView.animate(withDuration: 0.2, animations: { self.alpha = 1 },
+        UIView.animate(withDuration: MessageMotion.fadeDuration,
+                       delay: 0,
+                       options: [.curveEaseOut],
+                       animations: { self.alpha = 1 },
                        completion: { _ in settle() })
     }
 
@@ -178,8 +181,10 @@ final class FullscreenMessageView: UIView, InAppMessageView {
             finish()
             return
         }
-        UIView.animate(withDuration: 0.2, animations: { self.alpha = 0 },
-                       completion: { _ in finish() })
+        // Immediate, per the spec: there is no exit animation on this type. A dismissal is a
+        // decision the customer already made, and animating it out delays the app coming back.
+        alpha = 0
+        finish()
     }
 
     @objc private func handleClose() {
