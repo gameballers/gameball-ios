@@ -154,9 +154,15 @@ final class MessageLayoutResilienceTests: XCTestCase {
 
     // MARK: - Artwork must not be cropped when the artwork *is* the message
 
+    /// Artwork image views only.
+    ///
+    /// The close glyph is an SF Symbol, so `MessageCloseButton` contains a `UIImageView` of its
+    /// own. Counting it as artwork would make "this message has no image" false for every message
+    /// that can be closed — which is all of them.
     private func imageViews(in view: UIView) -> [UIImageView] {
         var found: [UIImageView] = []
         for subview in view.subviews {
+            if subview is MessageCloseButton { continue }
             if let image = subview as? UIImageView { found.append(image) }
             found.append(contentsOf: imageViews(in: subview))
         }
@@ -629,8 +635,8 @@ final class MessageLayoutResilienceTests: XCTestCase {
         let labels = copyLabels(in: view)
         XCTAssertTrue(labels.contains { $0.text == "Still here" })
         XCTAssertTrue(labels.contains { $0.text == "And so is the body." })
-        XCTAssertTrue(allSubviews(of: view).compactMap { $0 as? UIImageView }.isEmpty,
-                      "no image view should be built when there is no image")
+        XCTAssertTrue(imageViews(in: view).isEmpty,
+                      "no artwork view should be built when there is no image")
     }
 
     func testLabelsOptIntoDynamicType() {

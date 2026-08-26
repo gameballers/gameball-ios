@@ -24,6 +24,8 @@ struct MessageViewAttributes {
         var headerFont = UIFont.preferredFont(forTextStyle: .title3)
         var bodyFont = UIFont.preferredFont(forTextStyle: .subheadline)
         var imageHeight: CGFloat = 160
+        /// From the card's top trailing corner.
+        var closeInset: CGFloat = 4
 
         static let defaults = Modal()
     }

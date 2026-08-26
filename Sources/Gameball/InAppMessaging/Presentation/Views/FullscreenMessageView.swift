@@ -93,7 +93,11 @@ final class FullscreenMessageView: UIView, InAppMessageView {
         addSubview(content)
 
         if message.showCloseButton {
-            let close = MessageCloseButton(tintColor: message.style.closeButtonColor)
+            // Three cases, resolved here because only the view knows the background the glyph
+            // will sit on. See `MessageTheme.closeGlyphColor`.
+            let close = MessageCloseButton(
+                tintColor: MessageTheme.closeGlyphColor(named: message.style.closeButtonColor,
+                                                        background: message.style.backgroundColor))
             close.addTarget(self, action: #selector(handleClose), for: .touchUpInside)
             addSubview(close)
             NSLayoutConstraint.activate([
