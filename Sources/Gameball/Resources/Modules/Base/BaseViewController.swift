@@ -61,10 +61,17 @@ public class BaseViewController: UIViewController {
         }
     }
 
+    /// The language this screen's layout direction should follow. Defaults to the SDK-wide
+    /// language set at `init()`. Subclasses that resolve a per-call language (e.g. showProfile's
+    /// optional `lang` override) should override this so the close button's visual side and the
+    /// view's own layout direction never disagree — see `GB_WEBVIEWWIDGETViewController`.
+    var viewLanguage: Languages {
+        return GB_Localizator.sharedInstance.language
+    }
 
     func setupViewLanguage(){
 
-        if GB_Localizator.sharedInstance.language == Languages.arabic {
+        if viewLanguage == Languages.arabic {
             view.semanticContentAttribute = .forceRightToLeft
 
         } else {

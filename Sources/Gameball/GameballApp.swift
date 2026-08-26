@@ -60,19 +60,15 @@ public class GameballApp {
                 self.networkManager.registerBaseUrl(baseUrl: baseUrl)
             }
 
-            // Save global preferred language
+            // Store session token in memory (no persistence)
+            self.sessionToken = config.sessionToken
+
+            // Save global preferred language (used by LanguageHelper.resolveLanguage()'s fallback chain)
             if config.lang.count == 2 {
                 UserDefaults.standard.set(config.lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
             }
 
-            // Store session token in memory (no persistence)
-            self.sessionToken = config.sessionToken
-
-            var language = Languages.english
-            if config.lang == "ar" {
-                language = Languages.arabic
-            }
-
+            let language: Languages = (config.lang == "ar") ? .arabic : .english
             self.networkManager.registerAPIKey(APIKey: config.apiKey, language: language)
 
             // Mark as initialized immediately
@@ -167,8 +163,8 @@ public class GameballApp {
                 return
             }
 
-            // Resolve language using priority order
-            let resolvedLanguage = LanguageHelper.resolveLanguage()
+            // Resolve language using priority order (explicit request.lang takes precedence)
+            let resolvedLanguage = LanguageHelper.resolveLanguage(override: request.lang)
 
             let viewController = self.prepareProfileViewController(
                 apiKey: config.apiKey,
@@ -212,7 +208,8 @@ public class GameballApp {
                 "closeButtonColor": request.closeButtonColor,
                 "widgetUrlPrefix": request.widgetUrlPrefix,
                 "mobile": request.mobile,
-                "email": request.email
+                "email": request.email,
+                "lang": request.lang
             ]))
         }
     }
@@ -222,6 +219,19 @@ public class GameballApp {
         DispatchQueue.main.async { [weak self] in
             guard let vc = self?.presentedWidgetVC, vc.presentingViewController != nil else { return }
             vc.dismiss(animated: true)
+        }
+    }
+
+    /// Changes the SDK's global language on demand, without re-calling `init`. Affects everything
+    /// that isn't overridden per-call: future `showProfile` presentations that don't pass their own
+    /// `lang`, `initializeCustomer`/`sendEvent` requests, and the SDK's own localized strings.
+    /// A `showProfile` call with an explicit `lang` still takes precedence over this for that one
+    /// presentation — this only changes the fallback used when no per-call override is given.
+    /// - Parameter lang: A 2-letter language code (e.g. "en", "ar"). Ignored if invalid.
+    public func setLanguage(_ lang: String) {
+        queue.async { [weak self] in
+            self?.applyGlobalLanguage(lang)
+            self?.logger.log("sdk.setLanguage", params: GameballLogger.compact(["lang": lang]))
         }
     }
 
@@ -247,6 +257,19 @@ public class GameballApp {
 
 
     // MARK: - Private Implementation
+
+    /// Persists `lang` as the SDK-wide preferred language (for `LanguageHelper.resolveLanguage()`'s
+    /// fallback chain) and updates `GB_Localizator`/the network layer's current language in the
+    /// same call, so the two never drift apart the way the close-button bug happened when only
+    /// one of the two was kept in sync. Backs the public `setLanguage(_:)`. Must be called on `queue`.
+    private func applyGlobalLanguage(_ lang: String) {
+        guard lang.count == 2 else { return }
+
+        UserDefaults.standard.set(lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
+
+        let language: Languages = (lang == "ar") ? .arabic : .english
+        self.networkManager.setLanguage(language: language)
+    }
 
     private func loadBotSettings(completion: @escaping (Error?) -> Void) {
         // Use only the path - the base URL is added automatically by the URL extension

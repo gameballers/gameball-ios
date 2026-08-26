@@ -15,10 +15,17 @@ class LanguageHelper {
     private static let rtlLanguageCodes = ["ar"]
 
     /// Resolves the language to use based on priority:
-    /// 1. Customer preferred language (set via CustomerAttributes)
-    /// 2. Global preferred language (set during SDK init)
-    /// 3. Device locale (fallback)
-    static func resolveLanguage() -> String {
+    /// 1. Explicit per-call override (e.g., passed to showProfile)
+    /// 2. Customer preferred language (set via CustomerAttributes)
+    /// 3. Global preferred language (set during SDK init)
+    /// 4. Device locale (fallback)
+    /// - Parameter override: Optional per-call language code. Used only when it's a valid 2-letter code; otherwise falls back to the existing priority chain.
+    static func resolveLanguage(override: String? = nil) -> String {
+        // Highest priority: explicit per-call override
+        if let override = override, !override.isEmpty, override.count == 2 {
+            return override
+        }
+
         // First priority: Customer preferred language
         if let customerLanguage = UserDefaults.standard.string(forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue),
            !customerLanguage.isEmpty,
