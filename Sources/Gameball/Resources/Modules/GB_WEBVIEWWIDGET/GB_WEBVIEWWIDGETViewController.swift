@@ -40,6 +40,16 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
 
     private var closeBtn: UIButton!
 
+    /// Resolves once per presentation so the close button's side (below) and the view's own
+    /// layout direction (`BaseViewController.setupViewLanguage`) always agree — resolving them
+    /// independently let a stale SDK-wide language disagree with a per-call `lang` override and
+    /// visually reverse the close button.
+    private lazy var resolvedLanguage: String = lang ?? LanguageHelper.resolveLanguage()
+
+    override var viewLanguage: Languages {
+        return LanguageHelper.isRTL(resolvedLanguage) ? .arabic : .english
+    }
+
     private func setupCloseButton(_ button: UIButton) {
         // Draw the "X" as a stroked vector into a template image rather than loading a PNG,
         // so it stays crisp at any scale, ships no bundled asset, and is tinted by
@@ -94,9 +104,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
             closeBtnRight.isHidden = true
             closeBtnLeft.isHidden = true
         } else {
-            let selectedLanguage = lang ?? LanguageHelper.resolveLanguage()
-
-            if LanguageHelper.shouldHandleCloseButtonDirection(selectedLanguage: selectedLanguage) {
+            if LanguageHelper.shouldHandleCloseButtonDirection(selectedLanguage: resolvedLanguage) {
                 // RTL language with LTR device or vice versa - show left button
                 closeBtnRight.isHidden = true
                 closeBtnLeft.isHidden = false

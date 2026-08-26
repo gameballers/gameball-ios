@@ -15,6 +15,7 @@ public struct ShowProfileRequest {
     public let widgetUrlPrefix: String?
     public let mobile: String?
     public let email: String?
+    public let lang: String?
     public let externalLinkCallback: ((String) -> Void)?
     public let widgetEventCallback: (([String: Any]?) -> Void)?
 
@@ -28,6 +29,7 @@ public struct ShowProfileRequest {
     ///   - widgetUrlPrefix: Optional custom widget URL (currently unused)
     ///   - mobile: Optional customer mobile number
     ///   - email: Optional customer email address
+    ///   - lang: Optional 2-letter language code to use for this widget presentation (e.g., "en", "ar"). When not provided, falls back to the SDK's existing language resolution (customer preferred language, then global preferred language, then device locale)
     ///   - externalLinkCallback: Optional handler for links tagged gbExternalBrowser=true; when set, the link is delegated to it instead of being opened by the SDK in the system browser
     ///   - widgetEventCallback: Optional handler that receives widget events as a [type, metadata] dictionary posted via window.WidgetEvent.postEvent
     public init(
@@ -39,6 +41,7 @@ public struct ShowProfileRequest {
         widgetUrlPrefix: String? = nil,
         mobile: String? = nil,
         email: String? = nil,
+        lang: String? = nil,
         externalLinkCallback: ((String) -> Void)? = nil,
         widgetEventCallback: (([String: Any]?) -> Void)? = nil
     ) {
@@ -50,6 +53,7 @@ public struct ShowProfileRequest {
         self.widgetUrlPrefix = widgetUrlPrefix
         self.mobile = mobile
         self.email = email
+        self.lang = lang
         self.externalLinkCallback = externalLinkCallback
         self.widgetEventCallback = widgetEventCallback
     }
