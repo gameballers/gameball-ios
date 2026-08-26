@@ -136,10 +136,8 @@ enum MessageParser {
             showCloseButton: type != .slideup
                 && (closeBehaviour.contains("button") || closeBehaviour.contains("both")),
             dismissOnScrimTap: closeBehaviour.contains("swipe") || closeBehaviour.contains("both"),
-            // A slideup left without a duration gets the default. See `defaultSlideupAutoDismiss`
-            // for the number and why the other two types are excluded.
-            autoDismissAfter: positiveInterval(content["autoDismissSeconds"])
-                ?? (type == .slideup ? defaultSlideupAutoDismiss : nil),
+            autoDismissAfter: parseAutoDismiss(content["autoDismissSeconds"],
+                                               type: type, campaignId: campaignId),
             layout: parseLayout(content["layout"], type: type, campaignId: campaignId),
             orientation: parseOrientation(content["orientation"]),
             slidePosition: parseSlidePosition(content["slideFrom"]),
@@ -344,6 +342,36 @@ enum MessageParser {
     /// rendering hint, not a contract. And layout is never inferred from which fields are
     /// populated: personalised copy resolving to empty is indistinguishable from a
     /// deliberately image-only campaign.
+    /// Resolves `autoDismissSeconds`, which carries **three** distinct states rather than two.
+    ///
+    /// * **Absent** — the campaign expressed no opinion. A slideup takes the constant default; a
+    ///   modal or fullscreen stays until dismissed, because timing out a surface the customer is
+    ///   reading would pull it away mid-sentence.
+    /// * **Explicit zero** — the author switched the timer off. Honoured on every type. Reading
+    ///   this as "unset" and substituting the default overrides a deliberate choice, which is
+    ///   what an earlier version of this did.
+    /// * **Malformed** — negative, or not a number. Treated as absent and logged, because it is a
+    ///   mistake rather than an instruction.
+    private static func parseAutoDismiss(_ raw: Any?,
+                                         type: GameballMessageType,
+                                         campaignId: Int) -> TimeInterval? {
+        let fallback: TimeInterval? = type == .slideup ? defaultSlideupAutoDismiss : nil
+
+        guard raw != nil, !(raw is NSNull) else { return fallback }
+        guard let seconds = doubleValue(raw) else {
+            iamLog("campaign \(campaignId) sent an unreadable autoDismissSeconds "
+                 + "(\(raw ?? "nil")); using the default for a \(type)")
+            return fallback
+        }
+        if seconds == 0 { return nil }
+        guard seconds > 0 else {
+            iamLog("campaign \(campaignId) sent a negative autoDismissSeconds (\(seconds)); "
+                 + "using the default for a \(type)")
+            return fallback
+        }
+        return seconds
+    }
+
     private static func parseLayout(_ raw: Any?,
                                     type: GameballMessageType,
                                     campaignId: Int) -> GameballMessageLayout {

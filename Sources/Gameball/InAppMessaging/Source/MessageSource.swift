@@ -18,16 +18,15 @@ let defaultDisplayCooldown: TimeInterval = 30
 /// slideup in the wild. A swipe is always available, but a swipe is a gesture nobody announces,
 /// so without a timer the banner sits over the host app for the rest of the session.
 ///
-/// Seven seconds is roughly one to notice the animation, four and a half to read a fifteen-word
-/// slideup at a cautious 200 words per minute, and a second and a half to decide and reach for
-/// it. It sits between Braze's five-second slideup default and Material's ten-second "long"
-/// snackbar, and just under the eight seconds chosen by the one campaign on the account that
-/// asked for a duration at all — so a campaign that wants longer still gets a visible difference
-/// by saying so.
+/// Eight seconds, fixed by the cross-platform UI spec. It is roughly one second to notice the
+/// animation, four and a half to read a fifteen-word banner at a cautious 200 words per minute,
+/// and the rest to decide and reach for it — and it matches the value the one live campaign that
+/// configured a duration chose. This is a `Constant` in the spec's sense: identical on every
+/// platform, and not a number to re-derive per SDK.
 ///
 /// Slideups only. A modal or a fullscreen takes the screen deliberately, and timing one out
 /// would pull content the customer is reading.
-let defaultSlideupAutoDismiss: TimeInterval = 7
+let defaultSlideupAutoDismiss: TimeInterval = 8
 
 /// Backoff for retrying a sync that failed in a way that could plausibly succeed.
 ///

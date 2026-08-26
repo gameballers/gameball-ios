@@ -62,7 +62,10 @@ final class ModalMessageView: UIView, InAppMessageView {
         // rather than the message.
         if let image = image {
             let imageView = UIImageView(image: image)
-            imageView.contentMode = .scaleAspectFill
+            // Contain: a hero image sits inside a card alongside copy, so it is never cropped and
+        // never distorted. Marketing artwork routinely bakes text into the image, and cropping
+        // here cuts it. The image-only compositions are the deliberate exception — they cover.
+        imageView.contentMode = .scaleAspectFit
             imageView.clipsToBounds = true
             imageView.translatesAutoresizingMaskIntoConstraints = false
             imageView.heightAnchor.constraint(equalToConstant: attributes.imageHeight).isActive = true

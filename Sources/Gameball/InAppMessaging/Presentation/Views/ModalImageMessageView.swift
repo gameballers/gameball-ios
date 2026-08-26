@@ -50,7 +50,7 @@ final class ModalImageMessageView: UIView, InAppMessageView {
         card.translatesAutoresizingMaskIntoConstraints = false
         addSubview(card)
 
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.isAccessibilityElement = true
         imageView.accessibilityTraits = UIAccessibilityTraits.image

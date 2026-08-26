@@ -523,15 +523,33 @@ final class MessageParserTests: XCTestCase {
                      "a fullscreen must not auto-dismiss")
     }
 
-    /// A zero or negative duration is not a request for an instant dismissal — it is an
-    /// unconfigured field spelled badly, and it falls back like an absent one.
-    func testANonPositiveDurationFallsBackToTheDefault() {
-        for value in [0, -1] {
+    /// Three different values, per the UI spec: *absent* takes the default, *explicit zero* means
+    /// "stay until dismissed" and is honoured, and *malformed* falls back like an absent one.
+    ///
+    /// The first version of this conflated absent and zero, which silently overrode an author who
+    /// had deliberately switched the timer off. The spec is explicit: "Absent and zero are
+    /// different values; do not conflate them."
+    func testExplicitZeroMeansStayUntilDismissed() {
+        let message = parseOne(["messageType": 1],
+                               content: ["autoDismissSeconds": 0])?.message
+        XCTAssertNil(message?.autoDismissAfter,
+                     "zero is an author switching the timer off, not an unset field")
+    }
+
+    func testAMalformedDurationFallsBackLikeAnAbsentOne() {
+        for value in [-1, -30] {
             let message = parseOne(["messageType": 1],
                                    content: ["autoDismissSeconds": value])?.message
             XCTAssertEqual(message?.autoDismissAfter, defaultSlideupAutoDismiss,
-                           "autoDismissSeconds: \(value)")
+                           "autoDismissSeconds: \(value) is malformed, not a choice")
         }
+    }
+
+    /// A modal with an explicit zero has no timer either — and neither does one with no field at
+    /// all, so for the other two types the two paths converge.
+    func testZeroOnAModalIsStillNoTimer() {
+        XCTAssertNil(parseOne(["messageType": 2],
+                              content: ["autoDismissSeconds": 0])?.message.autoDismissAfter)
     }
 
     /// `showCloseButton` used to be reported as `true` for every slideup, because a missing

@@ -192,82 +192,56 @@ final class MessageLayoutResilienceTests: XCTestCase {
         }
     }
 
-    /// The inconsistency at the heart of IAM-8. `ModalImageMessageView` and
-    /// `FullscreenImageMessageView` render the same thing — a campaign whose artwork carries the
-    /// whole message, with no copy to fall back on — and they disagreed: fit in one, fill in the
-    /// other. The same asset showed completely as a modal and cropped as a fullscreen.
-    func testTheTwoImageOnlyViewsAgreeOnHowToScale() {
-        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
+    /// Both image-only compositions crop, and that is the spec's rule rather than an oversight:
+    /// when the artwork *is* the message it goes full-bleed, and letterboxing it would frame a
+    /// poster inside bars. A hero image inside a card is the opposite case — see the test below.
+    ///
+    /// IAM-8 was filed as "four of five views crop artwork", narrowed to the modal/fullscreen
+    /// image-only disagreement, and then fixed on the wrong side: commit bada75d made fullscreen
+    /// `contain`, when the UI spec says both image-only views are `cover` and it was the *modal*
+    /// that disagreed. This asserts the spec.
+    func testBothImageOnlyCompositionsFillTheirSurface() {
+        let asset = image(width: 1200, height: 628)
+
+        let fullscreenHost = IAMLayoutHost(size: CGSize(width: 375, height: 812))
         let fullscreen = FullscreenImageMessageView(
             message: makeMessage(type: .fullscreen, layout: .imageOnly),
-            attributes: .defaults, image: image(width: 1200, height: 628),
-            icon: nil, coordinator: nil)
-        host.install(fullscreen)
+            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
+        fullscreenHost.install(fullscreen)
 
         let modalHost = IAMLayoutHost(size: CGSize(width: 375, height: 812))
         let modal = ModalImageMessageView(
             message: makeMessage(type: .modal, layout: .imageOnly),
-            attributes: .defaults, image: image(width: 1200, height: 628),
-            icon: nil, coordinator: nil)
+            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
         modalHost.install(modal)
 
         guard let fullscreenImage = imageViews(in: fullscreen).first,
               let modalImage = imageViews(in: modal).first else {
             return XCTFail("expected an image view in each")
         }
+        XCTAssertEqual(fullscreenImage.contentMode, .scaleAspectFill,
+                       "an image-only fullscreen is full-bleed")
+        XCTAssertEqual(modalImage.contentMode, .scaleAspectFill,
+                       "an image-only modal fills its card for the same reason")
         XCTAssertEqual(fullscreenImage.contentMode, modalImage.contentMode,
-                       "the same campaign asset must scale the same way in both image-only views")
+                       "the two image-only compositions must agree")
     }
 
-    /// And the consequence, measured. A 1200x628 banner — the ordinary shape of marketing artwork —
-    /// in a portrait fullscreen keeps about a quarter of itself under aspect-fill. Anything baked
-    /// into the asset, which for an image-only campaign is the entire message, is gone.
-    func testAWideAssetIsNotCroppedAwayInAnImageOnlyFullscreen() {
+    /// The other half of the rule. A hero image sits *inside* a card alongside copy, so it is
+    /// contained: never cropped, never distorted. This is the view IAM-8 should have changed.
+    func testAHeroImageInsideACardIsContainedNotCropped() {
         let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
-        let asset = image(width: 1200, height: 628)
-        let view = FullscreenImageMessageView(
-            message: makeMessage(type: .fullscreen, layout: .imageOnly),
-            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
+        let view = ModalMessageView(
+            message: makeMessage(type: .modal, layout: .textWithImage),
+            attributes: .defaults, image: image(width: 1200, height: 628),
+            icon: nil, coordinator: nil)
         host.install(view)
 
         guard let imageView = imageViews(in: view).first else {
-            return XCTFail("no image view")
+            return XCTFail("no hero image view")
         }
-        let visible = visibleFraction(of: asset, in: imageView)
-        XCTAssertGreaterThan(visible, 0.95,
-                             "only \(Int(visible * 100))% of the asset is visible; an image-only "
-                           + "campaign has no copy to carry the message instead")
-    }
-
-    /// A tall asset in a wide-ish container is the same defect mirrored, and a fix that special-cased
-    /// landscape assets would pass the test above and fail this one.
-    func testATallAssetIsNotCroppedAwayEither() {
-        let host = IAMLayoutHost(size: CGSize(width: 375, height: 400))
-        let asset = image(width: 400, height: 1600)
-        let view = FullscreenImageMessageView(
-            message: makeMessage(type: .fullscreen, layout: .imageOnly),
-            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
-        host.install(view)
-
-        guard let imageView = imageViews(in: view).first else {
-            return XCTFail("no image view")
-        }
-        XCTAssertGreaterThan(visibleFraction(of: asset, in: imageView), 0.95)
-    }
-
-    /// The modal already behaved. Asserted so a change to the shared code cannot regress it.
-    func testTheImageOnlyModalShowsTheWholeAsset() {
-        let host = IAMLayoutHost(size: CGSize(width: 375, height: 812))
-        let asset = image(width: 1200, height: 628)
-        let view = ModalImageMessageView(
-            message: makeMessage(type: .modal, layout: .imageOnly),
-            attributes: .defaults, image: asset, icon: nil, coordinator: nil)
-        host.install(view)
-
-        guard let imageView = imageViews(in: view).first else {
-            return XCTFail("no image view")
-        }
-        XCTAssertGreaterThan(visibleFraction(of: asset, in: imageView), 0.95)
+        XCTAssertEqual(imageView.contentMode, .scaleAspectFit,
+                       "a hero image is contained; cropping it would cut copy baked into the art")
     }
 
     /// The deliberate exception, asserted so nobody "fixes" it by sweeping every view at once. A
