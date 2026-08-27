@@ -4,25 +4,81 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.2.2
+## Latest Release: v3.3.0
 
-**Release Date**: 2026-07-09
-**Version**: 3.2.2
-**Type**: Patch Release
+**Release Date**: 2026-08-29
+**Version**: 3.3.0
+**Type**: Minor Release
 
-v3.2.2 is a maintenance release fixing a right-to-left layout leak. No API changes — every v3.2.x and v3.1.x integration works unchanged.
+v3.3.0 adds **per-call and global language control** and **push notification click tracking**. All v3.2.x and v3.1.x code continues to work without modification — every addition is backward compatible.
 
-### RTL Layout No Longer Leaks Into the Host App
+### Per-Call Widget Language
 
-When the widget was shown in Arabic, the SDK set the right-to-left layout direction on the global `UIView.appearance()` proxy, which flipped the host app's own views too — and left them flipped after the widget was dismissed. The layout direction is now applied to the widget's own view only, so the host app's layout is untouched.
+`ShowProfileRequest` now accepts an optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to present that one widget in a specific language:
 
-No integration change: Arabic widgets still render right-to-left.
+```swift
+let request = ShowProfileRequest(
+    customerId: "customer_123",
+    lang: "ar"
+)
+GameballApp.getInstance().showProfile(request)
+```
+
+When `lang` is omitted, the SDK's existing resolution applies: customer preferred language, then global preferred language, then device locale.
+
+### Global Language Switch
+
+`GameballApp.setLanguage(_:)` changes the SDK's global language on demand, without re-calling `init`:
+
+```swift
+GameballApp.getInstance().setLanguage("ar")
+```
+
+This changes the fallback used by future `showProfile` presentations that don't pass their own `lang` (a per-call `lang` still wins), subsequent requests, and the SDK's localized strings. Invalid codes are ignored.
+
+### Push Click Tracking
+
+`GameballApp.handlePushClick(_:completion:sessionToken:)` reports taps on Gameball push notifications so campaign clicks are counted. Call it from your notification-tap handler with the notification's payload:
+
+```swift
+func userNotificationCenter(_ center: UNUserNotificationCenter,
+                            didReceive response: UNNotificationResponse,
+                            withCompletionHandler completionHandler: @escaping () -> Void) {
+    let payload = response.notification.request.content.userInfo
+
+    let isGameball = GameballApp.getInstance().handlePushClick(payload) { reported in
+        print("Click reported: \(reported)")
+    }
+
+    if !isGameball {
+        // Not a Gameball notification — run your own handling.
+    }
+    completionHandler()
+}
+```
+
+It returns `true` when the notification is a Gameball one; the tap is reported to Gameball when the payload carries a click token. An optional `sessionToken` overrides the global session token for this request.
+
+### Changes
+
+- Added optional `ShowProfileRequest.lang` (per-presentation language override)
+- Added `GameballApp.setLanguage(_:)` (global language switch)
+- Added `GameballApp.handlePushClick(_:completion:sessionToken:)` (push click tracking)
 
 ### Installation
 
 ```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.2")
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.0")
 ```
+
+---
+
+## v3.2.2
+
+**Release Date**: 2026-07-09
+**Type**: Patch Release
+
+v3.2.2 fixed a right-to-left layout leak: the widget's RTL layout direction was applied via the global `UIView.appearance()` proxy, flipping the host app's own views. It is now scoped to the widget's own view only. No API changes.
 
 ---
 
