@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.2.2-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -31,14 +31,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.2.2")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.0")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.2.2` or later
+3. Select version: `3.3.0` or later
 
 ## Quick Start
 
@@ -264,6 +264,52 @@ GameballApp.getInstance().showProfile(request)
 
 The SDK also records internal diagnostic logs automatically to aid troubleshooting.
 
+### Language Control (v3.3.0+)
+
+Present a single widget in a specific language with `ShowProfileRequest.lang` (2-letter code, e.g. `"en"`, `"ar"`):
+
+```swift
+let request = ShowProfileRequest(customerId: "customer_123", lang: "ar")
+GameballApp.getInstance().showProfile(request)
+```
+
+When `lang` is omitted, the SDK's existing resolution applies: customer preferred language, then global preferred language, then device locale.
+
+Or switch the SDK's global language on demand — no re-`init` needed:
+
+```swift
+GameballApp.getInstance().setLanguage("ar")
+```
+
+This changes the fallback used by future `showProfile` presentations (a per-call `lang` still wins), subsequent requests, and the SDK's localized strings. Invalid codes are ignored.
+
+### Push Click Tracking (v3.3.0+)
+
+Report taps on Gameball push notifications so campaign clicks are counted. Call `handlePushClick` from your notification-tap handler with the notification's payload:
+
+> **Call this from wherever your app handles the notification tap — not on receive/delivery.** If you call it as soon as the notification arrives, you'll count every delivery as a click; call it from the tap handler so it only counts when the user actually opens it.
+
+```swift
+func userNotificationCenter(_ center: UNUserNotificationCenter,
+                            didReceive response: UNNotificationResponse,
+                            withCompletionHandler completionHandler: @escaping () -> Void) {
+    let payload = response.notification.request.content.userInfo
+
+    // Returns true when the notification is a Gameball one; the tap is
+    // reported to Gameball when the payload carries a click token.
+    let isGameball = GameballApp.getInstance().handlePushClick(payload) { reported in
+        print("Click reported: \(reported)")
+    }
+
+    if !isGameball {
+        // Not a Gameball notification — run your own handling.
+    }
+    completionHandler()
+}
+```
+
+An optional `sessionToken` parameter overrides the global session token for this request.
+
 ## API Methods
 
 The SDK provides the following public methods:
@@ -272,6 +318,8 @@ The SDK provides the following public methods:
 - `sendEvent(_:completion:sessionToken:)` - Track events with optional token override
 - `showProfile(_:presentationStyle:sessionToken:)` - Show profile widget with optional token override
 - `hideProfile()` - Dismiss the currently shown profile widget (no-op when nothing is shown)
+- `setLanguage(_:)` - Change the SDK's global language on demand without re-calling `init`
+- `handlePushClick(_:completion:sessionToken:)` - Report a tap on a Gameball push notification for click tracking
 
 ## Advanced Usage
 
@@ -750,6 +798,7 @@ Request object for displaying the Gameball customer profile widget with customiz
 | `showCloseButton` | Bool | ❌ | Show close button (defaults to true) |
 | `closeButtonColor` | String | ❌ | Close button color (hex format like "#FF0000") |
 | `widgetUrlPrefix` | String | ❌ | Custom widget URL prefix |
+| `lang` | String? | ❌ | 2-letter language code for this presentation only (v3.3.0+) |
 
 **Guest Mode (v3.1.1+):**
 - `customerId` is now optional - when `nil` or omitted, widget opens in guest mode

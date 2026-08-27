@@ -4,6 +4,30 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
+## v3.2.x → v3.3.0 (Non-Breaking)
+
+### Overview
+v3.3.0 adds per-call and global language control, and push notification click tracking. **All v3.2.x and v3.1.x code continues to work without changes** — every addition is optional.
+
+### What's New
+- 🌐 **Per-Call Widget Language**: pass optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to `ShowProfileRequest` to present that one widget in a specific language
+- 🌐 **Global Language Switch**: `GameballApp.getInstance().setLanguage("ar")` changes the SDK's global language on demand, without re-calling `init`
+- 📣 **Push Click Tracking**: call `GameballApp.getInstance().handlePushClick(payload)` from your notification-tap handler to report Gameball push notification taps for campaign click counting
+
+### Action Required
+None. To adopt the new features, use the optional APIs:
+
+```swift
+// Per-call language
+let request = ShowProfileRequest(customerId: "customer_123", lang: "ar")
+GameballApp.getInstance().showProfile(request)
+
+// Push click tracking — from your notification-tap handler
+GameballApp.getInstance().handlePushClick(response.notification.request.content.userInfo)
+```
+
+---
+
 ## v3.1.1 → v3.2.0 (Non-Breaking)
 
 ### Overview

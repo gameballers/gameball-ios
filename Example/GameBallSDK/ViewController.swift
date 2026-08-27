@@ -508,4 +508,30 @@ extension ViewController {
         // Host-initiated dismiss — e.g. on logout. No-op when nothing is shown.
         GameballApp.getInstance().hideProfile()
     }
+
+    // EXAMPLE 15: Language Control (v3.3.0+)
+    func example_languageControl() {
+        // Per-call: present this one widget in Arabic, regardless of the global language
+        let request = ShowProfileRequest(
+            customerId: "customer_123",
+            lang: "ar"
+        )
+        GameballApp.getInstance().showProfile(request, presentationStyle: .fullScreen)
+
+        // Global: switch the SDK language on demand — no re-init needed.
+        // Future showProfile calls without a per-call lang use this.
+        GameballApp.getInstance().setLanguage("ar")
+    }
+
+    // EXAMPLE 16: Report a Push Notification Tap (v3.3.0+)
+    // Call from your notification handler, e.g. userNotificationCenter(_:didReceive:withCompletionHandler:)
+    func example_handlePushClick(_ userInfo: [AnyHashable: Any]) {
+        let isGameball = GameballApp.getInstance().handlePushClick(userInfo) { reported in
+            print(reported ? "✅ Push click reported" : "❌ Push click report failed")
+        }
+
+        if !isGameball {
+            // Not a Gameball notification — run your own handling.
+        }
+    }
 }

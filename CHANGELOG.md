@@ -3,6 +3,16 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.3.0] - 2026-08-29 📱
+
+> **Minor Release**: Per-call and global language control, and push notification click tracking
+
+### ✨ Added
+- 🌐 **Per-Call Widget Language**: `ShowProfileRequest` now accepts an optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to present that one widget in a specific language; when omitted, the SDK's existing language resolution applies (customer preferred language, then global preferred language, then device locale)
+- 🌐 **Global Language Switch**: new `GameballApp.setLanguage(_:)` changes the SDK's global language on demand without re-calling `init` — affects future `showProfile` presentations that don't pass their own `lang`, subsequent requests, and the SDK's localized strings
+- 📣 **Push Click Tracking**: new `GameballApp.handlePushClick(_:completion:sessionToken:)` — call it from your notification-tap handler with the notification's payload; returns `true` when the notification is a Gameball one and reports the campaign click to Gameball when a click token is present
+
+
 ## [3.2.2] - 2026-07-09 🔧
 
 > **Patch Release**: RTL layout no longer leaks into the host app
