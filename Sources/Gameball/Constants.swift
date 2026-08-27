@@ -19,6 +19,7 @@ class APIEndPoints {
     static let sendEvent = "/events"
     static let initializeCustomer = "/customers"
     static let mobileLogs = "/api/v4.0/integrations/mobile/logs"
+    static let pushClick = "/api/v4.0/integrations/mobile/push-click"
 }
 
 enum SDKInfo {
