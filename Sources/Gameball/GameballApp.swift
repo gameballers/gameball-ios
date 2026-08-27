@@ -64,12 +64,10 @@ public class GameballApp {
             self.sessionToken = config.sessionToken
 
             // Save global preferred language (used by LanguageHelper.resolveLanguage()'s fallback chain)
-            if config.lang.count == 2 {
-                UserDefaults.standard.set(config.lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
-            }
+            // and update GB_Localizator/the network layer's current language to match.
+            self.applyGlobalLanguage(config.lang)
 
-            let language: Languages = (config.lang == "ar") ? .arabic : .english
-            self.networkManager.registerAPIKey(APIKey: config.apiKey, language: language)
+            self.networkManager.registerAPIKey(APIKey: config.apiKey)
 
             // Mark as initialized immediately
             self.isInitialized = true
@@ -233,6 +231,47 @@ public class GameballApp {
             self?.applyGlobalLanguage(lang)
             self?.logger.log("sdk.setLanguage", params: GameballLogger.compact(["lang": lang]))
         }
+    }
+
+    /// Handle a tap on a push notification, called from the host app's own notification handler
+    /// with the notification's payload (e.g. `userInfo` from `userNotificationCenter(_:didReceive:)` —
+    /// FCM flattens its data payload to the top level there).
+    ///
+    /// Returns `true` when the notification is a Gameball one. When it also carries a click token,
+    /// the tap is reported to Gameball to count the campaign click; the optional `completion`
+    /// receives that report's result.
+    /// - Parameter payload: The notification's data payload.
+    /// - Parameter completion: Optional callback receiving whether the report succeeded.
+    /// - Parameter sessionToken: Optional session token for this request.
+    ///                           If provided, overrides the global sessionToken.
+    ///                           If not provided, nullifies the global sessionToken.
+    @discardableResult
+    public func handlePushClick(_ payload: [AnyHashable: Any], completion: ((Bool) -> Void)? = nil, sessionToken: String? = nil) -> Bool {
+        guard let isGB = payload["isGB"] as? String, isGB.caseInsensitiveCompare("true") == .orderedSame else {
+            return false
+        }
+
+        let token = payload["gbClickToken"] as? String
+        // Fire telemetry immediately, regardless of what happens below.
+        logger.log("sdk.handlePushClick", params: GameballLogger.compact(["hasToken": !(token?.isEmpty ?? true)]))
+
+        // Set session token if provided, otherwise set to nil
+        let isInitialized = queue.sync { () -> Bool in
+            self.sessionToken = sessionToken
+            return self.config != nil
+        }
+
+        guard isInitialized else {
+            completion?(false)
+            return true
+        }
+
+        guard let token = token, !token.isEmpty else {
+            return true
+        }
+
+        networkManager.reportPushClick(clickToken: token, sessionToken: sessionToken, completion: completion)
+        return true
     }
 
     // MARK: - Configuration Access

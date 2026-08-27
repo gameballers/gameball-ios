@@ -296,6 +296,24 @@ class NetworkManager:NSObject {
         task.resume()
     }
 
+    /// Reports a push notification tap so the campaign's click stats are incremented.
+    /// Fire-and-forget: only the 2xx/non-2xx distinction is surfaced via `completion`, no error body parsing.
+    func reportPushClick(clickToken: String, sessionToken: String?, completion: ((Bool) -> Void)? = nil) {
+        guard Reachability.isConnectedToNetwork() else {
+            completion?(false)
+            return
+        }
+
+        var request = URLRequest(path: APIEndPoints.pushClick, method: .POST, params: ["clickToken": clickToken], sessionToken: sessionToken)
+        self.adaptRequest(urlRequest: &request, sessionToken: sessionToken)
+
+        let task = self.urlSession.dataTask(with: request) { _, response, _ in
+            let succeeded = (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false
+            completion?(succeeded)
+        }
+        task.resume()
+    }
+
     func initializeCustomer(
         request: InitializeCustomerRequest,
         sessionToken: String?,
@@ -370,10 +388,9 @@ class NetworkManager:NSObject {
         }
     }
     
-    func registerAPIKey(APIKey: String,language: Languages  = .english) {
+    func registerAPIKey(APIKey: String) {
         NetworkManager.shared().APIKey = APIKey
         UserDefaults.standard.set(APIKey, forKey: UserDefaultsKeys.APIKey.rawValue)
-        setLanguage(language: language)
     }
     
     func registerBaseUrl(baseUrl: String) {
