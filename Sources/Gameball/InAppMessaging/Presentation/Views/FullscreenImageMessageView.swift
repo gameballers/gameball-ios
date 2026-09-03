@@ -12,6 +12,7 @@ final class FullscreenImageMessageView: UIView, InAppMessageView {
     private(set) var presented = false
 
     private let message: GameballInAppMessage
+    private let attributes: MessageViewAttributes.Fullscreen
     private let imageView = UIImageView()
 
     init(message: GameballInAppMessage,
@@ -20,6 +21,7 @@ final class FullscreenImageMessageView: UIView, InAppMessageView {
          icon: UIImage?,
          coordinator: MessageViewCoordinating?) {
         self.message = message
+        self.attributes = attributes.fullscreen
         self.coordinator = coordinator
         super.init(frame: .zero)
         imageView.image = image
@@ -56,7 +58,47 @@ final class FullscreenImageMessageView: UIView, InAppMessageView {
         ])
 
         if message.clickAction != nil {
-            addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+            tap.delegate = self
+            addGestureRecognizer(tap)
+        }
+
+        // Buttons, over the artwork. A poster drops its *copy* — that is the composition, and the
+        // dashboard guards it so every platform agrees — but never its call to action, which on an
+        // image-only campaign is the only affordance beyond a tap on the surface.
+        //
+        // Floated rather than stacked beneath: a full-bleed poster reaching every edge is the
+        // whole point of this composition, and a row below the image would letterbox it.
+        // Android does the same in `bindImageOnly`.
+        if !message.buttons.isEmpty {
+            let buttons = MessageButtonStack()
+            // Stacked and stretched, as on the copy composition: a fullscreen surface has the room.
+            buttons.axis = .vertical
+            buttons.distribution = .fill
+            buttons.alignment = .fill
+            buttons.spacing = attributes.buttonSpacing
+            buttons.translatesAutoresizingMaskIntoConstraints = false
+            for button in message.buttons {
+                let view = MessageButtonView(button: button, style: button.style,
+                                             typography: .fullscreenButton,
+                                             contentInsets: attributes.buttonPadding)
+                view.onTap = { [weak self] tapped in
+                    self?.process(action: tapped.action, buttonId: tapped.id)
+                }
+                buttons.addArrangedSubview(view)
+            }
+            addSubview(buttons)
+
+            // Inside the safe area, unlike the artwork, which runs under the home indicator.
+            let insets = attributes.imageOnlyButtonsPadding
+            NSLayoutConstraint.activate([
+                buttons.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor,
+                                                 constant: insets.left),
+                buttons.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor,
+                                                  constant: -insets.right),
+                buttons.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor,
+                                                constant: -insets.bottom)
+            ])
         }
 
         if message.showCloseButton {
@@ -136,5 +178,20 @@ final class FullscreenImageMessageView: UIView, InAppMessageView {
     @objc private func handleTap() {
         guard let action = message.clickAction else { return }
         process(action: action, buttonId: nil)
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension FullscreenImageMessageView: UIGestureRecognizerDelegate {
+
+    /// A tap that lands on a campaign button belongs to that button.
+    ///
+    /// Not merely a question of which action runs: a recogniser on the surface cancels the touch
+    /// tracking of any control beneath it, so without this the button never fires at all and the
+    /// tap is reported as a tap on the poster.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldReceive touch: UITouch) -> Bool {
+        return MessageButtonView.surfaceGestureShouldReceive(touchOn: touch.view)
     }
 }

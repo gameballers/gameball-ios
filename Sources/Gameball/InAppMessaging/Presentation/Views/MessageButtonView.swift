@@ -71,6 +71,25 @@ final class MessageButtonView: UIButton {
 /// Wrapping instead of overflowing matters most in the cases nobody previews: a long label, a
 /// narrow device, or an accessibility text size. Any of the three otherwise pushes a button
 /// off the edge of the card.
+extension MessageButtonView {
+
+    /// Whether a gesture recogniser on the message *surface* should see a touch that landed on
+    /// `view`.
+    ///
+    /// A tap on a campaign button belongs to that button. This is not merely about which action
+    /// runs: a recogniser above a control cancels its touch tracking, so without this the button
+    /// never fires at all and the tap is reported as a tap on the surface. Walks the hierarchy
+    /// rather than checking `view` alone, so a button that later gains a wrapper still wins.
+    static func surfaceGestureShouldReceive(touchOn view: UIView?) -> Bool {
+        var current = view
+        while let candidate = current {
+            if candidate is MessageButtonView { return false }
+            current = candidate.superview
+        }
+        return true
+    }
+}
+
 final class MessageButtonStack: UIStackView {
 
     override func layoutSubviews() {

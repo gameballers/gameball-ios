@@ -39,8 +39,9 @@ final class ModalImageMessageView: UIView, InAppMessageView {
         accessibilityIdentifier = GameballAccessibility.surface(for: .modal)
         backgroundColor = MessageTheme.scrim
         if message.dismissOnScrimTap {
-            addGestureRecognizer(UITapGestureRecognizer(target: self,
-                                                        action: #selector(handleScrimTap(_:))))
+            let scrim = UITapGestureRecognizer(target: self, action: #selector(handleScrimTap(_:)))
+            scrim.delegate = self
+            addGestureRecognizer(scrim)
         }
 
         card.layer.cornerRadius = attributes.cornerRadius
@@ -67,8 +68,43 @@ final class ModalImageMessageView: UIView, InAppMessageView {
 
         if message.clickAction != nil {
             let tap = UITapGestureRecognizer(target: self, action: #selector(handleCardTap))
+            tap.delegate = self
             card.addGestureRecognizer(tap)
             card.isUserInteractionEnabled = true
+        }
+
+        // Buttons, over the artwork. A poster drops its *copy* — the composition, guarded in the
+        // dashboard so every platform agrees — but never its call to action. Android does the same
+        // in `bindImageOnly`.
+        if !message.buttons.isEmpty {
+            let buttons = MessageButtonStack()
+            // Trailing-aligned and sized to their labels, as on the copy composition: a compact row
+            // is the dialog convention, and `MessageButtonStack` wraps to a column when it must.
+            buttons.axis = .horizontal
+            buttons.distribution = .fill
+            buttons.alignment = .fill
+            buttons.spacing = attributes.buttonSpacing
+            buttons.translatesAutoresizingMaskIntoConstraints = false
+            for button in message.buttons {
+                let view = MessageButtonView(button: button, style: button.style,
+                                             typography: .modalButton,
+                                             contentInsets: attributes.buttonPadding)
+                view.onTap = { [weak self] tapped in
+                    self?.process(action: tapped.action, buttonId: tapped.id)
+                }
+                buttons.addArrangedSubview(view)
+            }
+            card.addSubview(buttons)
+
+            let insets = attributes.imageOnlyButtonsPadding
+            NSLayoutConstraint.activate([
+                buttons.leadingAnchor.constraint(greaterThanOrEqualTo: card.leadingAnchor,
+                                                 constant: insets.left),
+                buttons.trailingAnchor.constraint(equalTo: card.trailingAnchor,
+                                                  constant: -insets.right),
+                buttons.bottomAnchor.constraint(equalTo: card.bottomAnchor,
+                                                constant: -insets.bottom)
+            ])
         }
 
         if message.showCloseButton {
@@ -169,5 +205,20 @@ final class ModalImageMessageView: UIView, InAppMessageView {
     @objc private func handleScrimTap(_ gesture: UITapGestureRecognizer) {
         guard !card.frame.contains(gesture.location(in: self)) else { return }
         dismiss(completion: nil)
+    }
+}
+
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension ModalImageMessageView: UIGestureRecognizerDelegate {
+
+    /// A tap that lands on a campaign button belongs to that button.
+    ///
+    /// Both recognisers here sit above the buttons — the scrim's on this view, the card's on the
+    /// card — and either would cancel a button's touch tracking, leaving it inert.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldReceive touch: UITouch) -> Bool {
+        return MessageButtonView.surfaceGestureShouldReceive(touchOn: touch.view)
     }
 }
