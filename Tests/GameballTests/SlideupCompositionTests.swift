@@ -48,6 +48,40 @@ final class SlideupCompositionTests: XCTestCase {
         return view.subviews + view.subviews.flatMap { descendants(of: $0) }
     }
 
+    /// The bounding box of everything a view actually drew, in points.
+    ///
+    /// Renders through `draw(_:)` rather than reading the path back, so what is asserted is what
+    /// the customer sees — a glyph is only correct once it has been drawn.
+    private func inkBounds(of view: UIView, scale: CGFloat = 3) -> CGRect {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = false
+        let image = UIGraphicsImageRenderer(bounds: view.bounds, format: format)
+            .image { _ in view.draw(view.bounds) }
+
+        guard let cgImage = image.cgImage else { return .zero }
+        let width = cgImage.width, height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(data: &pixels, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: width * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return .zero }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var minX = width, maxX = -1, minY = height, maxY = -1
+        for y in 0..<height {
+            for x in 0..<width where pixels[(y * width + x) * 4 + 3] > 32 {
+                minX = min(minX, x); maxX = max(maxX, x)
+                minY = min(minY, y); maxY = max(maxY, y)
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return .zero }
+        return CGRect(x: CGFloat(minX) / scale, y: CGFloat(minY) / scale,
+                      width: CGFloat(maxX - minX + 1) / scale,
+                      height: CGFloat(maxY - minY + 1) / scale)
+    }
+
     // MARK: - The chevron
 
     /// Drawn only when the campaign set a message action, so the affordance matches the behaviour.
@@ -68,6 +102,29 @@ final class SlideupCompositionTests: XCTestCase {
         }
         XCTAssertEqual(chevron.bounds.width, attributes.chevronSize, accuracy: 0.5)
         XCTAssertEqual(chevron.bounds.height, attributes.chevronSize, accuracy: 0.5)
+    }
+
+    /// The box was never the problem. `testTheChevronIsTheSpecsSize` pins the 20-point square the
+    /// view occupies and has always passed — the defect lived *inside* it, where a single `inset`
+    /// set both axes and the path filled a 10 × 10 square. At that proportion the arms sit at
+    /// 26.6°, giving a 127° vertex, and the glyph reads as a blunt `>` rather than a chevron.
+    ///
+    /// Half as wide as tall puts the arms at 45°, which is the proportion the Android SDK's own
+    /// `gb_iam_ic_chevron` uses — the two platforms draw the same affordance.
+    func testTheChevronIsDrawnHalfAsWideAsItIsTall() {
+        let chevron = SlideupChevron(color: .black, size: attributes.chevronSize)
+        chevron.frame = CGRect(origin: .zero,
+                               size: CGSize(width: attributes.chevronSize,
+                                            height: attributes.chevronSize))
+
+        // Round caps grow the ink by half the stroke at each extreme, so a whole stroke width
+        // comes off both axes to get back to the path itself.
+        let strokeWidth: CGFloat = 2
+        let ink = inkBounds(of: chevron)
+        let drawn = CGSize(width: ink.width - strokeWidth, height: ink.height - strokeWidth)
+
+        XCTAssertEqual(drawn.width / drawn.height, 0.5, accuracy: 0.06,
+                       "drawn \(drawn.width) × \(drawn.height) pt: a square glyph is a '>'")
     }
 
     /// It is decoration. The banner itself is the accessibility element, and announcing a chevron

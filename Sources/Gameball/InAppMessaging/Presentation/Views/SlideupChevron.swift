@@ -47,12 +47,16 @@ final class SlideupChevron: UIView {
         let rightToLeft = UIView.userInterfaceLayoutDirection(for: semanticContentAttribute)
             == .rightToLeft
 
-        // A quarter of the box on each side, so the glyph reads as an inset chevron rather than
-        // filling its square.
-        let inset = size / 4
-        let top = CGPoint(x: rightToLeft ? size - inset : inset, y: inset)
-        let middle = CGPoint(x: rightToLeft ? inset : size - inset, y: size / 2)
-        let bottom = CGPoint(x: top.x, y: size - inset)
+        // Two insets, not one. A single value for both axes forces the glyph square, which puts
+        // the arms at 26.6° and reads as a blunt `>`; half as wide as tall puts them at 45°,
+        // matching the Android SDK's `gb_iam_ic_chevron`.
+        let verticalInset = size / 4
+        let horizontalInset = size * 3 / 8
+        let near = rightToLeft ? size - horizontalInset : horizontalInset
+        let far = rightToLeft ? horizontalInset : size - horizontalInset
+        let top = CGPoint(x: near, y: verticalInset)
+        let middle = CGPoint(x: far, y: size / 2)
+        let bottom = CGPoint(x: near, y: size - verticalInset)
 
         let path = UIBezierPath()
         path.move(to: top)
