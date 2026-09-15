@@ -112,6 +112,9 @@ public class GameballApp {
             self.customerId = request.customerId
             UserDefaults.standard.set(request.customerId, forKey: UserDefaultsKeys.customerId.rawValue)
 
+            // In-app messaging: additive and guarded. No-op unless startInAppMessaging ran.
+            InAppMessagingCoordinator.shared.notifyCustomerChanged(request.customerId)
+
             // Save customer preferred language if provided
             if let preferredLanguage = request.customerAttributes?.preferredLanguage,
                !preferredLanguage.isEmpty {
@@ -408,6 +411,9 @@ extension GameballApp {
                     completion(success, error?.description)
                 }
             }
+
+            // In-app messaging: additive and guarded. No-op unless startInAppMessaging ran.
+            InAppMessagingCoordinator.shared.notifyEvents(event.events)
         }
     }
 
