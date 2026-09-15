@@ -46,10 +46,10 @@
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" id="6Rp-B8-Nhn"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="centerX" secondItem="fnl-2z-Ty3" secondAttribute="centerX" id="F19-oB-Us3"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="width" secondItem="i5M-Pr-FkT" secondAttribute="width" id="Q4v-FI-VqS"/>
-                <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="tM2-KC-iR4" secondAttribute="trailing" constant="30" id="o69-by-jhi"/>
+                <constraint firstItem="fnl-2z-Ty3" firstAttribute="right" secondItem="tM2-KC-iR4" secondAttribute="right" constant="30" id="o69-by-jhi"/>
                 <constraint firstItem="OTK-I0-JbD" firstAttribute="bottom" secondItem="fnl-2z-Ty3" secondAttribute="bottom" id="xDd-lu-bml"/>
                 <constraint firstItem="tM2-KC-iR4" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" constant="15" id="zAe-bb-vCw"/>
-                <constraint firstItem="XYZ-AB-CD1" firstAttribute="leading" secondItem="fnl-2z-Ty3" secondAttribute="leading" constant="30" id="L1-L2-L3"/>
+                <constraint firstItem="XYZ-AB-CD1" firstAttribute="left" secondItem="fnl-2z-Ty3" secondAttribute="left" constant="30" id="L1-L2-L3"/>
                 <constraint firstItem="XYZ-AB-CD1" firstAttribute="top" secondItem="fnl-2z-Ty3" secondAttribute="top" constant="15" id="T1-T2-T3"/>
             </constraints>
             <viewLayoutGuide key="safeArea" id="fnl-2z-Ty3"/>
