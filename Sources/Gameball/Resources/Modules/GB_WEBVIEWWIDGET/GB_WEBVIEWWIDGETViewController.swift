@@ -96,26 +96,12 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Default to right button (LTR)
-        closeBtn = closeBtnRight
-
-        // Handle close button visibility and position based on language direction
-        if !showCloseBtn {
-            closeBtnRight.isHidden = true
-            closeBtnLeft.isHidden = true
-        } else {
-            if LanguageHelper.shouldHandleCloseButtonDirection(selectedLanguage: resolvedLanguage) {
-                // RTL language with LTR device or vice versa - show left button
-                closeBtnRight.isHidden = true
-                closeBtnLeft.isHidden = false
-                closeBtn = closeBtnLeft
-            } else {
-                // Default - show right button
-                closeBtnRight.isHidden = false
-                closeBtnLeft.isHidden = true
-                closeBtn = closeBtnRight
-            }
-        }
+        // Buttons are pinned with absolute left/right in the XIB, not leading/trailing, so
+        // `setupViewLanguage`'s `semanticContentAttribute` doesn't flip them a second time.
+        let isRTL = LanguageHelper.isRTL(resolvedLanguage)
+        closeBtn = isRTL ? closeBtnLeft : closeBtnRight
+        closeBtnLeft.isHidden = !showCloseBtn || !isRTL
+        closeBtnRight.isHidden = !showCloseBtn || isRTL
 
         let baseURL = widgetApiPrefix ?? NetworkManager.shared().widgetUrl
         var urlComponents = URLComponents(string: baseURL)
