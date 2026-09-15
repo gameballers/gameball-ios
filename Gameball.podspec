@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   # 2
-  s.version    = '3.3.1'
+  s.version    = '3.4.0'
 
   #3
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
@@ -32,7 +32,7 @@ Pod::Spec.new do |s|
 
 
   # 7
-  s.framework = 'UIKit'
+  s.frameworks = 'UIKit', 'SafariServices'
   s.static_framework = true
   s.dependency 'Firebase'
   s.dependency 'Firebase/Core'

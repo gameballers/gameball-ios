@@ -42,3 +42,6 @@ Carthage/Build
 
 # Xcode DerivedData
 *.xcresult
+
+# Internal design docs, plans and research — kept locally, never published
+docs/

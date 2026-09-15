@@ -3,6 +3,33 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.4.0] - 2026-09-15 📬
+
+> **Minor Release**: Opt-in in-app messaging — slideup, modal and fullscreen campaigns evaluated on-device
+
+### ✨ Added
+- 📬 **In-App Messaging**: a self-contained, **opt-in** module that syncs campaigns, evaluates triggers on the device, draws messages above the host app, and reports impression / click / dismiss telemetry
+  - `GameballApp.startInAppMessaging(customerId:)` / `stopInAppMessaging()` / `isInAppMessagingStarted`
+  - `GameballApp.inAppMessagingDelegate` — `GameballInAppMessagingDelegate`, held **weakly**, with a default implementation for every method
+  - `GameballApp.logPurchase(productId:price:currency:quantity:properties:)` — reaches campaigns as an event named `purchase`
+- 🎨 **Three Message Types**: slideup (a non-blocking band), modal (a card over a scrim) and fullscreen, each in a text-with-artwork and an artwork-only composition
+- 🎯 **On-Device Triggers**: `session_start` and named events, with metadata filters (`equals`, `notEquals`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`, `contains`)
+- 🕒 **Frequency Control**: a global display floor from the backend plus per-campaign repeat rules, both persisted so they survive a restart
+- 📊 **Batched Telemetry**: an outbox that persists undelivered events, retries transient failures and discards permanent ones
+
+### 🔄 Changed
+- 🔇 **Console diagnostics are off in release builds.** `iamLog` output is gated on `GameballInAppMessagingLogging`, which is `true` in a `DEBUG` build and `false` otherwise. Set it in a release build only to reproduce a reported problem
+- 🔧 **Nothing for existing integrations.** The module is dormant until `startInAppMessaging` is called: before then it makes no requests, starts no timers, writes no storage and draws nothing. `GameballApp` gained two guarded lines that are no-ops without opt-in.
+
+### 🐛 Fixed
+- 🌙 **Quiet hours are enforced.** `quietHours` arrives at the response root as `{enabled, start, end}` in **UTC** and applies globally; a message caught by the window is suppressed rather than deferred, so the occurrence is lost and the campaign is not
+- 🔃 **Orientation is gated, not forced.** A message whose campaign names an orientation the device is not in waits in the deferred stack instead of rotating the host app
+- 🌐 **Personalisation locale is resolved per fetch**, not once when the source is built, so a language change between launches reaches the next sync
+- ⚖️ **Dashboard operator spellings are accepted.** `Is`, `Greater`, `Less` and `Between` previously failed to parse, and a dropped filter widens a campaign to every occurrence of its event
+- 🥇 **A same-trigger runner-up is deferred rather than lost.** When two campaigns fire on one occurrence, dismissing the winner now reveals the second instead of discarding it
+- 🖼️ **Artwork that failed to load no longer stays failed for the session**, and an image-only campaign's buttons are rendered
+- 🧪 **Test Harness**: `Scripts/test.sh` gives the package a working build/test entry point. `swift test` cannot build it (UIKit is absent from the macOS SDK) and a bare `xcodebuild` from the repo root picks up a stale `_Pods.xcodeproj`.
+
 ## [3.3.1] - 2026-09-15 🔧
 
 > **Patch Release**: Widget close button direction and runtime language switching
@@ -14,7 +41,6 @@ All notable changes to Gameball iOS SDK are documented here.
 ### 🔄 Changed
 - 🌐 **Preferred Language Sync**: `setLanguage(_:)` now also mirrors the new language onto the customer's Gameball profile, so server-driven communications follow it too; the profile update is skipped until a customer has been initialized
 
-
 ## [3.3.0] - 2026-08-29 📱
 
 > **Minor Release**: Per-call and global language control, and push notification click tracking
@@ -23,7 +49,6 @@ All notable changes to Gameball iOS SDK are documented here.
 - 🌐 **Per-Call Widget Language**: `ShowProfileRequest` now accepts an optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to present that one widget in a specific language; when omitted, the SDK's existing language resolution applies (customer preferred language, then global preferred language, then device locale)
 - 🌐 **Global Language Switch**: new `GameballApp.setLanguage(_:)` changes the SDK's global language on demand without re-calling `init` — affects future `showProfile` presentations that don't pass their own `lang`, subsequent requests, and the SDK's localized strings
 - 📣 **Push Click Tracking**: new `GameballApp.handlePushClick(_:completion:sessionToken:)` — call it from your notification-tap handler with the notification's payload; returns `true` when the notification is a Gameball one and reports the campaign click to Gameball when a click token is present
-
 
 ## [3.2.2] - 2026-07-09 🔧
 
