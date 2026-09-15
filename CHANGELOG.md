@@ -3,6 +3,18 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.3.1] - 2026-09-15 🔧
+
+> **Patch Release**: Widget close button direction and runtime language switching
+
+### 🐛 Fixed
+- 🔧 **Widget Close Button Direction**: the close button is now positioned from the widget's own language alone — it was previously placed by comparing the device locale against the widget language, so presenting the widget in a language other than the device's put the button on the wrong side, and it jumped to the opposite side when the app was relaunched in a different device language
+- 🌐 **Runtime Language Switching**: `setLanguage(_:)` is no longer outranked by a preferred language persisted from an earlier `initializeCustomer` — it now takes effect for the `lang` request header and for `showProfile` presentations that don't pass their own `lang`
+
+### 🔄 Changed
+- 🌐 **Preferred Language Sync**: `setLanguage(_:)` now also mirrors the new language onto the customer's Gameball profile, so server-driven communications follow it too; the profile update is skipped until a customer has been initialized
+
+
 ## [3.3.0] - 2026-08-29 📱
 
 > **Minor Release**: Per-call and global language control, and push notification click tracking

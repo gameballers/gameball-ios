@@ -4,10 +4,51 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.3.0
+## Latest Release: v3.3.1
+
+**Release Date**: 2026-09-15
+**Version**: 3.3.1
+**Type**: Patch Release
+
+v3.3.1 fixes the widget's close button landing on the wrong side, and makes `setLanguage(_:)` take effect when a preferred language was already set. No API changes — every v3.3.0 integration works unchanged.
+
+### Close Button Direction
+
+The widget's close button is now positioned from the widget's own language alone. Previously its side was chosen by comparing the **device locale** against the widget language, which had two consequences: presenting the widget in a language other than the device's put the button on the wrong side, and relaunching the app in a different device language moved it to the opposite side even though the widget's language had not changed.
+
+The button now mirrors the widget: right in left-to-right languages, left in right-to-left ones, on any device locale.
+
+### Runtime Language Switching
+
+`setLanguage(_:)` was only setting the SDK's global preferred language, which is resolved *after* the customer's preferred language. When a preferred language had been persisted by an earlier `initializeCustomer`, that value won and the call silently had no effect.
+
+```swift
+GameballApp.getInstance().setLanguage("ar")
+```
+
+It now takes precedence, so the change applies to the `lang` request header and to `showProfile` presentations that don't pass their own `lang`.
+
+### Preferred Language Sync
+
+`setLanguage(_:)` now also mirrors the new language onto the customer's Gameball profile, so server-driven communications (campaigns, emails) follow it as well — previously the change only affected this device. The profile update is skipped until a customer has been initialized, since `initializeCustomer` persists the language itself.
+
+### Changes
+
+- Fixed the widget close button being positioned by device locale instead of widget language
+- Fixed `setLanguage(_:)` being outranked by a preferred language set through `initializeCustomer`
+- `setLanguage(_:)` now mirrors the preferred language onto the customer's Gameball profile
+
+### Installation
+
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.1")
+```
+
+---
+
+## v3.3.0
 
 **Release Date**: 2026-08-29
-**Version**: 3.3.0
 **Type**: Minor Release
 
 v3.3.0 adds **per-call and global language control** and **push notification click tracking**. All v3.2.x and v3.1.x code continues to work without modification — every addition is backward compatible.
@@ -64,12 +105,6 @@ It returns `true` when the notification is a Gameball one; the tap is reported t
 - Added optional `ShowProfileRequest.lang` (per-presentation language override)
 - Added `GameballApp.setLanguage(_:)` (global language switch)
 - Added `GameballApp.handlePushClick(_:completion:sessionToken:)` (push click tracking)
-
-### Installation
-
-```swift
-.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.0")
-```
 
 ---
 
