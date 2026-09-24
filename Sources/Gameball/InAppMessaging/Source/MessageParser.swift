@@ -61,6 +61,22 @@ enum MessageParser {
                           quietHours: quietHours, rawPayload: data)
     }
 
+    /// The kinds of entry the sync response carries.
+    ///
+    /// An unrecognised kind is skipped, never coerced. More are expected, and an older client
+    /// must degrade to silence rather than to a wrong display.
+    private static let outboundCampaignType = 1
+    private static let gameCampaignType = 2
+
+    /// Games this SDK can open, as the open-details text the widget expects.
+    ///
+    /// A value absent from this set is skipped: composing `details_<unknown>_<id>` would ask the
+    /// widget to open something it has no renderer for.
+    private static let knownGameTypes: Set<String> = [
+        "wheel", "slot", "quiz", "scratch", "match", "catcher",
+        "tictactoe", "shooter", "puzzle", "tap_target", "highway_drive"
+    ]
+
     /// Parses one campaign. Returns `nil` when it cannot be evaluated or rendered, always
     /// logging which field caused it.
     static func parseCampaign(_ json: [String: Any], responseIndex: Int) -> InAppMessageCampaign? {
@@ -91,6 +107,24 @@ enum MessageParser {
             return nil
         }
 
+        // Which kind of entry this is. Read before anything about the content, because a game's
+        // content arrives at display time and the checks below would otherwise drop it for having
+        // no header, body or image.
+        let campaignType = intValue(json["campaignType"]) ?? outboundCampaignType
+        if campaignType != outboundCampaignType && campaignType != gameCampaignType {
+            iamLog("campaign \(campaignId) has unrecognised campaignType \(campaignType); "
+                 + "this SDK renders outbound messages and opens game campaigns, so dropping")
+            return nil
+        }
+
+        var widget: GameballWidgetContent?
+        if campaignType == gameCampaignType {
+            guard let parsed = parseGameContent(json, campaignId: campaignId) else {
+                return nil // already logged
+            }
+            widget = parsed
+        }
+
         let content = json["content"] as? [String: Any] ?? [:]
         let locale = json["locale"] as? [String: Any] ?? [:]
 
@@ -100,13 +134,15 @@ enum MessageParser {
         let imageURL = resolveImageURL(content: content, type: type)
         let iconURL = normalisedURL(content["iconUrl"])
 
-        // Drawing an empty box is worse than showing nothing.
+        // Drawing an empty box is worse than showing nothing. Exempt by kind, not by which
+        // fields happen to be absent: a game renders itself, while a *message* missing all three
+        // is still a campaign with nothing to show and must keep failing for that reason.
         let hasText = header != nil || body != nil
-        guard hasText || imageURL != nil else {
+        guard widget != nil || hasText || imageURL != nil else {
             iamLog("campaign \(campaignId) has nothing to render; dropping")
             return nil
         }
-        if type == .slideup && !hasText {
+        if widget == nil && type == .slideup && !hasText {
             iamLog("slideup campaign \(campaignId) has no text; an icon alone is not a "
                  + "message, so dropping")
             return nil
@@ -142,7 +178,8 @@ enum MessageParser {
             orientation: parseOrientation(content["orientation"]),
             slidePosition: parseSlidePosition(content["slideFrom"]),
             extras: content["extras"] as? [String: Any] ?? [:],
-            style: parseStyle(content["colors"], alignments: alignments)
+            style: parseStyle(content["colors"], alignments: alignments),
+            widget: widget
         )
 
         let repeatable = boolValue(triggerJSON["repeatable"]) ?? false
@@ -166,10 +203,58 @@ enum MessageParser {
 
     // MARK: - Trigger
 
+    /// Reads the game fields from a `campaignType: 2` entry.
+    ///
+    /// `nil` when the entry cannot be opened, which drops it. Both fields are required: without
+    /// the id there is nothing to open, and without a recognised type there is no renderer to ask
+    /// for.
+    private static func parseGameContent(_ json: [String: Any],
+                                         campaignId: Int) -> GameballWidgetContent? {
+        guard let gameCampaignId = intValue(json["gameCampaignId"]), gameCampaignId != 0 else {
+            iamLog("campaign \(campaignId) is a game entry with no gameCampaignId; its "
+                 + "campaignId is always 0 and identifies nothing, so dropping")
+            return nil
+        }
+
+        guard let gameType = stringValue(json["gameCampaignType"]),
+              knownGameTypes.contains(gameType) else {
+            iamLog("campaign \(campaignId) has unrecognised gameCampaignType "
+                 + "'\(stringValue(json["gameCampaignType"]) ?? "")'; this SDK version has no "
+                 + "renderer for it, so dropping")
+            return nil
+        }
+
+        return GameballWidgetContent(
+            gameCampaignId: gameCampaignId,
+            gameCampaignType: gameType,
+            // Not on the entry today; the backend still carries these on the challenge. Read
+            // leniently so the day they move here costs no parser change.
+            delay: parseGameDelay(json["delay"]),
+            dismissLimit: intValue(json["dismissLimit"])
+        )
+    }
+
+    /// Seconds to wait after the trigger, bounded to the 0-60 the dashboard accepts.
+    private static func parseGameDelay(_ value: Any?) -> TimeInterval? {
+        guard let seconds = intValue(value), seconds > 0 else { return nil }
+        return TimeInterval(min(seconds, 60))
+    }
+
     private static func parseTrigger(_ json: [String: Any],
                                      campaignId: Int) -> MessageTrigger? {
         let type = (stringValue(json["type"]) ?? "").lowercased()
         if type == "session_start" { return .sessionStart }
+
+        // Deliberate, not unimplemented. On the web a URL is ambient and free; on mobile nothing
+        // is, so a screen trigger needs the host to instrument it — at which point it costs the
+        // same as a custom event. Named here so a marketer who targets a screen gets a
+        // diagnosable silence rather than an inexplicable one.
+        if type == "screen" {
+            iamLog("campaign \(campaignId) uses a screen trigger (screen "
+                 + "'\(stringValue(json["name"]) ?? "")'), which this SDK version does not "
+                 + "support; dropping")
+            return nil
+        }
 
         guard type == "event" else {
             iamLog("campaign \(campaignId) has unknown trigger type '\(type)'; dropping")

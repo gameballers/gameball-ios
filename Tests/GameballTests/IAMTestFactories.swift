@@ -34,7 +34,8 @@ func makeButton(id: String = "cta",
                                                             borderColor: nil))
 }
 
-func makeMessage(id: String = "1",
+func makeMessage(widget: GameballWidgetContent? = nil,
+                 id: String = "1",
                  type: GameballMessageType = .modal,
                  header: String? = "Header",
                  body: String? = "Body",
@@ -65,7 +66,8 @@ func makeMessage(id: String = "1",
                                 orientation: orientation,
                                 slidePosition: slidePosition,
                                 extras: extras,
-                                style: style ?? makeStyle())
+                                style: style ?? makeStyle(),
+                                widget: widget)
 }
 
 func makeCampaign(campaignId: Int = 1,
