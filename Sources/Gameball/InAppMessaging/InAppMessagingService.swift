@@ -64,6 +64,14 @@ final class InAppMessagingService {
 
     private var started = false
     private var campaigns: [InAppMessageCampaign] = []
+
+    /// Whether the held campaigns came from the cache rather than a live sync.
+    ///
+    /// Only games care. A message carries its own content, so a cached one is still correct; a
+    /// game carries a pointer and fetches its content live, so a cached entry is a promise this
+    /// SDK cannot keep — the campaign may have ended, and the widget would answer "this campaign
+    /// is not available" to a customer who never asked for it.
+    private var campaignsFromCache = false
     private var cooldown: TimeInterval = defaultDisplayCooldown
     /// The account's quiet window. `nil` until a sync says otherwise, which is also the
     /// value that means "never suppress on time of day".
@@ -318,6 +326,7 @@ final class InAppMessagingService {
             // A successful sync always wins, including an empty one — a customer whose campaigns
             // were switched off must stop seeing them.
             campaigns = value.campaigns
+            campaignsFromCache = false
             cooldown = value.cooldown
             quietHours = value.quietHours
             syncAttempt = 0
@@ -330,6 +339,7 @@ final class InAppMessagingService {
             // Applied only on failure. That is the backend's rule, and it also removes the race
             // where a slow cache read lands after a fast sync and clobbers fresher campaigns.
             if let cached = cache.load(customerId: customerId, now: now()) {
+                campaignsFromCache = true
                 campaigns = cached.campaigns
                 cooldown = cached.cooldown
                 quietHours = cached.quietHours
@@ -361,8 +371,25 @@ final class InAppMessagingService {
         // Judged after the winner's impression, the winner's own display would start the
         // floor that rules its runner-up out.
         let capBefore = cap.state
+
+        // A game campaign is never opened from a cached set. A message carries its own content, so
+        // a cached one is still correct; a game carries a pointer and fetches its content live, so
+        // a cached entry is a promise this SDK cannot keep. Dropped rather than deferred: the next
+        // live sync is what makes it openable again.
+        let eligible: [InAppMessageCampaign]
+        if campaignsFromCache {
+            eligible = campaigns.filter { candidate in
+                guard let widget = candidate.message.widget else { return true }
+                iamLog("game \(widget.gameCampaignId) skipped: the campaign set came from the "
+                     + "cache, and a game must be confirmed live before it is opened")
+                return false
+            }
+        } else {
+            eligible = campaigns
+        }
+
         guard let selected = selectCampaign(occurrence: occurrence,
-                                            campaigns: campaigns,
+                                            campaigns: eligible,
                                             capState: capBefore,
                                             now: now(),
                                             cooldown: cooldown,
@@ -625,6 +652,16 @@ final class InAppMessagingService {
 
             guard !campaign.isTest else {
                 iamLog("campaign \(campaign.campaignId) is a test send; reporting nothing")
+                return
+            }
+
+            // A game campaign is not a message campaign. Engagement is recorded through the
+            // challenge flow when the customer plays it, and an event sent here would attribute
+            // against a campaign id that is not a message — campaignId is 0 on every game entry.
+            // The display history above is still recorded; only the reporting stops.
+            guard !campaign.message.isWidget else {
+                iamLog("game \(campaign.message.widget?.gameCampaignId ?? 0) displayed; "
+                     + "reporting nothing, as engagement is recorded through the challenge flow")
                 return
             }
             self.analytics.log(MessageEvent(campaignId: campaign.campaignId,

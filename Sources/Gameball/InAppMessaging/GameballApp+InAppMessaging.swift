@@ -199,7 +199,12 @@ final class InAppMessagingCoordinator {
                 context: context,
                 image: message.imageURL.flatMap { prefetcher.image(for: $0) },
                 icon: message.iconURL.flatMap { prefetcher.image(for: $0) },
-                coordinator: presenter)
+                coordinator: presenter,
+                widgetURL: { widget in GameballApp.inAppWidgetURL(openDetail: widget.openDetail) },
+                // Takes the message away having never shown it: no impression is logged and the
+                // cap is untouched, so the campaign gets another go at its next trigger rather
+                // than being burned by a slow network.
+                onWidgetFailed: { presenter.dismiss() })
         })
 
         let router = MessageActionRouter(
@@ -364,5 +369,52 @@ public extension GameballApp {
         // as well would evaluate every purchase twice.
         sendEvent(event, completion: { success, error in completion?(success, error) },
                   sessionToken: sessionToken)
+    }
+}
+
+extension GameballApp {
+
+    /// Builds the widget URL for a campaign an in-app message opens.
+    ///
+    /// The campaign supplies only `openDetail`. Everything identifying — api key, customer,
+    /// locale, platform, session token — comes from SDK state, which is why the campaign payload
+    /// never carries a URL.
+    ///
+    /// The host is resolved as configured, then production. `showProfile` takes one per call and
+    /// still overrides it there; messaging has no caller to take one from, so without the
+    /// configured value a host aimed at a non-production environment would get production here —
+    /// which renders as "this campaign is not available" and is indistinguishable from a campaign
+    /// that does not exist.
+    ///
+    /// Navigation is hidden: the message is a card showing one campaign, not the profile, so the
+    /// widget's own chrome would offer a way out of the thing the customer was just handed.
+    static func inAppWidgetURL(openDetail: String) -> URL? {
+        let app = GameballApp.getInstance()
+        let base = app.configuredWidgetUrlPrefix ?? NetworkManager.shared().widgetUrl
+        guard var components = URLComponents(string: base) else {
+            iamLog("could not compose a widget url from base '\(base)'")
+            return nil
+        }
+
+        var items = [
+            URLQueryItem(name: "customerId", value: app.currentCustomerId),
+            URLQueryItem(name: "lang", value: LanguageHelper.resolveLanguage()),
+            URLQueryItem(name: "apiKey", value: NetworkManager.shared().APIKey),
+            URLQueryItem(name: "os", value: "iOS"),
+            URLQueryItem(name: "sdk", value: SDKInfo.version),
+            URLQueryItem(name: "openDetail", value: openDetail),
+            URLQueryItem(name: "hideNavigation", value: "true")
+        ]
+        if let token = app.currentSessionToken, !token.isEmpty {
+            items.append(URLQueryItem(name: "sessionToken", value: token))
+        }
+        components.queryItems = items
+
+        let url = components.url
+        // Logged because it is otherwise invisible: a campaign that opens on "this campaign is not
+        // available" looks identical whether the id is wrong, the customer cannot play it, or the
+        // host is pointed at a different widget environment than its api key belongs to.
+        iamLog("opening widget \(url?.absoluteString ?? "(could not compose)")")
+        return url
     }
 }
