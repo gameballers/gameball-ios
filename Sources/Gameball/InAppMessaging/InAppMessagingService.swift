@@ -621,7 +621,7 @@ final class InAppMessagingService {
 
             // Recorded here, not at selection: a message deferred or discarded must not burn its
             // slot, and `impressions = clicks + dismissals` only holds if this is the anchor.
-            self.cap.recordDisplay(campaignId: campaign.campaignId, at: self.now())
+            self.cap.recordDisplay(campaign: campaign.key, at: self.now())
 
             guard !campaign.isTest else {
                 iamLog("campaign \(campaign.campaignId) is a test send; reporting nothing")

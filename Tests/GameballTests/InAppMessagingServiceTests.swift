@@ -335,7 +335,7 @@ final class InAppMessagingServiceTests: XCTestCase {
         let reloaded = FrequencyCap(store: store, customerId: "cust-1")
         reloaded.load()
         XCTAssertEqual(reloaded.state.lastDisplayAt, clock)
-        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[7], clock)
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.message(7)], clock)
     }
 
     func testMessageDismissedBeforePaintReportsNothing() {

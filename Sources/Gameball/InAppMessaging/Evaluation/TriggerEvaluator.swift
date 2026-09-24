@@ -95,7 +95,7 @@ func triggerMatches(_ trigger: MessageTrigger, _ occurrence: TriggerOccurrence) 
 func isRepeatEligible(campaign: InAppMessageCampaign,
                       capState: CapState,
                       now: Date) -> Bool {
-    guard let last = capState.lastDisplayByCampaign[campaign.campaignId] else {
+    guard let last = capState.lastDisplayByCampaign[campaign.key] else {
         return true
     }
     guard campaign.repeatable else {

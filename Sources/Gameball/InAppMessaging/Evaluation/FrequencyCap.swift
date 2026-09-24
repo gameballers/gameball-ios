@@ -12,16 +12,67 @@ import Foundation
 /// *this* last show".
 struct CapState: Codable {
     var lastDisplayAt: Date?
-    var lastDisplayByCampaign: [Int: Date]
+    var lastDisplayByCampaign: [CampaignKey: Date]
 
     static let empty = CapState(lastDisplayAt: nil, lastDisplayByCampaign: [:])
 
-    mutating func recordDisplay(campaignId: Int, at time: Date) {
-        lastDisplayByCampaign[campaignId] = time
+    mutating func recordDisplay(campaign: CampaignKey, at time: Date) {
+        lastDisplayByCampaign[campaign] = time
         // Never let the global marker travel backwards. A device clock correction or an
         // out-of-order replay would otherwise reopen the floor early.
         if let existing = lastDisplayAt, existing > time { return }
         lastDisplayAt = time
+    }
+
+    // MARK: - Codable
+
+    // Hand-written because the key is a struct. `JSONEncoder` special-cases `String` and `Int`
+    // dictionary keys and writes an object; anything else becomes a flat array of alternating
+    // keys and values. Left to itself, `[CampaignKey: Date]` would silently change the stored
+    // shape and orphan every existing history.
+    //
+    // The read is what carries installs across the change. Verified against 3.4.0, which writes
+    // `{"lastDisplayByCampaign":{"2215":721692800}}` — a bare number, which `CampaignKey.parse`
+    // reads as a message campaign, because games did not exist when it was written.
+
+    private enum CodingKeys: String, CodingKey {
+        case lastDisplayAt
+        case lastDisplayByCampaign
+    }
+
+    init(lastDisplayAt: Date?, lastDisplayByCampaign: [CampaignKey: Date]) {
+        self.lastDisplayAt = lastDisplayAt
+        self.lastDisplayByCampaign = lastDisplayByCampaign
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        lastDisplayAt = try container.decodeIfPresent(Date.self, forKey: .lastDisplayAt)
+
+        let stored = try container.decodeIfPresent([String: Date].self,
+                                                   forKey: .lastDisplayByCampaign) ?? [:]
+        var restored: [CampaignKey: Date] = [:]
+        for (raw, date) in stored {
+            // An unparseable key is dropped rather than failing the whole decode: losing one
+            // entry shows one campaign twice, while throwing loses the entire history.
+            guard let key = CampaignKey.parse(raw) else {
+                iamLog("display history has an unreadable key '\(raw)'; dropping that entry")
+                continue
+            }
+            restored[key] = date
+        }
+        lastDisplayByCampaign = restored
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(lastDisplayAt, forKey: .lastDisplayAt)
+
+        var stored: [String: Date] = [:]
+        for (key, date) in lastDisplayByCampaign {
+            stored[key.storageKey] = date
+        }
+        try container.encode(stored, forKey: .lastDisplayByCampaign)
     }
 }
 
@@ -49,8 +100,8 @@ final class FrequencyCap {
                                                 customerId: customerId) ?? .empty
     }
 
-    func recordDisplay(campaignId: Int, at time: Date) {
-        current.recordDisplay(campaignId: campaignId, at: time)
+    func recordDisplay(campaign: CampaignKey, at time: Date) {
+        current.recordDisplay(campaign: campaign, at: time)
         persist()
     }
 
