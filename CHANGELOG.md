@@ -3,6 +3,27 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [Unreleased] 🎡
+
+> **Minor Release**: Game campaigns — a reward campaign opens itself over your app from an in-app trigger
+
+### ✨ Added
+- 🎡 **Game campaigns**: a spin the wheel, quiz or scratch and win the merchant set to open over your app arrives in the same sync as in-app messages and displays through the same window. **Nothing to integrate** — a host already calling `startInAppMessaging()` gets them
+- 🧩 **The campaign is the content**: there is no headline or button to style. The SDK opens the game itself, and shows the card only once the game has finished drawing, so the customer never sees a loading state
+- 🖥️ **Modal and fullscreen**: fullscreen insets its content into the safe area, so the campaign's own controls stay clear of the notch and the home indicator, while the surface behind runs edge to edge
+- 🌐 **`GameballConfig.widgetUrlPrefix`**: sets the widget host once, for the profile widget *and* any campaign a message opens. Without it a host aimed at a non-production environment would get production for its campaigns, which renders as "this campaign is not available" and is indistinguishable from a campaign that does not exist
+- 🛡️ **Unknown kinds are skipped, never guessed at.** An entry whose `campaignType` or game type this version does not recognise is dropped with a log naming it, so a future kind degrades to silence rather than to a wrong display
+
+### 🔒 Changed
+- 🔑 **Display history is keyed by campaign kind and id.** Challenge ids and message campaign ids are separate sequences that overlap numerically, and every game entry arrives with `campaignId: 0` — so a bare number can no longer identify a campaign. Histories written by earlier releases are migrated on read; nothing is lost and no campaign re-shows
+- 📊 **Game campaigns report no in-app messaging telemetry.** Engagement is recorded through the normal challenge flow when the customer plays. Their display history is still kept, so a once-ever game stays once-ever
+- 🗂️ **A game is never opened from a cached campaign set.** A message carries its own content, so a cached one is still correct; a game carries a pointer and fetches its content live, so a cached entry is a promise the SDK cannot keep
+
+### ⚠️ Not yet supported
+- 📱 **Screen triggers do not fire on mobile.** Use a session-start or custom-event trigger. A screen-triggered campaign is logged by name, so one that does not appear can be diagnosed from the console
+
+---
+
 ## [4.0.0] - 2026-10-22 🎉
 
 > **Major Release**: Raised the minimum iOS version to 15.0, and added in-app messaging — an opt-in module that displays campaigns authored in the Gameball dashboard inside your app

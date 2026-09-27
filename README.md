@@ -330,6 +330,28 @@ let gameball = GameballApp.getInstance()
 gameball.startInAppMessaging()
 ```
 
+### Game campaigns (v3.5.0+)
+
+A campaign the merchant set to open itself over your app — a spin the wheel, a quiz, a scratch and
+win. It arrives in the same sync as in-app messages and displays through the same window, so
+**there is nothing extra to integrate**: if you already call `startInAppMessaging()`, game
+campaigns work.
+
+The campaign *is* the content. There is no headline or button to style — the SDK opens the game
+itself in a card over your app, and shows the card only once the game has finished drawing, so your
+customer never sees a loading state.
+
+A game campaign can be authored as a modal or fullscreen. Fullscreen insets its content into the
+safe area, so the campaign's own controls stay clear of the notch and the home indicator, while the
+surface behind runs edge to edge.
+
+One limit in this release: **screen triggers do not fire on mobile.** Use a session-start or
+custom-event trigger instead. A screen-triggered campaign is skipped with a `[GameballIAM]` log
+naming it, so one that does not appear can be diagnosed from the console.
+
+Game campaigns report no in-app messaging telemetry — engagement is recorded through the normal
+challenge flow when the customer plays.
+
 `startInAppMessaging()` uses the customer already identified with the SDK. Call it before
 `initializeCustomer` and the module starts as soon as a customer is identified. Pass an id
 explicitly if you prefer:
@@ -791,6 +813,7 @@ Configuration object for initializing the Gameball SDK.
 | `platform` | String | ❌ | Platform identifier |
 | `shop` | String | ❌ | Shop identifier |
 | `apiPrefix` | String | ❌ | Custom API base URL |
+| `widgetUrlPrefix` | String | ❌ | Widget host, for a non-production environment. Applies to the profile widget and to any campaign an in-app message opens |
 
 **Validation Rules:**
 - `apiKey` cannot be empty
