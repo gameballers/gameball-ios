@@ -72,16 +72,6 @@ public class GameballApp {
             // Mark as initialized immediately
             self.isInitialized = true
 
-            // Record the init call (full config as-is).
-            self.logger.log("sdk.init", params: GameballLogger.compact([
-                "apiKey": config.apiKey,
-                "lang": config.lang,
-                "platform": config.platform,
-                "shop": config.shop,
-                "apiPrefix": config.apiPrefix,
-                "sessionToken": config.sessionToken
-            ]))
-
             // Fire bot settings request in background (fire-and-forget)
             self.loadBotSettings { _ in
                 // Settings loaded in background, no action needed
@@ -137,8 +127,6 @@ public class GameballApp {
                     }
                 }
             )
-            // Fire telemetry immediately after dispatching the request.
-            self.logger.log("sdk.initializeCustomer", params: GameballLogger.dict(request))
         }
     }
 
@@ -235,8 +223,6 @@ public class GameballApp {
             // Customer language is read before the global one, so set it too
             UserDefaults.standard.set(language, forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
 
-            self.logger.log("sdk.setLanguage", params: GameballLogger.compact(["lang": lang]))
-
             guard self.isInitialized,
                   let customerId = UserDefaults.standard.string(forKey: UserDefaultsKeys.customerId.rawValue),
                   let request = try? InitializeCustomerRequest(
@@ -245,12 +231,7 @@ public class GameballApp {
                   ) else { return }
 
             // Pass the current session token: initializeCustomer replaces the stored one
-            self.initializeCustomer(request, completion: { [weak self] _, error in
-                self?.logger.log("sdk.setLanguage.profileSync", params: GameballLogger.compact([
-                    "lang": lang,
-                    "error": error
-                ]))
-            }, sessionToken: self.sessionToken)
+            self.initializeCustomer(request, completion: { _, _ in }, sessionToken: self.sessionToken)
         }
     }
 
@@ -273,8 +254,6 @@ public class GameballApp {
         }
 
         let token = payload["gbClickToken"] as? String
-        // Fire telemetry immediately, regardless of what happens below.
-        logger.log("sdk.handlePushClick", params: GameballLogger.compact(["hasToken": !(token?.isEmpty ?? true)]))
 
         // Set session token if provided, otherwise set to nil
         let isInitialized = queue.sync { () -> Bool in
@@ -429,8 +408,6 @@ extension GameballApp {
                     completion(success, error?.description)
                 }
             }
-            // Fire telemetry immediately after dispatching the request.
-            self.logger.log("sdk.sendEvent", params: GameballLogger.dict(event))
         }
     }
 

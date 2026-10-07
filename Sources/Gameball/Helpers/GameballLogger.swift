@@ -70,15 +70,6 @@ final class GameballLogger {
         return identifier.isEmpty ? UIDevice.current.model : identifier
     }
 
-    /// Encodes a Codable request to a JSON dictionary (best-effort; nil on failure).
-    static func dict<T: Encodable>(_ value: T) -> [String: Any]? {
-        guard let data = try? JSONEncoder().encode(value),
-              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return nil
-        }
-        return obj
-    }
-
     /// Builds a dictionary from optional values, omitting nils (safe for JSONSerialization).
     static func compact(_ dict: [String: Any?]) -> [String: Any] {
         var out: [String: Any] = [:]
