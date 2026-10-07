@@ -96,8 +96,7 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Buttons are pinned with absolute left/right in the XIB, not leading/trailing, so
-        // `setupViewLanguage`'s `semanticContentAttribute` doesn't flip them a second time.
+        // Buttons are pinned left/right in the XIB so semanticContentAttribute can't flip them
         let isRTL = LanguageHelper.isRTL(resolvedLanguage)
         closeBtn = isRTL ? closeBtnLeft : closeBtnRight
         closeBtnLeft.isHidden = !showCloseBtn || !isRTL

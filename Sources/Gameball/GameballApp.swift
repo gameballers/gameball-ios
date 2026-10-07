@@ -123,13 +123,13 @@ public class GameballApp {
             self.sessionToken = sessionToken
 
             self.customerId = request.customerId
+            UserDefaults.standard.set(request.customerId, forKey: UserDefaultsKeys.customerId.rawValue)
             self.customerIsGuest = request.isGuest
 
             // Save customer preferred language if provided
             if let preferredLanguage = request.customerAttributes?.preferredLanguage,
-               !preferredLanguage.isEmpty,
-               preferredLanguage.count == 2 {
-                UserDefaults.standard.set(preferredLanguage, forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
+               !preferredLanguage.isEmpty {
+                UserDefaults.standard.set(LanguageHelper.normalizeLanguage(preferredLanguage), forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
             }
 
             self.networkManager.initializeCustomer(
@@ -229,36 +229,27 @@ public class GameballApp {
     /// `lang`, `initializeCustomer`/`sendEvent` requests, and the SDK's own localized strings.
     /// A `showProfile` call with an explicit `lang` still takes precedence over this for that one
     /// presentation — this only changes the fallback used when no per-call override is given.
-    /// - Parameter lang: A 2-letter language code (e.g. "en", "ar"). Ignored if invalid.
+    /// Also becomes the customer's preferred language and is synced to the last initialized customer's profile.
+    /// - Parameter lang: A supported language code (e.g. "en", "ar"). Any other code falls back to "en".
     public func setLanguage(_ lang: String) {
         queue.async { [weak self] in
-            guard let self = self, self.applyGlobalLanguage(lang) else { return }
+            guard let self = self else { return }
+            let language = self.applyGlobalLanguage(lang)
 
-            // Also claim the customer-level preference, which `resolveLanguage()` reads *before*
-            // the global one. Without this an explicit `setLanguage` would be silently outranked
-            // by whatever `initializeCustomer` last persisted. Deliberately set here and not in
-            // `applyGlobalLanguage`, which `init(config:)` shares: doing it there would overwrite
-            // the customer's real preference with the app-wide default on every launch.
-            UserDefaults.standard.set(lang, forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
+            // Customer language is read before the global one, so set it too
+            UserDefaults.standard.set(language, forKey: UserDefaultsKeys.customerPreferredLanguage.rawValue)
 
             self.logger.log("sdk.setLanguage", params: GameballLogger.compact(["lang": lang]))
 
-            // The write above only steers this device. Mirror the preference onto the customer's
-            // Gameball profile so server-driven communications follow it too, sending just
-            // `preferredLanguage` and letting the server merge it into the existing attributes.
-            // Skipped until there's a customer to update — `initializeCustomer` persists the
-            // language itself, so nothing is lost by waiting.
             guard self.isInitialized,
-                  let customerId = self.customerId,
+                  let customerId = UserDefaults.standard.string(forKey: UserDefaultsKeys.customerId.rawValue),
                   let request = try? InitializeCustomerRequest(
                       customerId: customerId,
-                      customerAttributes: CustomerAttributes(preferredLanguage: lang),
+                      customerAttributes: CustomerAttributes(preferredLanguage: language),
                       isGuest: self.customerIsGuest
                   ) else { return }
 
-            // Routed through the public entry point rather than the network layer so the
-            // initialization guard and the customerId/guest bookkeeping stay in one place.
-            // `sessionToken` has to be passed explicitly — omitting it nulls the stored one.
+            // Pass the current session token: initializeCustomer replaces the stored one
             self.initializeCustomer(request, completion: { [weak self] _, error in
                 self?.logger.log("sdk.setLanguage.profileSync", params: GameballLogger.compact([
                     "lang": lang,
@@ -336,17 +327,15 @@ public class GameballApp {
     /// fallback chain) and updates `GB_Localizator`/the network layer's current language in the
     /// same call, so the two never drift apart the way the close-button bug happened when only
     /// one of the two was kept in sync. Backs the public `setLanguage(_:)`. Must be called on `queue`.
-    /// - Returns: `false` when `lang` isn't a usable code and nothing was applied, so callers with
-    ///   further work to do can bail on the same definition of valid rather than re-checking it.
     @discardableResult
-    private func applyGlobalLanguage(_ lang: String) -> Bool {
-        guard lang.count == 2 else { return false }
+    private func applyGlobalLanguage(_ lang: String) -> String {
+        let code = LanguageHelper.normalizeLanguage(lang)
 
-        UserDefaults.standard.set(lang, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
+        UserDefaults.standard.set(code, forKey: UserDefaultsKeys.globalPreferredLanguage.rawValue)
 
-        let language: Languages = (lang == "ar") ? .arabic : .english
+        let language: Languages = (code == "ar") ? .arabic : .english
         self.networkManager.setLanguage(language: language)
-        return true
+        return code
     }
 
     private func loadBotSettings(completion: @escaping (Error?) -> Void) {
