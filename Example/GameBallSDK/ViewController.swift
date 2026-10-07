@@ -103,8 +103,7 @@ class ViewController: UIViewController {
                 deviceToken: "fcm_token_here",  // Optional - for push notifications
                 pushProvider: .firebase,        // Optional - .firebase or .huawei
                 customerAttributes: attributes, // Optional
-                referralCode: nil,              // Optional
-                isGuest: false                  // Optional - defaults to false
+                referralCode: nil               // Optional
             )
 
             // Send initialization request
