@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.3.1-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-3.3.2-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
@@ -31,14 +31,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.1")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.2")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.3.1` or later
+3. Select version: `3.3.2` or later
 
 ## Quick Start
 
@@ -266,7 +266,7 @@ The SDK also records internal diagnostic logs automatically to aid troubleshooti
 
 ### Language Control (v3.3.0+)
 
-Present a single widget in a specific language with `ShowProfileRequest.lang` (2-letter code, e.g. `"en"`, `"ar"`):
+Present a single widget in a specific language with `ShowProfileRequest.lang` (a supported language code, e.g. `"en"`, `"ar"`):
 
 ```swift
 let request = ShowProfileRequest(customerId: "customer_123", lang: "ar")
@@ -281,9 +281,11 @@ Or switch the SDK's global language on demand — no re-`init` needed:
 GameballApp.getInstance().setLanguage("ar")
 ```
 
-This changes the fallback used by future `showProfile` presentations (a per-call `lang` still wins), subsequent requests, and the SDK's localized strings. Invalid codes are ignored.
+This changes the fallback used by future `showProfile` presentations (a per-call `lang` still wins), subsequent requests, and the SDK's localized strings.
 
-As of v3.3.1 it also becomes the customer's preferred language, taking precedence over one set earlier through `initializeCustomer`, and is mirrored onto the customer's Gameball profile so server-driven communications follow it too. The profile update is skipped until a customer has been initialized.
+As of v3.3.1 it also becomes the customer's preferred language, taking precedence over one set earlier through `initializeCustomer`, and is mirrored onto the Gameball profile of the most recently initialized customer so server-driven communications follow it too. The profile update is skipped until a customer has been initialized; as of v3.3.2 that customer is remembered across app launches.
+
+**Supported languages:** `en`, `ar`, `fr`, `es`, `de`, `pt`, `pl`, `it`, `hu`, `zh-tw`, `nl`, `sv`, `no`, `dk`, `ja`, matched case-insensitively. As of v3.3.2, any other code passed to `init`, `setLanguage(_:)`, `initializeCustomer` or `ShowProfileRequest.lang`, and an unsupported device language, falls back to `en` (earlier versions ignored codes that weren't 2 characters long). Codes must match one of these exactly (letter case doesn't matter): regional variants such as `ar-EG` and three-letter codes such as `ara` aren't mapped and fall back to `en`. `initializeCustomer` still sends `preferredLanguage` to Gameball exactly as passed; only the language the SDK itself uses falls back to `en`.
 
 ### Push Click Tracking (v3.3.0+)
 
@@ -653,7 +655,7 @@ Configuration object for initializing the Gameball SDK.
 
 **Validation Rules:**
 - `apiKey` cannot be empty
-- `lang` cannot be empty and should be 2-letter ISO code
+- `lang` should be a supported language code; any other code, including an empty one, falls back to `en`
 
 **Example:**
 ```swift
@@ -677,7 +679,7 @@ Request object for initializing/registering customers with the Gameball platform
 | `referralCode` | String | ❌ | Referral code for attribution |
 | `email` | String | ❌ | Customer email address |
 | `mobile` | String | ❌ | Customer mobile number |
-| `isGuest` | Bool | ❌ | Guest status (defaults to false) |
+| `isGuest` | Bool | ❌ | Ignored as of v3.3.2 — customers are always initialized as registered |
 
 **Validation Rules:**
 - `customerId` cannot be empty
@@ -720,7 +722,7 @@ Additional customer information for enriching customer profiles and personalizat
 | `mobile` | String | ❌ | Customer mobile number |
 | `dateOfBirth` | String | ❌ | Date of birth (YYYY-MM-DD format) |
 | `joinDate` | String | ❌ | Join date (YYYY-MM-DD format) |
-| `preferredLanguage` | String | ❌ | Preferred language (2-letter ISO code) |
+| `preferredLanguage` | String | ❌ | Preferred language (supported language code) |
 | `customAttributes` | [String: String] | ❌ | Custom key-value pairs |
 | `additionalAttributes` | [String: String] | ❌ | Additional flexible attributes |
 | `channel` | String | 🔒 | Channel identifier (automatically set to "mobile") |
@@ -800,7 +802,7 @@ Request object for displaying the Gameball customer profile widget with customiz
 | `showCloseButton` | Bool | ❌ | Show close button (defaults to true) |
 | `closeButtonColor` | String | ❌ | Close button color (hex format like "#FF0000") |
 | `widgetUrlPrefix` | String | ❌ | Custom widget URL prefix |
-| `lang` | String? | ❌ | 2-letter language code for this presentation only (v3.3.0+) |
+| `lang` | String? | ❌ | Supported language code for this presentation only (v3.3.0+) |
 
 **Guest Mode (v3.1.1+):**
 - `customerId` is now optional - when `nil` or omitted, widget opens in guest mode

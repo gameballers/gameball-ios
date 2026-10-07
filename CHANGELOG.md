@@ -3,6 +3,21 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [3.3.2] - 2026-10-07 🔧
+
+> **Patch Release**: Registered-only customers, language sync after relaunch, supported language fallback, widget URL encoding, and reduced diagnostic logging
+
+### 🐛 Fixed
+- 🌐 **Unsupported Language Codes**: any two-character code used to be accepted, so one that isn't a real language code (e.g. `"عر"`) was used for the widget and synced to the customer's Gameball profile
+- 🔗 **Widget URL Encoding**: values passed to the widget (customer ID, mobile, email, session token, `openDetail`) now reach it unchanged — a `+` (e.g. in `+20…` mobile numbers or `name+tag@` emails) used to arrive as a space, and values with spaces or non-Latin characters were encoded twice
+
+### 🔄 Changed
+- 👤 **Registered Customers Only**: the SDK now always initializes customers as registered — `initializeCustomer` sends `guest` as `false`, and `InitializeCustomerRequest`'s `isGuest` is ignored
+- 🌐 **Preferred Language Sync**: `setLanguage(_:)` now syncs the language to the most recently initialized customer, remembered across app launches — previously the profile update was skipped after a relaunch until `initializeCustomer` ran again
+- 🌐 **Supported Languages**: language codes from `init`, `setLanguage(_:)`, `initializeCustomer` and a per-call `lang` are now matched case-insensitively against the supported languages (`en`, `ar`, `fr`, `es`, `de`, `pt`, `pl`, `it`, `hu`, `zh-tw`, `nl`, `sv`, `no`, `dk`, `ja`); any other code, including an unsupported device language, falls back to `en`; regional variants (e.g. `ar-EG`) and three-letter codes (e.g. `ara`) aren't mapped, and `initializeCustomer` still sends `preferredLanguage` to Gameball as passed
+- 📊 **Diagnostic Logging**: internal diagnostic logging now only records widget usage
+
+
 ## [3.3.1] - 2026-09-15 🔧
 
 > **Patch Release**: Widget close button direction and runtime language switching
