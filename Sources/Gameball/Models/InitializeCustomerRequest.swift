@@ -61,7 +61,8 @@ public struct InitializeCustomerRequest {
         self.referralCode = referralCode
         self.email = email
         self.mobile = mobile
-        self.isGuest = isGuest
+        // Hardcoded: the SDK never initializes a customer as a guest
+        self.isGuest = false
     }
 }
 

@@ -29,9 +29,6 @@ public class GameballApp {
     private var isInitialized = false
     private var config: GameballConfig?
     private var customerId: String?
-    /// Carried over from the last `initializeCustomer` so `setLanguage` can re-send it rather than
-    /// defaulting to `false` and flipping a guest customer to registered.
-    private var customerIsGuest = false
     private var sessionToken: String?
     private weak var presentedWidgetVC: UIViewController?
 
@@ -124,7 +121,6 @@ public class GameballApp {
 
             self.customerId = request.customerId
             UserDefaults.standard.set(request.customerId, forKey: UserDefaultsKeys.customerId.rawValue)
-            self.customerIsGuest = request.isGuest
 
             // Save customer preferred language if provided
             if let preferredLanguage = request.customerAttributes?.preferredLanguage,
@@ -245,8 +241,7 @@ public class GameballApp {
                   let customerId = UserDefaults.standard.string(forKey: UserDefaultsKeys.customerId.rawValue),
                   let request = try? InitializeCustomerRequest(
                       customerId: customerId,
-                      customerAttributes: CustomerAttributes(preferredLanguage: language),
-                      isGuest: self.customerIsGuest
+                      customerAttributes: CustomerAttributes(preferredLanguage: language)
                   ) else { return }
 
             // Pass the current session token: initializeCustomer replaces the stored one
