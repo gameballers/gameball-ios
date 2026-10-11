@@ -136,10 +136,13 @@ class GB_WEBVIEWWIDGETViewController: BaseViewController {
             queryItems.append(URLQueryItem(name: "sessionToken", value: sessionToken))
         }
 
-        urlComponents?.queryItems = queryItems
+        // Encode each value once, leaving only unreserved characters: queryItems leaves "+" raw, which decodes as a space
+        let unreserved = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        urlComponents?.percentEncodedQueryItems = queryItems.map {
+            URLQueryItem(name: $0.name, value: $0.value?.addingPercentEncoding(withAllowedCharacters: unreserved))
+        }
 
-        guard let url = urlComponents?.url?.absoluteString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let encodedURL = URL(string: url) else {
+        guard let encodedURL = urlComponents?.url else {
             return
         }
 
