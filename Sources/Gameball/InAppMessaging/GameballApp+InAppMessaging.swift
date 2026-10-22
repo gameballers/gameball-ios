@@ -168,22 +168,6 @@ final class InAppMessagingCoordinator {
         }
     }
 
-    func logPurchase(productId: String,
-                     price: Double,
-                     currency: String,
-                     quantity: Int,
-                     properties: [String: Any]?) {
-        lock.lock()
-        let current = service
-        lock.unlock()
-        guard let service = current, service.isStarted else {
-            iamLog("logPurchase was called before in-app messaging was started; ignoring it")
-            return
-        }
-        service.onPurchase(productId: productId, price: price, currency: currency,
-                           quantity: quantity, properties: properties)
-    }
-
     /// Test-only. Returns the coordinator to the state a fresh process would have.
     func resetForTesting() {
         lock.lock()
@@ -338,19 +322,47 @@ public extension GameballApp {
         InAppMessagingCoordinator.shared.stop()
     }
 
-    /// Reports a purchase to the trigger engine.
+    /// Logs a purchase.
     ///
-    /// Reaches campaigns as an event named `purchase`, with these fields folded into its properties
-    /// so filters work on them with the same syntax as any other event.
-    func logPurchase(productId: String,
+    /// Sends an event to Gameball through `sendEvent`, under the reserved name `purchase` with
+    /// these fields as its metadata — whether or not in-app messaging is running. When it is,
+    /// the purchase also reaches campaigns, which can filter on `productId`, `price`, `currency`
+    /// and `quantity` with the same syntax as any other event.
+    ///
+    /// - Parameters:
+    ///   - customerId: Who bought. Required for the same reason `Event` requires it.
+    ///   - productId: Identifier of the item bought.
+    ///   - price: Unit price.
+    ///   - currency: ISO currency code, e.g. `USD`.
+    ///   - quantity: Number of units. Defaults to 1.
+    ///   - properties: Extra metadata, also available to campaign filters.
+    ///   - completion: Called with the send result, as `sendEvent`'s completion is.
+    ///   - sessionToken: Passed to `sendEvent`, where it has the same meaning.
+    /// - Throws: `GameballError.emptyCustomerId` when `customerId` is empty. Nothing is sent.
+    func logPurchase(customerId: String,
+                     productId: String,
                      price: Double,
                      currency: String,
                      quantity: Int = 1,
-                     properties: [String: Any]? = nil) {
-        InAppMessagingCoordinator.shared.logPurchase(productId: productId,
-                                                     price: price,
-                                                     currency: currency,
-                                                     quantity: quantity,
-                                                     properties: properties)
+                     properties: [String: Any]? = nil,
+                     completion: ((Bool, String?) -> Void)? = nil,
+                     sessionToken: String? = nil) throws {
+        var metadata: [String: Any] = [
+            "productId": productId,
+            "price": price,
+            "currency": currency,
+            "quantity": quantity
+        ]
+        // Merged last, so a property named like one of the fields above replaces it.
+        properties?.forEach { metadata[$0.key] = $0.value }
+
+        let event = try Event(events: [gameballPurchaseEventName: metadata], customerId: customerId)
+
+        // In-app messaging is notified from inside `sendEvent`, by the hook every event goes
+        // through, and deliberately not a second time here. A purchase reaches the trigger engine
+        // as the event named `purchase` carrying exactly this metadata, so notifying it directly
+        // as well would evaluate every purchase twice.
+        sendEvent(event, completion: { success, error in completion?(success, error) },
+                  sessionToken: sessionToken)
     }
 }
