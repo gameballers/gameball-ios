@@ -45,9 +45,9 @@ enum TokenSubstitution {
         return found
     }
 
-    /// Substitutes known tokens. An unknown token is left **exactly as written** — blanking it
-    /// would delete copy a marketer intended, and showing the raw placeholder at least makes
-    /// the misconfiguration visible.
+    /// Substitutes known tokens. An unknown token is left **exactly as written**, so a caller can
+    /// still tell resolved from unresolved. Nothing reaches the screen in that state:
+    /// `clearUnresolved(in:)` is the last step before display and blanks whatever is left.
     static func substitute(_ text: String, values: [String: String]) -> String {
         guard text.contains("{") else { return text }
         let found = matches(in: text)
@@ -69,18 +69,42 @@ enum TokenSubstitution {
     static func apply(values: [String: String],
                       to message: GameballInAppMessage) -> GameballInAppMessage {
         guard !values.isEmpty else { return message }
+        return rewritingText(of: message) { substitute($0, values: values) }
+    }
 
+    /// `message` with every remaining `{token}` replaced by nothing.
+    ///
+    /// The last step before a message is drawn, on every path — including the ones where
+    /// `apply` had nothing to work with, such as a values call that failed or timed out with
+    /// nothing held. Sync sends the copy as a template, so whatever is still unresolved here is
+    /// a raw placeholder, not a missed enhancement.
+    ///
+    /// Blanking rather than withholding the message is deliberate.
+    /// An unresolved token means the values call did not answer or did not know the name, which
+    /// is a backend problem to fix there. Withholding the campaign would hide the symptom and cost
+    /// the customer the message; rendering the braces would show them the SDK's internals.
+    static func clearUnresolved(in message: GameballInAppMessage) -> GameballInAppMessage {
+        guard !tokens(in: message).isEmpty else { return message }
+        return rewritingText(of: message) { blankTokens(in: $0) }
+    }
+
+    // MARK: - Internals
+
+    /// `message` with `transform` applied to its header, body and every button label, and
+    /// everything else carried through unchanged.
+    private static func rewritingText(of message: GameballInAppMessage,
+                                      with transform: (String) -> String) -> GameballInAppMessage {
         let buttons = message.buttons.map { button in
             GameballMessageButton(id: button.id,
-                                  text: substitute(button.text, values: values),
+                                  text: transform(button.text),
                                   action: button.action,
                                   style: button.style)
         }
 
         return GameballInAppMessage(id: message.id,
                                     type: message.type,
-                                    header: message.header.map { substitute($0, values: values) },
-                                    body: message.body.map { substitute($0, values: values) },
+                                    header: message.header.map(transform),
+                                    body: message.body.map(transform),
                                     imageURL: message.imageURL,
                                     iconURL: message.iconURL,
                                     clickAction: message.clickAction,
@@ -95,7 +119,11 @@ enum TokenSubstitution {
                                     style: message.style)
     }
 
-    // MARK: - Internals
+    private static func blankTokens(in text: String) -> String {
+        guard text.contains("{"), let regex = regex else { return text }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+    }
 
     private static func matches(in text: String) -> [NSTextCheckingResult] {
         guard let regex = regex else { return [] }
