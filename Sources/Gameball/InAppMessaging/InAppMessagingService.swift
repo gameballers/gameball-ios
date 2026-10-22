@@ -480,7 +480,9 @@ final class InAppMessagingService {
             guard let self = self else { return }
             self.perform {
                 let personalised = TokenSubstitution.apply(values: values, to: campaign.message)
-                self.present(campaign, message: personalised)
+                // Applied whatever came back, including nothing: a token still unresolved here is
+                // a raw template placeholder, and this is the only thing between it and the screen.
+                self.present(campaign, message: TokenSubstitution.clearUnresolved(in: personalised))
             }
         }
     }
