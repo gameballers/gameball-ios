@@ -3,6 +3,27 @@
 All notable changes to Gameball iOS SDK are documented here.
 
 
+## [4.0.0] - 2026-10-22 🎉
+
+> **Major Release**: Raised the minimum iOS version to 15.0, and added in-app messaging — an opt-in module that displays campaigns authored in the Gameball dashboard inside your app
+
+### ✨ Added
+- 🏗️ **In-App Messaging**: Added `startInAppMessaging(customerId:)`, `stopInAppMessaging()` and `isInAppMessagingStarted`. Nothing runs until `startInAppMessaging` is called — no requests, no timers, no stored data and nothing drawn — so upgrading without calling it changes nothing. It can be called before `initializeCustomer`; messaging starts as soon as a customer is identified
+- 🎁 **Three Message Types**: Added slideup (a non-blocking banner that lets touches through to your app), modal (a card over a dimmed background) and fullscreen messages, each with text and artwork or artwork only
+- 🎁 **Triggers**: Added session-start triggers, fired on launch and when the app returns to the foreground after 30 seconds in the background, and custom-event triggers matched on the event name and optionally filtered on its properties (`equals`, `notEquals`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`, `contains`, `between`)
+- 🎁 **Purchase Logging**: Added `logPurchase(customerId:productId:price:currency:quantity:properties:completion:sessionToken:)`, which sends a `purchase` event to Gameball whose `productId`, `price`, `currency` and `quantity` are available to campaign filters
+- 🎁 **Display Rules**: Added a backend-controlled minimum interval between any two messages, per-campaign repeat rules that persist across restarts, quiet hours, and orientation-specific campaigns that wait until the device is in that orientation
+- 🔧 **Delegate**: Added `inAppMessagingDelegate` (`GameballInAppMessagingDelegate`, held weakly) to show, postpone or discard a message, handle a tap yourself, observe every selected message, and route `navigate` actions through your own router. Every method has a default
+- 🏗️ **Message Analytics**: Added automatic impression, click and dismissal reporting. Events are batched and kept on the device until sent, and failed sends are retried
+- 🎁 **Personalisation**: Added `{token}` placeholders in campaign text, filled with the customer's current values fetched just before a message is shown. The fetch waits at most two seconds; if the values don't arrive, the placeholders are removed and the message still shows
+- 🎁 **Accessibility**: Messages support Dynamic Type, VoiceOver and Reduce Motion, and mirror for right-to-left languages
+- ⚙️ **Diagnostic Logging Switch**: Added `GameballInAppMessagingLogging` to control in-app messaging console logs; it defaults to on in `DEBUG` builds and off in release builds
+
+### 🔄 Changed
+- 💥 **BREAKING**: **Minimum iOS Version**: Raised the minimum supported iOS version from 11.0 to 15.0 in `Package.swift` and the podspec (earlier docs listed 12.0)
+
+---
+
 ## [3.3.2] - 2026-10-19 🔧
 
 > **Patch Release**: Registered-only customers, language sync after relaunch, supported language fallback, widget URL encoding, and reduced diagnostic logging
@@ -29,7 +50,6 @@ All notable changes to Gameball iOS SDK are documented here.
 ### 🔄 Changed
 - 🌐 **Preferred Language Sync**: `setLanguage(_:)` now also mirrors the new language onto the customer's Gameball profile, so server-driven communications follow it too; the profile update is skipped until a customer has been initialized
 
-
 ## [3.3.0] - 2026-08-29 📱
 
 > **Minor Release**: Per-call and global language control, and push notification click tracking
@@ -38,7 +58,6 @@ All notable changes to Gameball iOS SDK are documented here.
 - 🌐 **Per-Call Widget Language**: `ShowProfileRequest` now accepts an optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to present that one widget in a specific language; when omitted, the SDK's existing language resolution applies (customer preferred language, then global preferred language, then device locale)
 - 🌐 **Global Language Switch**: new `GameballApp.setLanguage(_:)` changes the SDK's global language on demand without re-calling `init` — affects future `showProfile` presentations that don't pass their own `lang`, subsequent requests, and the SDK's localized strings
 - 📣 **Push Click Tracking**: new `GameballApp.handlePushClick(_:completion:sessionToken:)` — call it from your notification-tap handler with the notification's payload; returns `true` when the notification is a Gameball one and reports the campaign click to Gameball when a click token is present
-
 
 ## [3.2.2] - 2026-07-09 🔧
 

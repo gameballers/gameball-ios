@@ -4,6 +4,129 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
+## v3.x → v4.0.0 (Breaking)
+
+### Overview
+v4.0.0 adds in-app messaging: campaigns authored in the Gameball dashboard, displayed inside your app. It is a **major release** because it raises the minimum supported iOS version to **15.0**. Every v3.x API keeps its signature and behaviour, so no Swift code changes are required.
+
+### What's New
+- 📬 **In-App Messaging**: `startInAppMessaging(customerId:)` displays dashboard campaigns; `stopInAppMessaging()` stops it and clears state on logout
+- 🖼️ **Three Message Types**: slideup, modal and fullscreen, chosen per campaign in the dashboard rather than in code
+- 🎯 **Triggers**: session start, and custom events matched by name and optionally filtered on their properties
+- 🛒 **Purchase Logging**: `logPurchase(customerId:productId:price:currency:quantity:properties:completion:sessionToken:)` sends a `purchase` event that campaigns can target and filter on
+- 🖐️ **Delegate**: `inAppMessagingDelegate` lets you postpone a message, handle a tap, observe selections and route `navigate` actions
+- 📊 **Automatic Message Analytics**: impressions, clicks and dismissals, batched and kept on the device until sent
+
+### ⚠️ Breaking Changes
+- **Minimum iOS version raised to 15.0** (was 11.0 in `Package.swift` and the podspec; earlier docs listed 12.0)
+- No changes to the public API. In-app messaging is opt-in: until you call `startInAppMessaging`, it makes no requests, starts no timers, stores nothing and draws nothing.
+
+### 1. Update Dependencies
+
+**Before (v3.x):**
+```swift
+// Package.swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.2")
+```
+
+**After (v4.0.0):**
+```swift
+// Package.swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.0.0")
+```
+
+### 2. Raise Your Deployment Target
+
+In Xcode, select your app target → **General** → **Minimum Deployments**.
+
+**Before (v3.x):**
+```
+IPHONEOS_DEPLOYMENT_TARGET = 12.0
+```
+
+**After (v4.0.0):**
+```
+IPHONEOS_DEPLOYMENT_TARGET = 15.0
+```
+
+If your project also uses CocoaPods for other dependencies, set `platform :ios, '15.0'` in the Podfile and run `pod install`.
+
+### 3. Adopt In-App Messaging (Optional)
+
+**Before (v3.x):** not available.
+
+**After (v4.0.0):**
+```swift
+let gameball = GameballApp.getInstance()
+
+// Optional: keep your own strong reference — the delegate is held weakly
+gameball.inAppMessagingDelegate = messagingCoordinator
+
+// After init(config:). Can be called before initializeCustomer; messaging
+// starts as soon as a customer is identified.
+gameball.startInAppMessaging()
+
+// On logout
+gameball.stopInAppMessaging()
+```
+
+- **Call `stopInAppMessaging()` on logout.** It dismisses anything on screen, sends pending analytics and clears the customer's state.
+- **Keep a strong reference to your delegate.** `inAppMessagingDelegate` is held weakly, so an object nothing else retains is released and its callbacks never run.
+- **Implement `gameballShouldNavigate(route:arguments:)` if campaigns navigate.** The SDK can't drive your router, so `navigate` actions do nothing without it. `route` is a bare name with no leading slash.
+
+### 4. Log Purchases (Optional)
+
+**Before (v3.x):**
+```swift
+let event = try Event(events: ["purchase": ["productId": "sku-001",
+                                            "price": 49.99,
+                                            "currency": "USD",
+                                            "quantity": 2]],
+                      customerId: "customer-123")
+gameball.sendEvent(event) { success, error in }
+```
+
+**After (v4.0.0):**
+```swift
+try gameball.logPurchase(customerId: "customer-123", productId: "sku-001",
+                         price: 49.99, currency: "USD", quantity: 2) { success, error in }
+```
+
+`logPurchase` sends an event named `purchase` through `sendEvent`, with `productId`, `price`, `currency` and `quantity` as metadata, so purchase-triggered campaigns can filter on them. If you already send a purchase event yourself, replace it with `logPurchase` rather than sending both.
+
+### Availability
+In-app messaging needs the in-app messaging endpoints enabled for your account. Where they aren't, the SDK logs the error in debug builds and stays silent — nothing surfaces to your app.
+
+### Migration Checklist
+
+#### Pre-Migration
+- [ ] Confirm your app can drop support for iOS versions below 15.0
+
+#### During Migration
+- [ ] Update the `gameball-ios` package to 4.0.0
+- [ ] Set your app target's minimum deployment to iOS 15.0 in Xcode
+- [ ] (Optional) Set `inAppMessagingDelegate` and call `startInAppMessaging()`
+- [ ] (Optional) Call `stopInAppMessaging()` on logout
+- [ ] (Optional) Replace hand-built purchase events with `logPurchase`
+
+#### Post-Migration
+- [ ] Verify `initializeCustomer`, `sendEvent` and `showProfile` behave as before
+- [ ] If adopted, confirm a session-start campaign appears on launch
+
+### Troubleshooting
+
+1. **Build fails after the update**
+   ```
+   Compiling for iOS 12.0, but module 'Gameball' has a minimum deployment target of iOS 15.0
+   ```
+   **Solution**: Raise your app target's minimum deployment to iOS 15.0 (and `platform :ios` in your Podfile, if you have one).
+
+2. **Campaigns never appear**
+
+   **Solution**: Check that `startInAppMessaging()` was called after `init(config:)`, that a customer has been identified, and that in-app messaging is enabled for your account. Set `GameballInAppMessagingLogging = true` and look for `[GameballIAM]` lines in the console to see why a campaign was skipped.
+
+---
+
 ## v3.2.x → v3.3.0 (Non-Breaking)
 
 ### Overview

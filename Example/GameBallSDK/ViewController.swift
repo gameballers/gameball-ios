@@ -4,6 +4,7 @@
 //
 //  Created by Mahmoud Tarek on 29/07/2023.
 //  Updated for v3.2.0 with widget event channel and dismissal controls
+//  Updated for v4.0.0 with in-app messaging and purchase logging
 //
 
 import UIKit
@@ -98,12 +99,12 @@ class ViewController: UIViewController {
             // Create InitializeCustomerRequest with throwing initializer
             let request = try InitializeCustomerRequest(
                 customerId: customerId,
-                email: "customer@example.com",  // Optional
-                mobile: "1234567890",           // Optional
                 deviceToken: "fcm_token_here",  // Optional - for push notifications
                 pushProvider: .firebase,        // Optional - .firebase or .huawei
                 customerAttributes: attributes, // Optional
-                referralCode: nil               // Optional
+                referralCode: nil,              // Optional
+                email: "customer@example.com",  // Optional
+                mobile: "1234567890"            // Optional
             )
 
             // Send initialization request
@@ -122,6 +123,12 @@ class ViewController: UIViewController {
                         // Enable buttons after successful initialization
                         self.launchWidgetBtn.isEnabled = true
                         self.trackEventBtn.isEnabled = true
+
+                        // Step 3 (v4.0.0+): Start in-app messaging for the identified customer.
+                        // The view controller is the delegate (see the extension below); the SDK
+                        // holds it weakly. Messages are drawn above the app, so no view is needed.
+                        GameballApp.getInstance().inAppMessagingDelegate = self
+                        GameballApp.getInstance().startInAppMessaging()
                     }
                 }
             }
@@ -202,8 +209,8 @@ class ViewController: UIViewController {
                     ]
                 ],
                 customerId: customerId,
-                email: "customer@example.com",  // Optional
-                mobile: "1234567890"            // Optional
+                mobile: "1234567890",           // Optional
+                email: "customer@example.com"   // Optional
             )
 
             // Send event
@@ -233,7 +240,8 @@ class ViewController: UIViewController {
         guard let text = customerAttributesTextView.text,
               !text.isEmpty,
               let data = text.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+              let object = try? JSONSerialization.jsonObject(with: data),
+              let json = object as? [String: Any] else {
             return nil
         }
 
@@ -298,8 +306,8 @@ extension ViewController {
 
             let request = try InitializeCustomerRequest(
                 customerId: "customer_456",
-                email: "john@example.com",
-                customerAttributes: attributes
+                customerAttributes: attributes,
+                email: "john@example.com"
             )
 
             GameballApp.getInstance().initializeCustomer(request) { response, error in
@@ -419,8 +427,8 @@ extension ViewController {
         do {
             let request = try InitializeCustomerRequest(
                 customerId: "customer_789",
-                email: "newuser@example.com",
-                referralCode: referralCode
+                referralCode: referralCode,
+                email: "newuser@example.com"
             )
 
             GameballApp.getInstance().initializeCustomer(request) { response, error in
@@ -532,5 +540,84 @@ extension ViewController {
         if !isGameball {
             // Not a Gameball notification — run your own handling.
         }
+    }
+
+    // EXAMPLE 17: In-App Messaging (v4.0.0+)
+    func example_inAppMessaging() {
+        let gameball = GameballApp.getInstance()
+
+        // Console logs explaining why each campaign was shown or skipped.
+        // On by default in DEBUG builds; set to true to see them in a release build.
+        GameballInAppMessagingLogging = true
+
+        // Optional: set a delegate (held weakly — keep your own strong reference)
+        gameball.inAppMessagingDelegate = self
+
+        // Uses the customer from initializeCustomer. Can be called before it;
+        // messaging starts as soon as a customer is identified.
+        gameball.startInAppMessaging()
+
+        // Or name the customer explicitly:
+        // gameball.startInAppMessaging(customerId: "customer_123")
+
+        print("In-app messaging started: \(gameball.isInAppMessagingStarted)")
+    }
+
+    // EXAMPLE 18: Log a Purchase (v4.0.0+)
+    func example_logPurchase() {
+        // Sends a `purchase` event to Gameball, whether or not in-app messaging has started.
+        // While it is running, the same event triggers purchase campaigns.
+        do {
+            try GameballApp.getInstance().logPurchase(customerId: "customer_123",
+                                                      productId: "sku-001",
+                                                      price: 49.99,
+                                                      currency: "USD",
+                                                      quantity: 2,
+                                                      properties: ["source": "app"]) { success, error in
+                if success {
+                    print("✅ Purchase logged")
+                } else {
+                    print("❌ Error: \(error ?? "Unknown")")
+                }
+            }
+        } catch {
+            print("❌ Validation error: \(error)")
+        }
+    }
+
+    // EXAMPLE 19: Stop In-App Messaging on Logout (v4.0.0+)
+    func example_stopInAppMessaging() {
+        // Dismisses any message on screen, sends pending analytics and clears state.
+        GameballApp.getInstance().stopInAppMessaging()
+    }
+}
+
+// MARK: - In-App Messaging Delegate (v4.0.0+)
+// Every method has a default, so implement only what you need.
+
+extension ViewController: GameballInAppMessagingDelegate {
+
+    // Called immediately before a message would display.
+    // Return .later to hold it for the next opportunity, or .discard to drop it.
+    func gameballShouldDisplay(_ message: GameballInAppMessage) -> GameballDisplayDecision {
+        return .show
+    }
+
+    // Return true when you handled the tap yourself; the SDK then does nothing further.
+    // `button` is nil for a tap on the message surface.
+    func gameballDidHandleAction(_ message: GameballInAppMessage,
+                                button: GameballMessageButton?,
+                                action: GameballClickAction) -> Bool {
+        return false
+    }
+
+    // Called for every message selected, whatever happens to it next.
+    func gameballDidSelectMessage(_ message: GameballInAppMessage) {
+        print("📬 In-app message selected: \(message.id)")
+    }
+
+    // Called for a `navigate` action. `route` is a bare name with no leading slash.
+    func gameballShouldNavigate(route: String, arguments: [String: Any]?) {
+        print("➡️ Navigate to \(route) with \(arguments ?? [:])")
     }
 }
