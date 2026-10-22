@@ -7,7 +7,7 @@ let package = Package(
     name: "Gameball",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v11) // Specify the desired iOS version here
+        .iOS(.v15) // Specify the desired iOS version here
     ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
