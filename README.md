@@ -1,9 +1,9 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-3.3.2-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![iOS](https://img.shields.io/badge/iOS-12.0%2B-blue.svg)](https://developer.apple.com/ios/)
-[![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange.svg)](https://swift.org)
+[![iOS](https://img.shields.io/badge/iOS-15.0%2B-blue.svg)](https://developer.apple.com/ios/)
+[![Swift](https://img.shields.io/badge/Swift-5.7%2B-orange.svg)](https://swift.org)
 
 Gameball iOS SDK allows you to integrate customer engagement and loyalty features into your iOS applications with modern Swift patterns and type-safe request models.
 
@@ -12,16 +12,17 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 - 🎯 **Customer Management** - Initialize and manage customer profiles
 - 📊 **Event Tracking** - Track user actions and behaviors with flexible metadata
 - 🎁 **Profile Widget** - Display customer loyalty information in customizable UI
+- 📬 **In-App Messaging** - Opt-in slideup, modal and fullscreen campaigns evaluated on-device
 - 🔧 **Modern Architecture** - Built with iOS best practices and Swift concurrency
 - 🛡️ **Type Safety** - Compile-time validation with Swift's type system
 - ⚡ **Async-Ready** - Modern async architecture with proper callback handling
 
 ## Requirements
 
-- **Minimum iOS Version**: 12.0
+- **Minimum iOS Version**: 15.0
 - **Target iOS Version**: Latest
-- **Swift**: 5.0+
-- **Xcode**: 12.0+
+- **Swift**: 5.7+
+- **Xcode**: 14.0+
 - **Swift Package Manager**: Required
 
 ## Installation
@@ -31,14 +32,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "3.3.2")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.0.0")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `3.3.2` or later
+3. Select version: `4.0.0` or later
 
 ## Quick Start
 
@@ -314,6 +315,135 @@ func userNotificationCenter(_ center: UNUserNotificationCenter,
 
 An optional `sessionToken` parameter overrides the global session token for this request.
 
+## In-App Messaging (v4.0.0+)
+
+Campaigns authored in the Gameball dashboard, drawn above your app. The module is **opt-in** and
+dormant until you start it: before then it makes no requests, schedules no timers, writes no
+storage and draws nothing. Upgrading to 4.0.0 changes nothing else for a widget-only integration.
+
+### Getting started
+
+```swift
+let gameball = GameballApp.getInstance()
+
+// After initializeCustomer, or before it — ordering does not matter.
+gameball.startInAppMessaging()
+```
+
+`startInAppMessaging()` uses the customer already identified with the SDK. Call it before
+`initializeCustomer` and the module starts as soon as a customer is identified. Pass an id
+explicitly if you prefer:
+
+```swift
+gameball.startInAppMessaging(customerId: "customer-123")
+```
+
+It is idempotent for the same customer. Starting for a **different** customer refetches campaigns
+and resets frequency caps, so you never need to stop first.
+
+```swift
+gameball.stopInAppMessaging()        // dismiss, flush telemetry, clear per-customer state
+gameball.isInAppMessagingStarted     // Bool
+```
+
+Events you already send drive the triggers — there is nothing extra to call:
+
+```swift
+let event = try Event(events: ["place_order": ["price": 150, "currency": "USD"]],
+                      customerId: "customer-123")
+gameball.sendEvent(event) { success, error in }
+```
+
+Purchases get a dedicated entry point, because campaigns filter on their fields:
+
+```swift
+try gameball.logPurchase(customerId: "customer-123",
+                         productId: "sku-1",
+                         price: 150,
+                         currency: "USD",
+                         quantity: 2,
+                         properties: ["source": "app"]) { success, error in }
+```
+
+`logPurchase` sends an event named `purchase` to Gameball through `sendEvent`, with `productId`,
+`price`, `currency` and `quantity` as its metadata, so the purchase is recorded whether or not
+in-app messaging has started. While messaging is running, the same event reaches campaigns, where
+filters work on those fields. It replaces a hand-built purchase event, so send one or the other for
+each purchase, not both.
+
+### Delegate
+
+Every method has a default, so implement only what you need. The delegate is held **weakly** — keep
+your own strong reference.
+
+```swift
+final class MessagingCoordinator: GameballInAppMessagingDelegate {
+
+    init() {
+        GameballApp.getInstance().inAppMessagingDelegate = self
+    }
+
+    // Called immediately before a message would display.
+    func gameballShouldDisplay(_ message: GameballInAppMessage) -> GameballDisplayDecision {
+        if isCheckingOut { return .later }   // held, retried at the next opportunity
+        return .show
+    }
+
+    // Return true when you handled the tap yourself; the SDK then does nothing further.
+    // `button` is nil for a tap on the message surface.
+    func gameballDidHandleAction(_ message: GameballInAppMessage,
+                                button: GameballMessageButton?,
+                                action: GameballClickAction) -> Bool {
+        return false
+    }
+
+    // Called for every message selected, whatever happens to it next.
+    func gameballDidSelectMessage(_ message: GameballInAppMessage) {}
+
+    // Called for a `navigate` action, so your own router drives the transition.
+    func gameballShouldNavigate(route: String, arguments: [String: Any]?) {
+        router.push(route, arguments)
+    }
+}
+```
+
+| Method | Default | Notes |
+|---|---|---|
+| `gameballShouldDisplay(_:)` | `.show` | `.later` holds the message and retries; `.discard` spends the occurrence |
+| `gameballDidHandleAction(_:button:action:)` | `false` | `true` suppresses the SDK's own handling |
+| `gameballDidSelectMessage(_:)` | no-op | Observation only |
+| `gameballShouldNavigate(route:arguments:)` | no-op | `route` is a bare name, no leading slash |
+
+**The hooks replace the action, never the bookkeeping.** The impression, the click and the
+dismissal are reported whatever a hook returns.
+
+### What you get
+
+- **Three message types** — slideup (a non-blocking band that passes touches through), modal (a
+  card over a scrim) and fullscreen, each in a text-with-artwork and an artwork-only composition.
+- **On-device triggers** — `session_start` and named events, with metadata filters.
+- **Frequency control** — a global display floor set from the dashboard, plus per-campaign repeat
+  rules. Both survive a restart.
+- **Accessibility** — Dynamic Type throughout, a 48pt close target, VoiceOver focus moved to the
+  message, and entrance animations skipped when Reduce Motion is on.
+- **Personalisation** — campaign text can contain `{token}` placeholders, filled with the
+  customer's current values fetched just before display (waiting at most two seconds, cached for a
+  minute). If a value doesn't arrive, its placeholder is removed rather than shown as raw
+  `{braces}`, and the message still shows.
+- **Right-to-left** — mirrored through directional constraints. The SDK never touches
+  `UIView.appearance()`.
+
+### Notes
+
+- The module draws in its own `UIWindow` at `.normal` level and never takes key window status, so
+  your keyboard and first responder are left alone.
+- Diagnostics are printed with a `[GameballIAM]` prefix. If a campaign does not appear, that log
+  says why — it is never posted to the backend. They are on in a `DEBUG` build and silent in a
+  release build; set `GameballInAppMessagingLogging = true` to turn them back on when you need to
+  reproduce a problem against a release build.
+- Storage lives in its own `UserDefaults` suite (`co.gameball.inappmessaging`), not your app's
+  preferences.
+
 ## API Methods
 
 The SDK provides the following public methods:
@@ -324,6 +454,11 @@ The SDK provides the following public methods:
 - `hideProfile()` - Dismiss the currently shown profile widget (no-op when nothing is shown)
 - `setLanguage(_:)` - Change the SDK's global language on demand without re-calling `init`
 - `handlePushClick(_:completion:sessionToken:)` - Report a tap on a Gameball push notification for click tracking
+- `startInAppMessaging(customerId:)` - Opt in to in-app messaging (v4.0.0+)
+- `stopInAppMessaging()` - Stop in-app messaging and clear state; call on logout (v4.0.0+)
+- `logPurchase(customerId:productId:price:currency:quantity:properties:completion:sessionToken:)` - Send a purchase event that in-app messaging campaigns can target (v4.0.0+)
+- `isInAppMessagingStarted` - Whether in-app messaging is running (v4.0.0+)
+- `inAppMessagingDelegate` - Host callbacks for in-app messaging, held weakly (v4.0.0+)
 
 ## Advanced Usage
 
@@ -629,6 +764,10 @@ do {
 }
 ```
 
+## ⚠️ Migration from v3.x
+
+**Version 4.0.0 contains breaking changes**: the minimum supported iOS version is now **15.0** (was 11.0 in `Package.swift` and the podspec). Every v3.x API keeps its signature and behaviour. See the [Migration Guide](MIGRATION.md) for details.
+
 ## ⚠️ Migration from v2.x
 
 **Version 3.0.0 contains breaking changes**. See [Migration Guide](MIGRATION.md) for detailed upgrade instructions.
@@ -832,6 +971,42 @@ let guestRequest = ShowProfileRequest(
 GameballApp.getInstance().showProfile(guestRequest, presentationStyle: .fullScreen)
 ```
 
+### startInAppMessaging
+Opts in to in-app messaging (v4.0.0+).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customerId` | String? | ❌ | Customer to fetch campaigns for. Defaults to the customer already identified with `initializeCustomer`; when none is identified yet, messaging starts as soon as one is |
+
+**Validation Rules:**
+- Calling it again for the same customer does nothing; a different customer refetches campaigns and resets frequency caps, so you don't need to stop first
+
+### logPurchase
+Sends a `purchase` event that in-app messaging campaigns can target (v4.0.0+).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customerId` | String | ✅ | Customer who made the purchase |
+| `productId` | String | ✅ | Identifier of the purchased item |
+| `price` | Double | ✅ | Unit price |
+| `currency` | String | ✅ | ISO currency code, e.g. `"USD"` |
+| `quantity` | Int | ❌ | Number of units (defaults to 1) |
+| `properties` | [String: Any]? | ❌ | Extra metadata, also available to campaign filters |
+| `completion` | ((Bool, String?) -> Void)? | ❌ | Receives the result, as with `sendEvent` |
+| `sessionToken` | String? | ❌ | Overrides the global session token for this request, as with `sendEvent` |
+
+**Validation Rules:**
+- Throws `GameballError.emptyCustomerId` when `customerId` is empty; nothing is sent
+
+**Example:**
+```swift
+try GameballApp.getInstance().logPurchase(customerId: "customer-123",
+                                          productId: "sku-001",
+                                          price: 49.99,
+                                          currency: "USD",
+                                          quantity: 2) { success, error in }
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -864,10 +1039,15 @@ Error: SDK not initialized
 ### Debug Logging
 The SDK provides console logging for debugging. Check Xcode's console for detailed logs when debugging integration issues.
 
+In-app messaging logs why a campaign was shown or skipped, prefixed with `[GameballIAM]`. These logs are on in `DEBUG` builds and off in release builds; to turn them on in a release build while reproducing an issue:
+```swift
+GameballInAppMessagingLogging = true
+```
+
 ## Documentation
 
 - 📋 **[Changelog](CHANGELOG.md)** - Version history and changes
-- 🔄 **[Migration Guide](MIGRATION.md)** - v2.x to v3.0.0 upgrade instructions
+- 🔄 **[Migration Guide](MIGRATION.md)** - Upgrade instructions, including v3.x to v4.0.0
 - 📝 **[Release Notes](RELEASE_NOTES.md)** - Latest release details
 
 ## Support

@@ -4,7 +4,129 @@ This file contains detailed release notes for the latest version. For complete v
 
 ---
 
-## Latest Release: v3.3.2
+## Latest Release: v4.0.0
+
+**Release Date**: 2026-10-22
+**Version**: 4.0.0
+**Type**: Major Release
+
+---
+
+## 🎉 What's New
+
+v4.0.0 raises the minimum supported iOS version to **15.0**, and adds **in-app messaging**: campaigns authored in the Gameball dashboard, displayed inside your app. In-app messaging is opt-in — until you call `startInAppMessaging` it issues no requests, schedules no timers, stores nothing and draws nothing.
+
+- **In-app messaging**: slideup, modal and fullscreen campaigns from the Gameball dashboard, shown inside your app
+- **On-device triggers**: session start, and custom events filtered on their properties
+- **Purchase logging**: `logPurchase(...)` for purchase-triggered campaigns
+- **Host control**: `inAppMessagingDelegate` to postpone messages, handle taps, observe selections and route navigation
+- **Raised minimum**: iOS 15.0+
+
+---
+
+## 🚀 Key Features
+
+### 💬 Opting in
+
+```swift
+let gameball = GameballApp.getInstance()
+gameball.inAppMessagingDelegate = myCoordinator   // optional, held weakly
+gameball.startInAppMessaging()                   // uses the customer from initializeCustomer
+
+// On logout
+gameball.stopInAppMessaging()
+```
+
+`startInAppMessaging()` can be called before `initializeCustomer`; messaging starts as soon as a customer is identified. Starting for a different customer refetches campaigns and resets frequency caps, so you don't need to stop first.
+
+### 🖼️ Message types
+
+Three message types — slideup (a non-blocking banner that lets touches through to your app), modal (a card over a dimmed background) and fullscreen — each with text and artwork or artwork only. A campaign that needs a particular orientation waits until the device is in it.
+
+### 🎯 Triggers
+
+Triggers are evaluated on the device, so a message appears the moment the event happens with no round trip: session start (on launch, and on returning to the foreground after 30 seconds in the background) plus any named event, narrowed by filters on the event's own properties. The events you already send with `sendEvent` drive the triggers — there is nothing extra to call.
+
+### 🛒 Purchase logging
+
+```swift
+try gameball.logPurchase(customerId: "customer-123", productId: "sku-1",
+                         price: 150, currency: "USD", quantity: 2)
+```
+
+`logPurchase` sends a `purchase` event to Gameball with `productId`, `price`, `currency` and `quantity` as metadata, whether or not in-app messaging has started, so purchase-triggered campaigns can filter on them.
+
+### 🚦 What controls whether a message shows
+
+A backend-controlled minimum interval between any two messages, per-campaign repeat rules that persist across restarts, campaign expiry and priority, and quiet hours — a message inside the quiet window is dropped, not delayed.
+
+### 🖐️ Delegate
+
+Four optional delegate methods let you postpone a message while the customer is mid-checkout, handle a tap yourself, observe every selection, or route a `navigate` action through your own router. Each has a default, so implement only what you need. The hooks replace the *action*, never the bookkeeping: the impression, click and dismissal are reported whatever a hook returns.
+
+### 📊 Analytics and personalisation
+
+Impressions, clicks and dismissals are reported automatically, batched and kept on the device until sent. Campaign text can contain `{token}` placeholders, filled with the customer's current values just before display (waiting at most two seconds). If the values don't arrive — a timeout, no network or an error — the placeholders are removed rather than shown as raw `{braces}`, and the message still shows.
+
+### ♿️ Accessibility
+
+Dynamic Type, a 48pt close target, VoiceOver focus moved to the message, entrance animations skipped under Reduce Motion, and right-to-left mirroring via directional constraints — the SDK never touches `UIView.appearance()`.
+
+See the In-App Messaging section of the [README](README.md) for the full surface.
+
+---
+
+## ⚠️ Breaking Changes
+
+**This is a major release.** Apps targeting iOS versions below 15.0 must raise their deployment target before upgrading.
+
+- **iOS**: minimum raised from 11.0 to **15.0** in `Package.swift` and the podspec (earlier docs listed 12.0)
+
+There are no changes to the public API — every v3.x call keeps its signature and behaviour.
+
+---
+
+## 🔄 Changes
+
+- Raised the minimum supported iOS version to 15.0
+- Added in-app messaging: `startInAppMessaging(customerId:)`, `stopInAppMessaging()`, `isInAppMessagingStarted` and `inAppMessagingDelegate`
+- Added slideup, modal and fullscreen messages, triggered on session start or by custom events with property filters
+- Added `logPurchase(customerId:productId:price:currency:quantity:properties:completion:sessionToken:)` to send purchase events that campaigns can target
+- Added automatic impression, click and dismissal analytics, kept on the device until sent
+- Added `GameballInAppMessagingLogging` to control in-app messaging debug logs
+
+---
+
+## 🔧 Technical Details
+
+### Requirements
+
+- iOS 15.0+
+- Swift 5.7+
+- Xcode 14.0+
+
+---
+
+## 📚 Migration Support
+
+Raise your app's deployment target to iOS 15.0. No Swift code changes are required — all v3.x calls work without modification. In-app messaging is opt-in; to adopt it, call `startInAppMessaging()` and call `stopInAppMessaging()` on logout.
+
+### Migration Resources
+- **[Migration Guide](MIGRATION.md)**: Step-by-step migration instructions
+- **[README](README.md)**: Complete usage documentation with examples
+- **[Changelog](CHANGELOG.md)**: Detailed list of all changes
+
+---
+
+## 📦 Installation
+
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.0.0")
+```
+
+---
+
+## v3.3.2
 
 **Release Date**: 2026-10-19
 **Version**: 3.3.2
@@ -299,14 +421,6 @@ func logout() {
     clearSession()
 }
 ```
-
----
-
-## Requirements
-
-- iOS 12.0+
-- Swift 5.0+
-- Xcode 12.0+
 
 ---
 
