@@ -110,17 +110,13 @@ final class PublicAPITests: XCTestCase {
 
     // MARK: - logPurchase
 
-    func testLogPurchaseBeforeStartingIsANoOpThatSaysSo() {
-        let logs = capturingIAMLog {
-            self.app.logPurchase(productId: "sku-1", price: 10, currency: "USD")
+    func testLogPurchaseHasDefaultQuantityPropertiesAndCompletion() {
+        // Compiles with only the four required arguments — the surface an integrator will use.
+        // Never invoked: a call would send a real event. LogPurchaseTests covers the behaviour.
+        let _: () throws -> Void = {
+            try GameballApp.getInstance().logPurchase(customerId: "cust-1", productId: "sku-1",
+                                                      price: 10, currency: "USD")
         }
-        XCTAssertTrue(logs.contains { $0.contains("logPurchase") },
-                      "an ignored purchase was not reported: \(logs)")
-    }
-
-    func testLogPurchaseHasDefaultQuantityAndProperties() {
-        // Compiles with only the three required arguments — the surface an integrator will use.
-        app.logPurchase(productId: "sku-1", price: 10, currency: "USD")
     }
 
     // MARK: - Idempotence and customer change

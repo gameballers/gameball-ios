@@ -12,7 +12,8 @@ import UIKit
 typealias JSON = [String: Any]
 
 class NetworkManager:NSObject {
-    let urlSession: URLSession
+    // A var so tests can route the SDK's requests through a stub instead of the network.
+    var urlSession: URLSession
     var baseUrl: String
     var widgetUrl: String
     var APIKey: String

@@ -243,7 +243,14 @@ final class EndToEndTests: XCTestCase {
                        "event properties never reached the filter")
     }
 
-    func testPurchaseReachesAPurchaseTriggeredCampaignThroughLogPurchase() {
+    /// `logPurchase` reaches the trigger engine through `sendEvent`'s hook, and only through it.
+    /// Notifying it a second time directly is the double fire Flutter's own `logPurchase` once
+    /// had: the duplicate selects the same campaign while it is on screen and parks it in the
+    /// deferred stack, so the customer sees it again after dismissing.
+    func testPurchaseReachesAPurchaseTriggeredCampaignThroughLogPurchaseExactlyOnce() throws {
+        let restoreNetwork = routeGameballRequestsThroughStub()
+        defer { restoreNetwork() }
+
         harness.campaigns = [makeCampaign(
             campaignId: 901,
             trigger: .event(name: gameballPurchaseEventName, filters: [
@@ -253,12 +260,20 @@ final class EndToEndTests: XCTestCase {
             message: makeMessage(id: "901", header: "Thanks for your order"))]
 
         startModule()
-        app.logPurchase(productId: "sku-1", price: 150, currency: "USD", quantity: 2)
+        // The hook runs on the SDK's own queue, which `drain()` does not settle. It is called as
+        // soon as the request is issued, so by the time the stubbed reply completes the send it
+        // has long run.
+        let sent = expectation(description: "the send completed")
+        try app.logPurchase(customerId: "cust-e2e", productId: "sku-1", price: 150,
+                            currency: "USD", quantity: 2) { _, _ in sent.fulfill() }
+        wait(for: [sent], timeout: 5)
         drain()
 
         XCTAssertEqual(harness.builtViews.count, 1,
                        "logPurchase did not reach a purchase-triggered campaign")
         XCTAssertEqual(harness.analytics.types(), [.impression])
+        XCTAssertEqual(harness.service?.deferredMessages.count, 0,
+                       "one purchase fired the trigger engine twice")
     }
 
     // MARK: - Delegate through the public surface

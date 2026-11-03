@@ -1034,6 +1034,33 @@ final class InAppMessagingServiceTests: XCTestCase {
         XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi ")
     }
 
+    /// Sync sends campaign copy as a template, so a token the values call did not resolve is a
+    /// raw placeholder — and it is blanked rather than shown, as the Flutter SDK does. Here the
+    /// endpoint answered but did not know the name.
+    func testAnUnresolvedTokenIsBlankedBeforeDisplay() {
+        variablesTransport.script([.success(try! JSONSerialization.data(
+            withJSONObject: ["variables": [String: String]()]))])
+        let source = StubMessageSource(result: .success(result([personalisedCampaign()])))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi ")
+    }
+
+    /// The path where substitution had nothing to work with: the values call failed and no
+    /// earlier value was held. The placeholder is still blanked, because blanking is the last
+    /// step before display rather than part of substitution.
+    func testATokenIsBlankedWhenPersonalisationFails() {
+        variablesTransport.script([.retryableFailure(status: 503)])
+        let source = StubMessageSource(result: .success(result([personalisedCampaign()])))
+        let service = makeService(source: source)
+        service.start()
+        drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.first?.body, "Hi ")
+    }
+
     // MARK: - The host is only asked about messages that can actually display
 
     /// The hook's contract is "what the host wants done with a message that is **about to

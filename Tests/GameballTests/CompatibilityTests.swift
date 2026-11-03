@@ -89,9 +89,6 @@ final class CompatibilityTests: XCTestCase {
 
         InAppMessagingCoordinator.shared.notifyCustomerChanged("cust-1")
         InAppMessagingCoordinator.shared.notifyEvents(["e": [:]])
-        InAppMessagingCoordinator.shared.logPurchase(productId: "sku", price: 1,
-                                                     currency: "USD", quantity: 1,
-                                                     properties: nil)
 
         XCTAssertEqual(built, 0, "a service was assembled without the host opting in")
         XCTAssertFalse(app.isInAppMessagingStarted)

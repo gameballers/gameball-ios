@@ -18,8 +18,6 @@ final class TokenSubstitutionTests: XCTestCase {
                        "You have 1,250 points")
     }
 
-    /// Blanking it would delete copy a marketer wrote; leaving it at least makes the
-    /// misconfiguration visible.
     /// An empty value is a value, and it substitutes as one. The result reads badly — "Welcome
     /// {player_name}!" becomes "Welcome !" — and that is the agreed contract across every
     /// Gameball SDK, not a defect: the backend returns "" when a customer has no name on file,
@@ -54,6 +52,8 @@ final class TokenSubstitutionTests: XCTestCase {
         XCTAssertEqual(TokenSubstitution.substitute("[{x}]", values: ["x": "  "]), "[  ]")
     }
 
+    /// Left so the caller can still tell resolved from unresolved. It never reaches the screen
+    /// like this: `clearUnresolved(in:)` blanks it as the last step before display.
     func testUnknownTokenIsLeftExactlyAsWritten() {
         XCTAssertEqual(TokenSubstitution.substitute("Hello {mystery}", values: values),
                        "Hello {mystery}")
@@ -139,6 +139,48 @@ final class TokenSubstitutionTests: XCTestCase {
     }
 
     func testApplyPreservesEverythingElse() {
+        assertPreservesEverythingElse { TokenSubstitution.apply(values: self.values, to: $0) }
+    }
+
+    func testApplyWithNoValuesReturnsTheMessageUnchanged() {
+        let message = makeMessage(header: "Hi {name}")
+        XCTAssertEqual(TokenSubstitution.apply(values: [:], to: message).header, "Hi {name}")
+    }
+
+    // MARK: - Clearing what substitution left
+
+    /// Every field substitution covers is cleared too: a header, body or button label that kept
+    /// its placeholder would put `{points}` on the customer's screen.
+    func testClearingBlanksUnresolvedTokensInEveryField() {
+        let message = makeMessage(header: "Hi {name}",
+                                  body: "You have {points} points",
+                                  buttons: [makeButton(id: "a", text: "Spend {points}")])
+        let cleared = TokenSubstitution.clearUnresolved(in: message)
+
+        XCTAssertEqual(cleared.header, "Hi ")
+        XCTAssertEqual(cleared.body, "You have  points")
+        XCTAssertEqual(cleared.buttons.first?.text, "Spend ")
+    }
+
+    /// The same strict pattern as substitution: braces that are not a token are copy.
+    func testClearingLeavesBracesThatAreNotTokens() {
+        let message = makeMessage(header: "{ spaced } and {2}", body: "100% {")
+        let cleared = TokenSubstitution.clearUnresolved(in: message)
+
+        XCTAssertEqual(cleared.header, "{ spaced } and {2}")
+        XCTAssertEqual(cleared.body, "100% {")
+    }
+
+    func testClearingPreservesEverythingElse() {
+        assertPreservesEverythingElse { TokenSubstitution.clearUnresolved(in: $0) }
+    }
+
+    // MARK: - Helpers
+
+    private func assertPreservesEverythingElse(
+        _ transform: (GameballInAppMessage) -> GameballInAppMessage,
+        file: StaticString = #file,
+        line: UInt = #line) {
         let action = GameballClickAction.navigate(route: "orders", arguments: nil)
         let message = makeMessage(id: "7/2", type: .fullscreen,
                                   header: "Hi {name}",
@@ -151,28 +193,24 @@ final class TokenSubstitutionTests: XCTestCase {
                                   orientation: .landscape,
                                   slidePosition: .top,
                                   extras: ["tag": "summer"])
-        let applied = TokenSubstitution.apply(values: values, to: message)
+        let transformed = transform(message)
 
-        XCTAssertEqual(applied.id, "7/2")
-        XCTAssertEqual(applied.type, .fullscreen)
-        XCTAssertEqual(applied.imageURL?.absoluteString, "https://example.com/a.png")
-        XCTAssertEqual(applied.showCloseButton, false)
-        XCTAssertEqual(applied.autoDismissAfter, 5)
-        XCTAssertEqual(applied.layout, .imageOnly)
-        XCTAssertEqual(applied.orientation, .landscape)
-        XCTAssertEqual(applied.slidePosition, .top)
-        XCTAssertEqual(applied.extras["tag"] as? String, "summer")
-        XCTAssertEqual(applied.buttons.first?.id, "a")
-        if case .some(.navigate) = applied.clickAction {} else {
-            XCTFail("the surface action was lost")
+        XCTAssertEqual(transformed.id, "7/2", file: file, line: line)
+        XCTAssertEqual(transformed.type, .fullscreen, file: file, line: line)
+        XCTAssertEqual(transformed.imageURL?.absoluteString, "https://example.com/a.png",
+                       file: file, line: line)
+        XCTAssertEqual(transformed.showCloseButton, false, file: file, line: line)
+        XCTAssertEqual(transformed.autoDismissAfter, 5, file: file, line: line)
+        XCTAssertEqual(transformed.layout, .imageOnly, file: file, line: line)
+        XCTAssertEqual(transformed.orientation, .landscape, file: file, line: line)
+        XCTAssertEqual(transformed.slidePosition, .top, file: file, line: line)
+        XCTAssertEqual(transformed.extras["tag"] as? String, "summer", file: file, line: line)
+        XCTAssertEqual(transformed.buttons.first?.id, "a", file: file, line: line)
+        if case .some(.navigate) = transformed.clickAction {} else {
+            XCTFail("the surface action was lost", file: file, line: line)
         }
-        if case .dismiss = applied.buttons.first!.action {} else {
-            XCTFail("the button action was lost")
+        if case .dismiss = transformed.buttons.first!.action {} else {
+            XCTFail("the button action was lost", file: file, line: line)
         }
-    }
-
-    func testApplyWithNoValuesReturnsTheMessageUnchanged() {
-        let message = makeMessage(header: "Hi {name}")
-        XCTAssertEqual(TokenSubstitution.apply(values: [:], to: message).header, "Hi {name}")
     }
 }

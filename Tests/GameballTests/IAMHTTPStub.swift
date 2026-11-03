@@ -6,7 +6,7 @@
 //  touch the network.
 //
 
-import Foundation
+import XCTest
 @testable import Gameball
 
 final class IAMHTTPStub: URLProtocol {
@@ -116,4 +116,45 @@ func capturingIAMLog(_ body: () -> Void) -> [String] {
     defer { iamLogSink = nil }
     body()
     return lines
+}
+
+extension IAMHTTPStub {
+
+    /// The JSON bodies posted to the events endpoint — where `sendEvent`, and so `logPurchase`,
+    /// reports to — oldest first.
+    static func eventBodies() -> [[String: Any]] {
+        return zip(requests, bodies)
+            .filter { request, _ in request.url?.path == "/api/v4.0/integrations/events" }
+            .compactMap { _, body in
+                guard let body = body else { return nil }
+                return (try? JSONSerialization.jsonObject(with: body, options: [])) as? [String: Any]
+            }
+    }
+}
+
+extension XCTestCase {
+
+    /// Points the SDK's own network layer — the one `sendEvent` posts through — at `IAMHTTPStub`,
+    /// and initialises the SDK so those calls are actually sent. Call the returned closure to
+    /// restore the session.
+    ///
+    /// `init(config:)` cannot be undone, so the SDK stays initialised for the rest of the run.
+    /// Nothing else in the suite depends on it not being.
+    func routeGameballRequestsThroughStub() -> () -> Void {
+        IAMHTTPStub.reset()
+        let manager = NetworkManager.shared()
+        let original = manager.urlSession
+        manager.urlSession = IAMHTTPStub.session()
+
+        let ready = expectation(description: "the SDK initialised")
+        GameballApp.getInstance().`init`(config: GameballConfig(apiKey: "test-key", lang: "en")) { _ in
+            ready.fulfill()
+        }
+        wait(for: [ready], timeout: 5)
+
+        return {
+            manager.urlSession = original
+            IAMHTTPStub.reset()
+        }
+    }
 }
