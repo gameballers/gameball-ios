@@ -5,19 +5,27 @@ All notable changes to Gameball iOS SDK are documented here.
 
 ## [Unreleased] 🎡
 
-> **Minor Release**: Game campaigns — a reward campaign opens itself over your app from an in-app trigger
+> **Minor Release**: Game campaigns — a reward campaign opens itself over your app from an in-app trigger — and campaigns that show when any of their conditions match
 
 ### ✨ Added
 - 🎡 **Game campaigns**: a spin the wheel, quiz or scratch and win the merchant set to open over your app arrives in the same sync as in-app messages and displays through the same window. **Nothing to integrate** — a host already calling `startInAppMessaging()` gets them
 - 🧩 **The campaign is the content**: there is no headline or button to style. The SDK opens the game itself, and shows the card only once the game has finished drawing, so the customer never sees a loading state
 - 🖥️ **Modal and fullscreen**: fullscreen insets its content into the safe area, so the campaign's own controls stay clear of the notch and the home indicator, while the surface behind runs edge to edge
+- ✖️ **A close button on every game**: the widget shows no close or back control for a game on mobile, so the SDK draws its own in the game's top-end corner — inside the safe area, a 48pt target, read by VoiceOver as "Close". A modal game also closes on a tap outside it. Closing is a dismissal
+- 🔀 **Any of the conditions**: a campaign whose event conditions are set to match *any* (`metadataLogicalOperator: OR`, in any case) shows when at least one condition matches, for messages and games alike. Such campaigns used to be dropped. *All* (`AND`, or no operator) is unchanged
 - 🌐 **`GameballConfig.widgetUrlPrefix`**: sets the widget host once, for the profile widget *and* any campaign a message opens. Without it a host aimed at a non-production environment would get production for its campaigns, which renders as "this campaign is not available" and is indistinguishable from a campaign that does not exist
 - 🛡️ **Unknown kinds are skipped, never guessed at.** An entry whose `campaignType` or game type this version does not recognise is dropped with a log naming it, so a future kind degrades to silence rather than to a wrong display
 
 ### 🔒 Changed
-- 🔑 **Display history is keyed by campaign kind and id.** Challenge ids and message campaign ids are separate sequences that overlap numerically, and every game entry arrives with `campaignId: 0` — so a bare number can no longer identify a campaign. Histories written by earlier releases are migrated on read; nothing is lost and no campaign re-shows
-- 📊 **Game campaigns report no in-app messaging telemetry.** Engagement is recorded through the normal challenge flow when the customer plays. Their display history is still kept, so a once-ever game stays once-ever
+- 🔁 **Games follow the message frequency rules**: `repeatable` and `minIntervalSeconds` from the sync, the account's display cooldown and quiet hours apply to a game exactly as to a message. There is no game-specific interval, delay or dismissal limit
+- 🎯 **After a play**: once the customer finishes a game, it is not offered again until the next successful sync, where Gameball rechecks whether they can still play it. Closing a game without playing it holds it only by the rules above
+- ⏳ **A waiting game is rechecked before it opens**: a game held behind another message, or by `gameballShouldDisplay` returning `.later`, opens only if the latest sync still carries it, it has not expired, and the campaign set came from a live sync rather than the cache
+- 🔑 **Display history is keyed by campaign kind and id.** Challenge ids and message campaign ids are separate sequences that overlap numerically, and every game entry arrives with `campaignId: 0` — so a bare number can no longer identify a campaign. Histories written by earlier releases are migrated on read; nothing is lost and no campaign re-shows. Waiting campaigns, runners-up and log lines are told apart the same way
+- 📊 **Game campaigns report no in-app messaging telemetry** — no impression, click or dismissal. Engagement is recorded through the normal challenge flow when the customer plays. Their display history is still kept, so a once-ever game stays once-ever
 - 🗂️ **A game is never opened from a cached campaign set.** A message carries its own content, so a cached one is still correct; a game carries a pointer and fetches its content live, so a cached entry is a promise the SDK cannot keep
+- 🔗 **Links inside a game open in the device browser**, as they do in the profile widget, and the game stays open behind them
+- 📴 **A game that cannot load is taken away at once** — offline, say — rather than after a 12-second wait. It was never seen, so it is not counted as a display and can open at its next trigger
+- 🔒 **The game's widget URL is encoded as the profile widget's is**, so a `+` in a customer id arrives intact, and the URL is logged with the API key and session token redacted
 
 ### ⚠️ Not yet supported
 - 📱 **Screen triggers do not fire on mobile.** Use a session-start or custom-event trigger. A screen-triggered campaign is logged by name, so one that does not appear can be diagnosed from the console

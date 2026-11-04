@@ -345,6 +345,21 @@ A game campaign can be authored as a modal or fullscreen. Fullscreen insets its 
 safe area, so the campaign's own controls stay clear of the notch and the home indicator, while the
 surface behind runs edge to edge.
 
+**Closing.** The widget shows no close or back control for a game on mobile, so the SDK draws its
+own close button in the game's top-end corner — inside the safe area, a 48pt target, read by
+VoiceOver as "Close". A modal game also closes on a tap outside it. Closing is a dismissal. Links
+inside a game open in the device browser, as they do in the profile widget.
+
+**How often.** A game follows exactly the rules a message does: `repeatable` and the minimum
+interval set on the campaign, your account's display cooldown, and quiet hours. There is no
+game-specific interval, delay or dismissal limit. Once the customer finishes a game, it is not
+offered again until the next successful sync, where Gameball rechecks whether they can still play
+it. A game is never opened from cached campaigns, and one waiting behind another message is
+rechecked against the latest sync and its end date before it opens.
+
+**Conditions.** A game triggered by a custom event can filter on the event's properties like any
+campaign, matching all of its conditions or any one of them.
+
 One limit in this release: **screen triggers do not fire on mobile.** Use a session-start or
 custom-event trigger instead. A screen-triggered campaign is skipped with a `[GameballIAM]` log
 naming it, so one that does not appear can be diagnosed from the console.
@@ -443,7 +458,8 @@ dismissal are reported whatever a hook returns.
 
 - **Three message types** — slideup (a non-blocking band that passes touches through), modal (a
   card over a scrim) and fullscreen, each in a text-with-artwork and an artwork-only composition.
-- **On-device triggers** — `session_start` and named events, with metadata filters.
+- **On-device triggers** — `session_start` and named events, with metadata filters that must all
+  match or, when the campaign says so, any one of them.
 - **Frequency control** — a global display floor set from the dashboard, plus per-campaign repeat
   rules. Both survive a restart.
 - **Accessibility** — Dynamic Type throughout, a 48pt close target, VoiceOver focus moved to the
