@@ -73,6 +73,11 @@ final class InAppMessagingService {
     /// SDK cannot keep — the campaign may have ended, and the widget would answer "this campaign
     /// is not available" to a customer who never asked for it.
     private var campaignsFromCache = false
+    /// Games the customer finished since the last successful sync. Not offered again until the
+    /// next one, which is where the server rechecks whether they can still play: a sync from
+    /// before the play says nothing about that. Held in memory only, because every new session
+    /// starts with a sync anyway.
+    private var playedSinceSync: Set<CampaignKey> = []
     private var cooldown: TimeInterval = defaultDisplayCooldown
     /// The account's quiet window. `nil` until a sync says otherwise, which is also the
     /// value that means "never suppress on time of day".
@@ -161,6 +166,7 @@ final class InAppMessagingService {
             self.analytics.dispose()
             self.campaigns = []
             self.deferred = []
+            self.playedSinceSync = []
             self.runnerUpBehindWinner = nil
             self.showing = nil
             self.prefetcher.reset()
@@ -328,6 +334,8 @@ final class InAppMessagingService {
             // were switched off must stop seeing them.
             campaigns = value.campaigns
             campaignsFromCache = false
+            // The server has rechecked every game it sent: one it still sends may be played again.
+            playedSinceSync = []
             cooldown = value.cooldown
             quietHours = value.quietHours
             syncAttempt = 0
@@ -414,12 +422,16 @@ final class InAppMessagingService {
     ///
     /// A message carries its own content, so a cached one is still correct; a game carries a
     /// pointer and fetches its content live, so a cached entry is a promise this SDK cannot keep.
-    /// Must run on `queue`.
+    /// And a game the customer has finished waits for the next sync to say it may be played
+    /// again. Must run on `queue`.
     private func whyGameCannotOpen(_ campaign: InAppMessageCampaign) -> String? {
         guard campaign.message.isWidget else { return nil }
         if campaignsFromCache {
             return "the campaign set came from the cache, and a game must be confirmed live "
                  + "before it is opened"
+        }
+        if playedSinceSync.contains(campaign.key) {
+            return "it was played, and only the next sync can offer it again"
         }
         return nil
     }
@@ -559,7 +571,8 @@ final class InAppMessagingService {
             onMessagePressed: { [weak self] in
                 self?.handleClick(campaign, message: message, button: nil)
             },
-            onDismissed: { [weak self] in self?.handleDismissed(campaign) }
+            onDismissed: { [weak self] in self?.handleDismissed(campaign) },
+            onGameCompleted: { [weak self] in self?.handleGameCompleted(campaign) }
         )
 
         // Set *before* presenting, not after: a view that honours reduce motion reports
@@ -760,6 +773,16 @@ final class InAppMessagingService {
         DispatchQueue.main.async { [weak self] in
             let handled = hook(message, button, action)
             self?.perform { continuation(handled) }
+        }
+    }
+
+    /// The open game reports that the customer finished it. It stays on screen, on its result,
+    /// until they close it; what changes is that it is not offered again before the next sync.
+    private func handleGameCompleted(_ campaign: InAppMessageCampaign) {
+        perform {
+            guard campaign.message.isWidget else { return }
+            self.playedSinceSync.insert(campaign.key)
+            iamLog("\(campaign.key) was played; it is not offered again until the next sync")
         }
     }
 

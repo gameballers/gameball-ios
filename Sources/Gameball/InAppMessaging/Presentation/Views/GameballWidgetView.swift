@@ -226,10 +226,31 @@ extension GameballWidgetView: WKScriptMessageHandler {
             // The page's own close is the customer leaving the game: a dismissal, never a click.
             dismiss(completion: nil)
         case "GBIamEvent":
-            iamLog("game \(self.message.widget?.gameCampaignId ?? 0) reported \(message.body)")
+            receiveWidgetEvent(message.body)
         default:
             break
         }
+    }
+
+    /// An event the page posted through `WidgetEvent.postEvent`.
+    ///
+    /// Only `gameCompleted` means anything here. Its `metadata.campaignType` is the widget's own
+    /// name for the game (`spinTheWheel`), not the sync's (`wheel`), so nothing is matched on the
+    /// metadata: the event came from this view, so it is about the game this view opened.
+    private func receiveWidgetEvent(_ body: Any) {
+        let type = GameballWidgetView.widgetEvent(from: body)?["type"] as? String
+        let game = self.message.widget.map { "game \($0.gameCampaignId)" } ?? "the game"
+        iamLog("\(game) reported \(type.map { "'\($0)'" } ?? "an event it could not read")")
+        guard type == "gameCompleted" else { return }
+        coordinator?.viewDidCompleteGame()
+    }
+
+    /// Reads what `WidgetEvent.postEvent` was handed: a JSON string, `{"type", "metadata"}`, or
+    /// the object itself. `nil` for anything else.
+    static func widgetEvent(from body: Any) -> [String: Any]? {
+        if let event = body as? [String: Any] { return event }
+        guard let text = body as? String, let data = text.data(using: .utf8) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: data, options: [])) as? [String: Any]
     }
 }
 

@@ -34,6 +34,7 @@ final class StubPresenter: MessagePresenting {
     func reportShown() { handlers?.onShown() }
     func tapButton(_ button: GameballMessageButton) { handlers?.onButtonPressed(button) }
     func tapSurface() { handlers?.onMessagePressed() }
+    func reportGameCompleted() { handlers?.onGameCompleted() }
     func reportDismissed() {
         isShowing = false
         handlers?.onDismissed()
@@ -1550,5 +1551,58 @@ final class InAppMessagingServiceTests: XCTestCase {
         service.onDisplayOpportunity(); drain(service)
 
         XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+    }
+
+    /// Once the customer finishes a game it is not offered again until the next successful sync,
+    /// which is where the server rechecks whether they can still play it. Repeatable or not, a
+    /// sync from before the play is no grounds to open it again.
+    func testAPlayedGameIsNotOfferedAgainUntilTheNextSync() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportGameCompleted(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a played game was offered again")
+
+        // A new session syncs, and that sync is what may offer it again.
+        service.onSessionStart(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 2)
+    }
+
+    /// The same game selected again while it was on screen waits behind itself. Once it has been
+    /// played, that wait is dropped rather than reopening the game the moment it closes.
+    func testAPlayedGameWaitingBehindItselfIsDropped() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        presenter.reportGameCompleted(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a played game reopened as it closed")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// The control: a game that was closed without being finished is held only by the ordinary
+    /// rules.
+    func testAGameClosedWithoutAPlayMayBeOfferedAgain() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 2)
     }
 }

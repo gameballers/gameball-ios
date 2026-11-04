@@ -17,6 +17,9 @@ protocol MessageViewCoordinating: AnyObject {
     func viewDidDismiss()
     func viewDidClick(buttonId: String?)
     func viewDidRequest(action: GameballClickAction, buttonId: String?)
+    /// The game this view opened reports that the customer finished playing it. Only a game
+    /// view calls this; it is neither a click nor a dismissal.
+    func viewDidCompleteGame()
 }
 
 /// A drawable message.

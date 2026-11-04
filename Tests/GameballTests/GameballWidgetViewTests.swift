@@ -63,4 +63,36 @@ final class GameballWidgetViewTests: XCTestCase {
         XCTAssertTrue(coordinator.clicks.isEmpty, "closing a game reported a click")
         XCTAssertEqual(coordinator.didDismissCount, 1)
     }
+
+    // MARK: - The widget's own events
+
+    /// As the widget posts it. `campaignType` is the widget's own name for the game, not the
+    /// sync's (`wheel`), so nothing may be matched on it.
+    private let gameCompleted = """
+        {"type":"gameCompleted","metadata":{"campaignId":"9645","campaignType":"spinTheWheel"}}
+        """
+
+    func testAFinishedGameIsReportedToTheCoordinator() {
+        let view = game()
+        post("GBIamEvent", gameCompleted, to: view)
+
+        XCTAssertEqual(coordinator.gamesCompleted, 1)
+        XCTAssertTrue(coordinator.clicks.isEmpty, "a finished game reported a click")
+        XCTAssertEqual(coordinator.didDismissCount, 0, "the game closed over its own result")
+    }
+
+    func testAnEventPostedAsAnObjectIsReadToo() {
+        let view = game()
+        post("GBIamEvent", ["type": "gameCompleted", "metadata": ["campaignId": "9645"]], to: view)
+        XCTAssertEqual(coordinator.gamesCompleted, 1)
+    }
+
+    func testOtherEventsAreNotAFinishedGame() {
+        let view = game()
+        post("GBIamEvent", "{\"type\":\"rewardClaimed\",\"metadata\":{}}", to: view)
+        post("GBIamEvent", "not json", to: view)
+        post("GBIamEvent", "", to: view)
+
+        XCTAssertEqual(coordinator.gamesCompleted, 0)
+    }
 }

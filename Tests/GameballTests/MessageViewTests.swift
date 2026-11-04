@@ -14,6 +14,7 @@ final class RecordingCoordinator: MessageViewCoordinating {
     var didDismissCount = 0
     var clicks: [String?] = []
     var actions: [(GameballClickAction, String?)] = []
+    var gamesCompleted = 0
 
     func viewWillPresent() { willPresentCount += 1 }
     func viewDidPresent() { didPresentCount += 1 }
@@ -23,6 +24,7 @@ final class RecordingCoordinator: MessageViewCoordinating {
     func viewDidRequest(action: GameballClickAction, buttonId: String?) {
         actions.append((action, buttonId))
     }
+    func viewDidCompleteGame() { gamesCompleted += 1 }
 }
 
 final class MessageViewTests: XCTestCase {

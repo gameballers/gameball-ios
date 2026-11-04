@@ -176,6 +176,10 @@ final class MessageWindowPresenter: MessagePresenting, MessageViewCoordinating {
         if case .dismiss = action { dismiss() }
     }
 
+    func viewDidCompleteGame() {
+        handlers?.onGameCompleted()
+    }
+
     /// The interface orientation of the host's active scene; the status bar's on iOS 12.
     static func currentOrientation() -> UIInterfaceOrientation? {
         if #available(iOS 13.0, *) {
