@@ -42,6 +42,15 @@ struct InAppMessageCampaign {
         return .game(widget.gameCampaignId)
     }
 
+    /// Whether impressions, clicks and dismissals of this campaign go to the events endpoint.
+    ///
+    /// Never for a test send, and never for a game: a game is not a message campaign, its
+    /// campaignId is always 0, and its engagement is recorded through the challenge flow when the
+    /// customer plays.
+    var reportsTelemetry: Bool {
+        return !isTest && !message.isWidget
+    }
+
     func hasExpired(at now: Date) -> Bool {
         guard let expiresAt = expiresAt else { return false }
         return expiresAt <= now

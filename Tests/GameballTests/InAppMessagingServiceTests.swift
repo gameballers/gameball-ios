@@ -1439,4 +1439,26 @@ final class InAppMessagingServiceTests: XCTestCase {
         presenter.reportDismissed(); drain(service)
         XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645", "game_9702"])
     }
+
+    /// A game is not a message campaign: closing one reports nothing to the events endpoint,
+    /// where it would land as a dismissal of campaign 0. Its display history is still kept.
+    func testClosingAGameReportsNothing() {
+        let (service, _) = startedService([makeGameCampaign()])
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertNotNil(reloaded.state.lastDisplayByCampaign[.game(9645)])
+    }
+
+    func testATapOnAGameReportsNoClick() {
+        let (service, _) = startedService([makeGameCampaign()])
+        presenter.reportShown(); drain(service)
+        presenter.tapSurface(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
+    }
 }

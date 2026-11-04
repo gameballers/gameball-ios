@@ -704,7 +704,7 @@ final class InAppMessagingService {
 
     /// Must run on `queue`.
     private func logClick(_ campaign: InAppMessageCampaign, buttonId: String?, url: String?) {
-        guard !campaign.isTest else { return }
+        guard campaign.reportsTelemetry else { return }
         analytics.log(MessageEvent(campaignId: campaign.campaignId,
                                    variationId: campaign.variationId,
                                    dispatchId: campaign.dispatchId,
@@ -738,7 +738,7 @@ final class InAppMessagingService {
             self.didReportImpression = false
             self.didEngage = false
 
-            if reportDismissal && !campaign.isTest {
+            if reportDismissal && campaign.reportsTelemetry {
                 // Only when shown and not engaged, so the dismissal that follows a tap is not
                 // also counted as "shown and ignored".
                 self.analytics.log(MessageEvent(campaignId: campaign.campaignId,

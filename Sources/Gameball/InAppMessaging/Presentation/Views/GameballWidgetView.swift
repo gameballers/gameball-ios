@@ -223,8 +223,8 @@ extension GameballWidgetView: WKScriptMessageHandler {
         case "GBIamReady":
             settle(ready: (message.body as? String) == "ready")
         case "GBIamClose":
-            coordinator?.viewDidClick(buttonId: nil)
-            coordinator?.viewDidRequest(action: .dismiss, buttonId: nil)
+            // The page's own close is the customer leaving the game: a dismissal, never a click.
+            dismiss(completion: nil)
         case "GBIamEvent":
             iamLog("game \(self.message.widget?.gameCampaignId ?? 0) reported \(message.body)")
         default:
