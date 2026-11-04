@@ -22,6 +22,18 @@ final class StubScriptMessage: WKScriptMessage {
     override var body: Any { stubBody }
 }
 
+/// A navigation as WebKit hands one to its delegate, without a page to start it.
+final class StubNavigationAction: WKNavigationAction {
+    private let stubRequest: URLRequest
+
+    init(_ link: String) {
+        stubRequest = URLRequest(url: URL(string: link)!)
+        super.init()
+    }
+
+    override var request: URLRequest { stubRequest }
+}
+
 final class GameballWidgetViewTests: XCTestCase {
 
     private var coordinator: RecordingCoordinator!
@@ -207,5 +219,64 @@ final class GameballWidgetViewTests: XCTestCase {
         post("GBIamEvent", "", to: view)
 
         XCTAssertEqual(coordinator.gamesCompleted, 0)
+    }
+
+    // MARK: - Links
+
+    /// A game whose outside links are recorded rather than opened. `widget` is the page it opens.
+    private func linkingGame(widget: String = "https://m.gameball.app/?openDetail=details_wheel_9645",
+                             opened: @escaping (URL) -> Void) -> GameballWidgetView {
+        return GameballWidgetView(message: makeGameCampaign().message,
+                                  attributes: .defaults,
+                                  url: URL(string: widget)!,
+                                  coordinator: coordinator,
+                                  onFailed: nil,
+                                  openOutside: opened)
+    }
+
+    private func policy(for link: String, in view: GameballWidgetView) -> WKNavigationActionPolicy? {
+        var decided: WKNavigationActionPolicy?
+        (view as WKNavigationDelegate).webView?(WKWebView(),
+                                                decidePolicyFor: StubNavigationAction(link),
+                                                decisionHandler: { decided = $0 })
+        return decided
+    }
+
+    /// As in the profile widget: a link to anywhere but Gameball leaves the game for the device
+    /// browser, and the game stays where it was.
+    func testALinkToAnotherSiteOpensOutsideTheGame() {
+        var opened: [URL] = []
+        let view = linkingGame { opened.append($0) }
+
+        XCTAssertEqual(policy(for: "https://example.com/offer?ref=game", in: view), .cancel)
+        XCTAssertEqual(opened, [URL(string: "https://example.com/offer?ref=game")!])
+        XCTAssertEqual(coordinator.didDismissCount, 0)
+    }
+
+    /// A look-alike host is not Gameball.
+    func testALookAlikeHostOpensOutsideTheGame() {
+        var opened: [URL] = []
+        let view = linkingGame { opened.append($0) }
+
+        XCTAssertEqual(policy(for: "https://evilgameball.app/", in: view), .cancel)
+        XCTAssertEqual(opened.count, 1)
+    }
+
+    /// The widget's own pages, its frames, and the host it was configured on all load in place.
+    func testTheWidgetsOwnPagesStayInTheGame() {
+        var opened: [URL] = []
+        let view = linkingGame(widget: "https://widget.staging.example/?openDetail=details_wheel_9645") {
+            opened.append($0)
+        }
+
+        for link in ["https://widget.staging.example/next",
+                     "https://m.gameball.app/details",
+                     "https://gameball.app/",
+                     "https://alpha.gameball.app/challenge",
+                     "about:srcdoc",
+                     "about:blank"] {
+            XCTAssertEqual(policy(for: link, in: view), .allow, link)
+        }
+        XCTAssertTrue(opened.isEmpty, "\(opened)")
     }
 }

@@ -35,6 +35,8 @@ final class GameballWidgetView: UIView, InAppMessageView {
     private let url: URL
     private let webView: WKWebView
     private let closeButton: MessageCloseButton
+    /// Where a link tapped inside the game goes. Injected so a test can see it go.
+    private let openOutside: (URL) -> Void
     private var timeoutWork: DispatchWorkItem?
     private var settled = false
     /// Whether a dismissal has begun. The close button, the scrim, the page's own close and a
@@ -47,12 +49,14 @@ final class GameballWidgetView: UIView, InAppMessageView {
          attributes: MessageViewAttributes,
          url: URL,
          coordinator: MessageViewCoordinating?,
-         onFailed: (() -> Void)?) {
+         onFailed: (() -> Void)?,
+         openOutside: @escaping (URL) -> Void = { MessageActionRouter.liveOpenURL($0, external: true) }) {
         self.message = message
         self.attributes = attributes
         self.url = url
         self.coordinator = coordinator
         self.onFailed = onFailed
+        self.openOutside = openOutside
 
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
@@ -257,6 +261,34 @@ final class GameballWidgetView: UIView, InAppMessageView {
 // MARK: - WKNavigationDelegate
 
 extension GameballWidgetView: WKNavigationDelegate {
+
+    /// A link tapped inside the game opens outside it, as the profile widget's do: a page that
+    /// belongs to the widget loads in place, and anything else goes to the device browser while
+    /// the game stays where it is. The device browser rather than an in-app one, because one
+    /// presented from the host's controllers would sit beneath the message's own window.
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let target = navigationAction.request.url,
+              !Self.staysInGame(target, widgetHost: url.host) else {
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        // The host only: the rest of a link can carry anything.
+        iamLog("a link in the game to \(target.host ?? "another site") opened outside it")
+        openOutside(target)
+    }
+
+    /// Whether `target` is part of the widget: no host at all (`about:srcdoc`, which the game's
+    /// own frames use), gameball.app or any subdomain of it, or the host the widget was opened
+    /// on, which a non-production `widgetUrlPrefix` can make something else. The leading dot in
+    /// the suffix is what turns away a look-alike such as `evilgameball.app`.
+    static func staysInGame(_ target: URL, widgetHost: String?) -> Bool {
+        guard let host = target.host?.lowercased() else { return true }
+        if let widgetHost = widgetHost?.lowercased(), host == widgetHost { return true }
+        return host == "gameball.app" || host.hasSuffix(".gameball.app")
+    }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.evaluateJavaScript(Self.readinessScript, completionHandler: nil)
