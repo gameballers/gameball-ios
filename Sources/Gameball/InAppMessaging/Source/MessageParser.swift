@@ -589,12 +589,28 @@ enum MessageParser {
         return formatter
     }()
 
+    /// A date and time with no zone designator, as the sync sends a game's end date
+    /// ("2026-11-04T13:42:00"). The backend's stamps are UTC, so that is how it is read — as
+    /// Android reads it. Without this, a game's end date was unparseable and never applied.
+    private static let utcWithoutZone: [DateFormatter] = [
+        "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+    ].map { pattern in
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = pattern
+        return formatter
+    }
+
     /// An unparseable stamp means "no expiry", never "expired" — the alternative silently
     /// suppresses a live campaign because of a formatting change.
     private static func parseDate(_ raw: Any?, campaignId: Int) -> Date? {
         guard let value = stringValue(raw) else { return nil }
         if let date = iso8601.date(from: value) ?? iso8601Fractional.date(from: value) {
             return date
+        }
+        for formatter in utcWithoutZone {
+            if let date = formatter.date(from: value) { return date }
         }
         iamLog("campaign \(campaignId) has an unparseable expiresAt '\(value)'; treating it "
              + "as no expiry")
