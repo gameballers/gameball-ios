@@ -57,4 +57,24 @@ final class InAppWidgetURLTests: XCTestCase {
         XCTAssertNil(widgetReads("sessionToken", in: url(sessionToken: "")))
         XCTAssertEqual(widgetReads("sessionToken", in: url(sessionToken: "tok")), "tok")
     }
+
+    /// The url carries the api key and the session token, and a console line — which a release
+    /// build can be told to write — is no place for either.
+    func testTheLoggedUrlCarriesNeitherTheApiKeyNorTheSessionToken() {
+        var composed: URL?
+        let logs = capturingIAMLog {
+            composed = url(apiKey: "live-api-key-123", sessionToken: "session-token-456")
+        }
+        let logged = logs.filter { $0.contains("opening widget") }
+
+        XCTAssertEqual(logged.count, 1, "\(logs)")
+        XCTAssertFalse(logs.joined().contains("live-api-key-123"), "\(logs)")
+        XCTAssertFalse(logs.joined().contains("session-token-456"), "\(logs)")
+        XCTAssertTrue(logged.first?.contains("openDetail=details_wheel_9645") ?? false,
+                      "the rest of the url should still be logged: \(logs)")
+
+        // Only the log line is redacted, never the url the game opens on.
+        XCTAssertEqual(widgetReads("apiKey", in: composed), "live-api-key-123")
+        XCTAssertEqual(widgetReads("sessionToken", in: composed), "session-token-456")
+    }
 }

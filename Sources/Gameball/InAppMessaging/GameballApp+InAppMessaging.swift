@@ -433,10 +433,26 @@ extension GameballApp {
         let url = components.url
         // Logged because it is otherwise invisible: a campaign that opens on "this campaign is not
         // available" looks identical whether the id is wrong, the customer cannot play it, or the
-        // host is pointed at a different widget environment than its api key belongs to.
-        iamLog("opening widget \(url?.absoluteString ?? "(could not compose)")")
+        // host is pointed at a different widget environment than its api key belongs to. Logged
+        // without the api key and the session token, which no console line should carry.
+        iamLog("opening widget \(url.map(redactedForLog) ?? "(could not compose)")")
         return url
     }
+
+    /// `url` as a log line, with the value of every credential in its query replaced.
+    static func redactedForLog(_ url: URL) -> String {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return "(a url that could not be read back)"
+        }
+        components.percentEncodedQueryItems = components.percentEncodedQueryItems?.map { item in
+            guard widgetQueryCredentials.contains(item.name), item.value != nil else { return item }
+            return URLQueryItem(name: item.name, value: "redacted")
+        }
+        return components.string ?? "(a url that could not be read back)"
+    }
+
+    /// Query items a log line never shows the value of.
+    private static let widgetQueryCredentials: Set<String> = ["apiKey", "sessionToken"]
 
     /// The unreserved characters of RFC 3986, the only ones a widget query value carries raw. The
     /// same set the profile widget encodes with.
