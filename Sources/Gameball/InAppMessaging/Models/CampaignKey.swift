@@ -50,3 +50,9 @@ struct CampaignKey: Hashable {
         return CampaignKey(kind: kind, id: id)
     }
 }
+
+extension CampaignKey: CustomStringConvertible {
+    /// How a log line names a campaign: `message 2215`, `game 9645`. Never the bare campaignId,
+    /// which is 0 for every game and so named all of them at once.
+    var description: String { "\(kind.rawValue) \(id)" }
+}

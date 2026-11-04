@@ -1403,4 +1403,40 @@ final class InAppMessagingServiceTests: XCTestCase {
         service.onCustomEvent(name: "spin", properties: [:]); drain(service)
         XCTAssertEqual(presenter.presentedMessages.count, 1, "a once-ever game was offered again")
     }
+
+    /// Every game arrives with campaignId 0. Deduplicated on that, the second game to wait evicted
+    /// the first.
+    func testTwoWaitingGamesDoNotEvictEachOther() {
+        presenter.obstacle = .noSurface
+        let wheel = makeGameCampaign(gameCampaignId: 9645, responseIndex: 0)
+        let quiz = makeGameCampaign(gameCampaignId: 9702,
+                                    trigger: .event(name: "e", filters: []),
+                                    responseIndex: 1)
+        let (service, _) = startedService([wheel, quiz])
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        let logs = capturingIAMLog {
+            service.onCustomEvent(name: "e", properties: [:])
+            drain(service)
+        }
+
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645), .game(9702)])
+        XCTAssertTrue(logs.contains { $0.contains("deferring game 9702") },
+                      "the deferral was not logged by its key: \(logs)")
+    }
+
+    /// Two games on one trigger: the second is the runner-up. Filtering "everything but the
+    /// winner" on campaignId 0 filtered out every other game.
+    func testAGameRunnerUpWaitsBehindAWinningGame() {
+        let wheel = makeGameCampaign(gameCampaignId: 9645, responseIndex: 0)
+        let quiz = makeGameCampaign(gameCampaignId: 9702, responseIndex: 1)
+        let (service, _) = startedService([wheel, quiz])
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9702)])
+
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645", "game_9702"])
+    }
 }

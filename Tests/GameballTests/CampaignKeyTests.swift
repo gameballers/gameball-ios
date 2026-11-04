@@ -39,4 +39,11 @@ final class CampaignKeyTests: XCTestCase {
             XCTAssertNil(CampaignKey.parse(bad), "expected nil for \(bad)")
         }
     }
+
+    /// A log line names the kind as well as the id. A game's campaignId is always 0, so "campaign
+    /// 0" named every game at once.
+    func testALogLineNamesTheKindAndTheId() {
+        XCTAssertEqual("\(CampaignKey.game(9645))", "game 9645")
+        XCTAssertEqual("\(CampaignKey.message(2215))", "message 2215")
+    }
 }
