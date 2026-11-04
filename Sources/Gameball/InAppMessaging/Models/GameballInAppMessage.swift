@@ -43,6 +43,9 @@ public struct GameballMessageStyle {
 /// Deliberately not a URL on the wire: one would have to carry the api key and the player id,
 /// making the payload both credential-bearing and customer-specific. The SDK composes the URL from
 /// state it already holds and the two fields here.
+///
+/// There is no delay and no dismissal limit, by product decision: a game opens when its trigger
+/// fires and is held to exactly the frequency rules a message is.
 public struct GameballWidgetContent {
     /// The challenge to open. All local bookkeeping keys off this, never off the entry's
     /// `campaignId`, which is always 0 on a game.
@@ -51,23 +54,9 @@ public struct GameballWidgetContent {
     /// Which game it is, as the open-details text: `wheel`, `quiz`, `scratch`…
     public let gameCampaignType: String
 
-    /// How long to wait after the trigger fires. `nil` means open immediately.
-    ///
-    /// Not on the sync entry today; read when it appears so this needs no change on the day it
-    /// does.
-    public let delay: TimeInterval?
-
-    /// Stop offering after this many dismissals without a play. `nil` means no cap.
-    public let dismissLimit: Int?
-
-    public init(gameCampaignId: Int,
-                gameCampaignType: String,
-                delay: TimeInterval? = nil,
-                dismissLimit: Int? = nil) {
+    public init(gameCampaignId: Int, gameCampaignType: String) {
         self.gameCampaignId = gameCampaignId
         self.gameCampaignType = gameCampaignType
-        self.delay = delay
-        self.dismissLimit = dismissLimit
     }
 
     /// What the host widget is asked to open.

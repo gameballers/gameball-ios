@@ -224,20 +224,9 @@ enum MessageParser {
             return nil
         }
 
-        return GameballWidgetContent(
-            gameCampaignId: gameCampaignId,
-            gameCampaignType: gameType,
-            // Not on the entry today; the backend still carries these on the challenge. Read
-            // leniently so the day they move here costs no parser change.
-            delay: parseGameDelay(json["delay"]),
-            dismissLimit: intValue(json["dismissLimit"])
-        )
-    }
-
-    /// Seconds to wait after the trigger, bounded to the 0-60 the dashboard accepts.
-    private static func parseGameDelay(_ value: Any?) -> TimeInterval? {
-        guard let seconds = intValue(value), seconds > 0 else { return nil }
-        return TimeInterval(min(seconds, 60))
+        // Nothing else is read for a game: its frequency comes from the trigger, exactly as a
+        // message's does. The challenge's own delay and dismissal limit are deliberately not used.
+        return GameballWidgetContent(gameCampaignId: gameCampaignId, gameCampaignType: gameType)
     }
 
     private static func parseTrigger(_ json: [String: Any],
