@@ -1380,4 +1380,27 @@ final class InAppMessagingServiceTests: XCTestCase {
         drain(service)
         XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["7"])
     }
+
+    // MARK: - Game campaigns
+
+    /// A game's display is recorded under its own key and survives a new session, so a once-ever
+    /// game stays once-ever — the same history a message keeps.
+    func testANonRepeatableGameIsNotOfferedAgain() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []), repeatable: false)
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.game(9645)], clock)
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        service.onSessionStart(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a once-ever game was offered again")
+    }
 }

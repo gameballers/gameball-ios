@@ -6,19 +6,29 @@
 import XCTest
 @testable import Gameball
 
-/// A session-start game campaign. `campaignId` is 0 exactly as a real game entry arrives; its
-/// identity comes from `gameCampaignId`.
+/// A game campaign, session-start and repeatable unless told otherwise. `campaignId` is 0 exactly
+/// as a real game entry arrives; its identity comes from `gameCampaignId`.
 func makeGameCampaign(gameCampaignId: Int = 9645,
-                      type: GameballMessageType = .modal) -> InAppMessageCampaign {
+                      type: GameballMessageType = .modal,
+                      trigger: MessageTrigger = .sessionStart,
+                      repeatable: Bool = true,
+                      minInterval: TimeInterval? = nil,
+                      expiresAt: Date? = nil,
+                      responseIndex: Int = 0) -> InAppMessageCampaign {
     return makeCampaign(
         campaignId: 0,
+        expiresAt: expiresAt,
+        repeatable: repeatable,
+        minInterval: minInterval,
+        trigger: trigger,
         type: type,
         message: makeMessage(widget: GameballWidgetContent(gameCampaignId: gameCampaignId,
                                                           gameCampaignType: "wheel"),
                              id: "game_\(gameCampaignId)",
                              type: type,
                              header: nil,
-                             body: nil))
+                             body: nil),
+        responseIndex: responseIndex)
 }
 
 final class GameCampaignIdentityTests: XCTestCase {

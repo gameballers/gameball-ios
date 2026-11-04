@@ -122,4 +122,39 @@ final class GameCampaignParserTests: XCTestCase {
         XCTAssertEqual(parsed.count, 1)
         XCTAssertFalse(parsed.first?.message.isWidget ?? true)
     }
+
+    // MARK: - Frequency is the message rules
+
+    private func withTrigger(_ trigger: String) -> String {
+        Self.wheelEntry.replacingOccurrences(
+            of: "\"trigger\": { \"type\": \"session_start\", \"repeatable\": true }",
+            with: "\"trigger\": \(trigger)")
+    }
+
+    func testAGameReadsItsRepeatRulesFromTheTriggerAsAMessageDoes() {
+        let parsed = campaigns(withTrigger(
+            "{ \"type\": \"session_start\", \"repeatable\": true, \"minIntervalSeconds\": 3600 }"))
+            .first
+
+        XCTAssertEqual(parsed?.repeatable, true)
+        XCTAssertEqual(parsed?.minInterval, 3600)
+    }
+
+    /// Null on every game entry today. No game-specific interval stands in for it: a repeatable
+    /// game may show on every occurrence, held back only by the account's cooldown and quiet
+    /// hours — exactly as a message would be.
+    func testAGameWithNoIntervalGetsNoDefaultOfItsOwn() {
+        let parsed = campaigns(withTrigger(
+            "{ \"type\": \"session_start\", \"repeatable\": true, \"minIntervalSeconds\": null }"))
+            .first
+
+        XCTAssertEqual(parsed?.repeatable, true)
+        XCTAssertNil(parsed?.minInterval)
+    }
+
+    func testANonRepeatableGameIsOnceEver() {
+        let parsed = campaigns(withTrigger("{ \"type\": \"session_start\", \"repeatable\": false }"))
+            .first
+        XCTAssertEqual(parsed?.repeatable, false)
+    }
 }
