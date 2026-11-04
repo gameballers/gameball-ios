@@ -123,6 +123,25 @@ final class GameballWidgetViewTests: XCTestCase {
         }
     }
 
+    /// A modal game is a card as wide as the margins allow (up to the modal's maximum), shaped by
+    /// the widget's aspect ratio and inside the screen. Its web view has no intrinsic size, so
+    /// without a width preference the card collapsed to nothing on a device.
+    func testAModalGameIsACardTheMarginsAllowNotZeroWide() {
+        let view = game(.modal)
+        let host = hosted(view)
+        guard let web = webView(in: view) else { return XCTFail("no web view") }
+        let card = web.convert(web.bounds, to: view)
+        let modal = MessageViewAttributes.defaults.modal
+        let safe = view.bounds.inset(by: view.safeAreaInsets)
+        let expectedWidth = min(modal.maxWidth, safe.width - modal.margin.left - modal.margin.right)
+
+        XCTAssertEqual(card.width, expectedWidth, accuracy: 1, "card \(card)")
+        XCTAssertEqual(card.width / card.height, GameballWidgetView.widgetAspectRatio, accuracy: 0.01)
+        XCTAssertTrue(safe.contains(card), "card \(card) leaves the safe area \(safe)")
+        XCTAssertEqual(card.midX, view.bounds.midX, accuracy: 1)
+        withExtendedLifetime(host) {}
+    }
+
     /// Whatever the campaign says: without it a fullscreen game could only be left by leaving
     /// the app.
     func testAGameGetsACloseButtonEvenWhenTheCampaignAsksForNone() {

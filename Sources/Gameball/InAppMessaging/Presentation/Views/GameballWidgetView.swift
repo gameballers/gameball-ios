@@ -141,10 +141,20 @@ final class GameballWidgetView: UIView, InAppMessageView {
             // box much wider than this clips its own copy — measured at roughly 0.96, where a
             // wheel lost the right-hand label.
             let width = webView.widthAnchor.constraint(lessThanOrEqualToConstant: attributes.modal.maxWidth)
+            // Every other constraint here is an inequality, and a web view has no intrinsic size,
+            // so without a preference the card is free to be zero wide — and was, on a device: a
+            // dimmed screen with the close button floating at its centre. The card takes the width
+            // the margins leave it, as a message modal does; just below required, so `maxWidth`
+            // and the top and bottom margins win on a short or wide screen.
+            let preferred = webView.widthAnchor.constraint(
+                equalTo: guide.widthAnchor,
+                constant: -(attributes.modal.margin.left + attributes.modal.margin.right))
+            preferred.priority = UILayoutPriority(750)
             NSLayoutConstraint.activate([
                 webView.centerXAnchor.constraint(equalTo: centerXAnchor),
                 webView.centerYAnchor.constraint(equalTo: centerYAnchor),
                 width,
+                preferred,
                 webView.leadingAnchor.constraint(greaterThanOrEqualTo: guide.leadingAnchor,
                                                  constant: attributes.modal.margin.left),
                 webView.trailingAnchor.constraint(lessThanOrEqualTo: guide.trailingAnchor,
