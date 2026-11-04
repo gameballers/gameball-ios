@@ -373,20 +373,12 @@ final class InAppMessagingService {
         // floor that rules its runner-up out.
         let capBefore = cap.state
 
-        // A game campaign is never opened from a cached set. A message carries its own content, so
-        // a cached one is still correct; a game carries a pointer and fetches its content live, so
-        // a cached entry is a promise this SDK cannot keep. Dropped rather than deferred: the next
-        // live sync is what makes it openable again.
-        let eligible: [InAppMessageCampaign]
-        if campaignsFromCache {
-            eligible = campaigns.filter { candidate in
-                guard candidate.message.isWidget else { return true }
-                iamLog("\(candidate.key) skipped: the campaign set came from the cache, and a "
-                     + "game must be confirmed live before it is opened")
-                return false
-            }
-        } else {
-            eligible = campaigns
+        // Dropped rather than deferred: whatever keeps a game from opening now — a cached set,
+        // above all — is lifted only by a later live sync, never by waiting.
+        let eligible = campaigns.filter { candidate in
+            guard let reason = whyGameCannotOpen(candidate) else { return true }
+            iamLog("\(candidate.key) skipped: \(reason)")
+            return false
         }
 
         guard let selected = selectCampaign(occurrence: occurrence,
@@ -414,8 +406,37 @@ final class InAppMessagingService {
             return
         }
 
-        stashRunnerUp(for: occurrence, behind: selected, capState: capBefore)
+        stashRunnerUp(for: occurrence, behind: selected, among: eligible, capState: capBefore)
         decideThenPresent(selected)
+    }
+
+    /// Why a game may not be opened now, or `nil` when it may. Always `nil` for a message.
+    ///
+    /// A message carries its own content, so a cached one is still correct; a game carries a
+    /// pointer and fetches its content live, so a cached entry is a promise this SDK cannot keep.
+    /// Must run on `queue`.
+    private func whyGameCannotOpen(_ campaign: InAppMessageCampaign) -> String? {
+        guard campaign.message.isWidget else { return nil }
+        if campaignsFromCache {
+            return "the campaign set came from the cache, and a game must be confirmed live "
+                 + "before it is opened"
+        }
+        return nil
+    }
+
+    /// Why a game that waited may no longer open, or `nil` when it still may. Always `nil` for a
+    /// message.
+    ///
+    /// A wait can outlast a sync — the deferred stack survives one — so the game is judged
+    /// against the campaigns held now, not the set it was selected from: the latest sync must
+    /// still carry it, and that entry must not have expired. Must run on `queue`.
+    private func whyWaitingGameCannotOpen(_ campaign: InAppMessageCampaign) -> String? {
+        guard campaign.message.isWidget else { return nil }
+        if let reason = whyGameCannotOpen(campaign) { return reason }
+        guard let current = campaigns.first(where: { $0.key == campaign.key }) else {
+            return "the latest sync no longer has it"
+        }
+        return current.hasExpired(at: now()) ? "it has expired" : nil
     }
 
     /// Picks the next-best campaign for this occurrence and holds it until the winner has
@@ -425,12 +446,15 @@ final class InAppMessagingService {
     /// that displayed earns a runner-up: a winner that was itself
     /// deferred or discarded must not be displaced or doubled by it. Whether the runner-up
     /// may still display when its turn comes is decided then, by the repeat, floor and
-    /// quiet-hours checks every retry goes through. Must run on `queue`.
+    /// quiet-hours checks every retry goes through. Chosen from `eligible`, what the occurrence
+    /// itself could open, so it can never be a game the winner's own selection ruled out.
+    /// Must run on `queue`.
     private func stashRunnerUp(for occurrence: TriggerOccurrence,
                                behind winner: InAppMessageCampaign,
+                               among eligible: [InAppMessageCampaign],
                                capState: CapState) {
         runnerUpBehindWinner = nil
-        let others = campaigns.filter { $0.key != winner.key }
+        let others = eligible.filter { $0.key != winner.key }
         guard let runnerUp = selectCampaign(occurrence: occurrence,
                                             campaigns: others,
                                             capState: capState,
@@ -584,7 +608,16 @@ final class InAppMessagingService {
 
     /// Must run on `queue`.
     private func retryDeferred() {
-        guard started, let candidate = deferred.last else { return }
+        guard started else { return }
+
+        // A waiting game is rechecked before anything else, and every stale one on top is
+        // dropped rather than only the first: the opportunity is still unused, so the next
+        // candidate is entitled to it.
+        while let top = deferred.last, let reason = whyWaitingGameCannotOpen(top) {
+            iamLog("dropping deferred \(top.key): \(reason)")
+            deferred.removeLast()
+        }
+        guard let candidate = deferred.last else { return }
 
         // Re-validated, because the world moved while it waited.
         guard isRepeatEligible(campaign: candidate, capState: cap.state, now: now()) else {

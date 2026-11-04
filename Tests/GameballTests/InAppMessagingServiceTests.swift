@@ -1461,4 +1461,94 @@ final class InAppMessagingServiceTests: XCTestCase {
 
         XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
     }
+
+    /// A game entry as the sync sends it, for seeding the cache.
+    private func gameEntry(_ gameCampaignId: Int = 9645) -> [String: Any] {
+        return ["campaignType": 2, "campaignId": 0, "messageType": 2,
+                "trigger": ["type": "session_start", "repeatable": true],
+                "content": NSNull(), "locale": NSNull(),
+                "gameCampaignId": gameCampaignId, "gameCampaignType": "wheel"]
+    }
+
+    private func cache(_ entries: [[String: Any]]) {
+        let payload = try! JSONSerialization.data(withJSONObject: ["cooldownSeconds": 0,
+                                                                   "messages": entries])
+        CampaignCache(store: store).save(payload: payload, customerId: "cust-1")
+    }
+
+    /// The deferred stack survives a fresh sync, and a waiting game is a pointer the server may
+    /// have withdrawn since: one the latest sync no longer carries must not open.
+    func testAWaitingGameTheLatestSyncDroppedIsNotOpened() {
+        presenter.obstacle = .noSurface
+        let source = ScriptedMessageSource([.success(result([makeGameCampaign()])),
+                                            .success(result([]))])
+        let service = makeService(source: source)
+        service.start(); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        service.onSessionStart(); drain(service)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "a game the latest sync dropped opened")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    func testAWaitingGamePastItsExpiryIsNotOpened() {
+        presenter.obstacle = .noSurface
+        let (service, _) = startedService([makeGameCampaign(expiresAt: clock.addingTimeInterval(60))])
+        XCTAssertEqual(service.deferredMessages.count, 1)
+
+        clock = clock.addingTimeInterval(120)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "an expired game opened")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// A failed sync falls back to the cache, and a game is never opened from a cached set —
+    /// including one still waiting from an earlier, live sync.
+    func testAWaitingGameIsNotOpenedOnceTheSetComesFromTheCache() {
+        cache([gameEntry()])
+        presenter.obstacle = .noSurface
+        let source = ScriptedMessageSource([.success(result([makeGameCampaign()])),
+                                            .failure(IAMSyncError.permanent(status: 401))])
+        let service = makeService(source: source)
+        service.start(); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        service.onSessionStart(); drain(service)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "a game opened from a cached set")
+    }
+
+    /// The runner-up comes from what the occurrence may open, not from everything held: a cached
+    /// game behind a cached message must not be queued to open after it.
+    func testARunnerUpIsNeverAGameFromACachedSet() {
+        cache([["campaignId": 7, "priority": 9, "messageType": 2,
+                "trigger": ["type": "session_start", "repeatable": true],
+                "locale": ["message": "From the cache"]],
+               gameEntry()])
+        let source = StubMessageSource(result: .failure(IAMSyncError.permanent(status: 401)))
+        let service = makeService(source: source)
+        service.start(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.body }, ["From the cache"])
+        XCTAssertTrue(service.deferredMessages.isEmpty, "a cached game is waiting to open")
+    }
+
+    /// The control: a waiting game the latest live sync still carries opens as before.
+    func testAWaitingGameTheLatestSyncStillCarriesOpens() {
+        presenter.obstacle = .noSurface
+        let (service, _) = startedService([makeGameCampaign()])
+        service.onSessionStart(); drain(service)
+
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+    }
 }
