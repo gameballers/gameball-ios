@@ -279,4 +279,42 @@ final class GameballWidgetViewTests: XCTestCase {
         }
         XCTAssertTrue(opened.isEmpty, "\(opened)")
     }
+
+    // MARK: - Loading
+
+    private func failProvisionally(_ view: GameballWidgetView, with error: Error) {
+        (view as WKNavigationDelegate).webView?(WKWebView(),
+                                                didFailProvisionalNavigation: nil,
+                                                withError: error)
+    }
+
+    /// Offline, the page never starts: the game is taken away at once rather than after the
+    /// twelve-second wait, and a load that failed was never seen, so it is not an impression.
+    func testAGameThatCannotLoadIsTakenAwayAtOnce() {
+        let view = game()
+        failProvisionally(view, with: URLError(.notConnectedToInternet))
+
+        XCTAssertEqual(failures, 1, "an offline game waited out the timeout")
+        XCTAssertEqual(coordinator.didPresentCount, 0, "a game that never loaded was presented")
+    }
+
+    func testAFailedLoadIsReportedOnce() {
+        let view = game()
+        failProvisionally(view, with: URLError(.notConnectedToInternet))
+        failProvisionally(view, with: URLError(.timedOut))
+
+        XCTAssertEqual(failures, 1)
+    }
+
+    /// A navigation cancelled for another one, or refused by the link policy, is not a page that
+    /// failed to load.
+    func testACancelledNavigationIsNotAFailure() {
+        let view = game()
+        failProvisionally(view, with: URLError(.cancelled))
+        failProvisionally(view, with: NSError(domain: "WebKitErrorDomain", code: 102))
+        (view as WKNavigationDelegate).webView?(WKWebView(), didFail: nil,
+                                                withError: URLError(.cancelled))
+
+        XCTAssertEqual(failures, 0)
+    }
 }

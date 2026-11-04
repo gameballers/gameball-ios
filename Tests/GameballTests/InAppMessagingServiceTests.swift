@@ -1463,6 +1463,23 @@ final class InAppMessagingServiceTests: XCTestCase {
         XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
     }
 
+    /// A game whose page failed to load is taken away before it was ever revealed. That is not a
+    /// display: nothing is recorded, so it can open at its next trigger.
+    func testAGameTakenAwayUnseenRecordsNoDisplay() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []), repeatable: false)
+        let (service, _) = startedService([game])
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertNil(reloaded.state.lastDisplayByCampaign[.game(9645)])
+        XCTAssertNil(reloaded.state.lastDisplayAt, "a game nobody saw started the display floor")
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 2, "a once-ever game was spent unseen")
+    }
+
     /// A game entry as the sync sends it, for seeding the cache.
     private func gameEntry(_ gameCampaignId: Int = 9645) -> [String: Any] {
         return ["campaignType": 2, "campaignId": 0, "messageType": 2,

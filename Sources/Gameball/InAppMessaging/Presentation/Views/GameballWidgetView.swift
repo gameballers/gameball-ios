@@ -239,8 +239,10 @@ final class GameballWidgetView: UIView, InAppMessageView {
 
     // MARK: - Readiness
 
-    /// Reports the outcome exactly once.
-    private func settle(ready: Bool) {
+    /// Reports the outcome exactly once. `failure` says what went wrong when the game is not ready.
+    private func settle(ready: Bool,
+                        failure: String = "did not become ready within "
+                            + "\(Int(GameballWidgetView.readyTimeout))s") {
         guard !settled else { return }
         settled = true
         timeoutWork?.cancel()
@@ -248,8 +250,7 @@ final class GameballWidgetView: UIView, InAppMessageView {
         if ready {
             onReady?()
         } else {
-            iamLog("widget did not become ready within \(Int(Self.readyTimeout))s; "
-                 + "taking the message away unshown")
+            iamLog("widget \(failure); taking the message away unshown")
             // Never counted an impression, so nothing is logged and the cap is untouched — the
             // campaign gets another go at its next trigger rather than being burned by a slow
             // network.
@@ -294,12 +295,34 @@ extension GameballWidgetView: WKNavigationDelegate {
         webView.evaluateJavaScript(Self.readinessScript, completionHandler: nil)
     }
 
+    /// Offline, the page never starts — this, not `didFail`, is what WebKit reports — and waiting
+    /// out the readiness timeout would hold an invisible game for twelve seconds for nothing.
+    func webView(_ webView: WKWebView,
+                 didFailProvisionalNavigation navigation: WKNavigation!,
+                 withError error: Error) {
+        loadFailed(error)
+    }
+
     func webView(_ webView: WKWebView,
                  didFail navigation: WKNavigation!,
                  withError error: Error) {
-        iamLog("widget failed to load: \(error.localizedDescription)")
-        settle(ready: false)
+        loadFailed(error)
     }
+
+    /// Takes the game away unshown — never an impression, so the campaign keeps its next trigger.
+    ///
+    /// A navigation cancelled for another one, or refused by `decidePolicyFor`, is not a page that
+    /// failed to load, and the page it gave way to may still draw.
+    private func loadFailed(_ error: Error) {
+        let failure = error as NSError
+        let cancelled = (failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled)
+            || (failure.domain == "WebKitErrorDomain" && failure.code == Self.frameLoadInterrupted)
+        guard !cancelled else { return }
+        settle(ready: false, failure: "failed to load (\(failure.localizedDescription))")
+    }
+
+    /// WebKit's "frame load interrupted", sent when a navigation is replaced or refused by policy.
+    private static let frameLoadInterrupted = 102
 }
 
 // MARK: - WKScriptMessageHandler
