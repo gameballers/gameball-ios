@@ -356,15 +356,38 @@ extension GameballWidgetView: WKScriptMessageHandler {
 
     /// An event the page posted through `WidgetEvent.postEvent`.
     ///
-    /// Only `gameCompleted` means anything here. Its `metadata.campaignType` is the widget's own
-    /// name for the game (`spinTheWheel`), not the sync's (`wheel`), so nothing is matched on the
-    /// metadata: the event came from this view, so it is about the game this view opened.
+    /// `gameCompleted` is the customer finishing the game. Its `metadata.campaignType` is the
+    /// widget's own name for the game (`spinTheWheel`), not the sync's (`wheel`), so nothing is
+    /// matched on the metadata: the event came from this view, so it is about the game this view
+    /// opened.
+    ///
+    /// `gameReady` is the page saying the game is on screen: the answer the readiness check can
+    /// only guess at, and never reaches for a game drawn on a canvas with little text. With
+    /// `playable: false` the page is showing "already played", "not available" or an error in the
+    /// game's place, which is never put over the app unasked.
     private func receiveWidgetEvent(_ body: Any) {
-        let type = GameballWidgetView.widgetEvent(from: body)?["type"] as? String
+        let event = GameballWidgetView.widgetEvent(from: body)
+        let type = event?["type"] as? String
         let game = self.message.widget.map { "game \($0.gameCampaignId)" } ?? "the game"
         iamLog("\(game) reported \(type.map { "'\($0)'" } ?? "an event it could not read")")
-        guard type == "gameCompleted" else { return }
-        coordinator?.viewDidCompleteGame()
+        switch type {
+        case "gameCompleted":
+            coordinator?.viewDidCompleteGame()
+        case "gameReady":
+            pageIsReady(event?["metadata"] as? [String: Any])
+        default:
+            break
+        }
+    }
+
+    /// Settles on the page's word. Only an explicit `playable: false` holds the game back.
+    private func pageIsReady(_ metadata: [String: Any]?) {
+        guard metadata?["playable"] as? Bool == false else {
+            settle(ready: true)
+            return
+        }
+        let reason = metadata?["reason"] as? String ?? "no reason given"
+        settle(ready: false, failure: "says the game cannot be played now (\(reason))")
     }
 
     /// Reads what `WidgetEvent.postEvent` was handed: a JSON string, `{"type", "metadata"}`, or
@@ -381,6 +404,13 @@ extension GameballWidgetView: WKScriptMessageHandler {
 extension GameballWidgetView {
 
     /// Injected once the page has navigated. Reports `ready` when the campaign is actually drawn.
+    ///
+    /// **The fallback, not the first word.** A widget that posts `gameReady` says itself when the
+    /// game is on screen, and whichever comes first settles the view. This check is for widgets
+    /// that predate that event, and it can miss: a game drawn on a canvas with under 40 characters
+    /// of text (a scratch card whose title has no translation in the customer's language, measured
+    /// at `6/323/2/0/36`) never passes it. It also installs the `WidgetEvent` shim the event
+    /// arrives through, so the page keeps offering an event until the shim is there.
     ///
     /// **Mirrored in the Flutter, React Native and Android SDKs.** It is inlined in each rather
     /// than shared, so the numbers below are repeated everywhere and must be changed everywhere.

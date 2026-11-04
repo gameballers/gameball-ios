@@ -240,6 +240,74 @@ final class GameballWidgetViewTests: XCTestCase {
         XCTAssertEqual(coordinator.gamesCompleted, 0)
     }
 
+    // MARK: - The page saying the game is on screen
+
+    /// A game presented out of sight, as the presenter does, on a page that is never fetched: here,
+    /// only what is posted to it can reveal it.
+    private func presentedGame() -> (GameballWidgetView, IAMLayoutHost) {
+        let view = GameballWidgetView(message: makeGameCampaign().message,
+                                      attributes: .defaults,
+                                      url: URL(string: "about:blank")!,
+                                      coordinator: coordinator,
+                                      onFailed: { [weak self] in self?.failures += 1 })
+        let host = hosted(view)
+        view.present(completion: nil)
+        return (view, host)
+    }
+
+    /// As the widget posts it: `{"type":"gameReady","metadata":{...}}`.
+    private func gameReady(_ metadata: String) -> String {
+        return "{\"type\":\"gameReady\",\"metadata\":\(metadata)}"
+    }
+
+    /// The page's own word that the game is on screen. Without it the view can only guess from
+    /// the page's contents, and a game drawn on a canvas with little text never passes the guess.
+    func testAGameIsShownWhenThePageSaysItIsOnScreen() {
+        let (view, host) = presentedGame()
+        post("GBIamEvent",
+             gameReady("{\"page\":\"details_scratch_12676\",\"playable\":true}"), to: view)
+
+        XCTAssertEqual(coordinator.didPresentCount, 1)
+        XCTAssertTrue(view.presented)
+        XCTAssertEqual(failures, 0)
+        withExtendedLifetime(host) {}
+    }
+
+    /// The page shows "already played", "not available" or an error in place of the game: that is
+    /// never put over the app unasked, and it is not an impression.
+    func testAGameThePageSaysCannotBePlayedIsTakenAwayUnseen() {
+        let (view, host) = presentedGame()
+        post("GBIamEvent",
+             gameReady("{\"page\":\"details_tictactoe_12680\",\"playable\":false,\"reason\":\"unplayable\"}"),
+             to: view)
+
+        XCTAssertEqual(failures, 1)
+        XCTAssertEqual(coordinator.didPresentCount, 0)
+        XCTAssertFalse(view.presented)
+        withExtendedLifetime(host) {}
+    }
+
+    /// Only an explicit `playable: false` holds a game back.
+    func testAPageThatSaysNothingAboutPlayingIsShown() {
+        let (view, host) = presentedGame()
+        post("GBIamEvent", gameReady("{}"), to: view)
+
+        XCTAssertEqual(coordinator.didPresentCount, 1)
+        XCTAssertEqual(failures, 0)
+        withExtendedLifetime(host) {}
+    }
+
+    /// Settled once: a page that reports ready again cannot bring back a game already taken away.
+    func testThePagesFirstWordStands() {
+        let (view, host) = presentedGame()
+        post("GBIamEvent", gameReady("{\"playable\":false,\"reason\":\"error\"}"), to: view)
+        post("GBIamEvent", gameReady("{\"playable\":true}"), to: view)
+
+        XCTAssertEqual(failures, 1)
+        XCTAssertEqual(coordinator.didPresentCount, 0)
+        withExtendedLifetime(host) {}
+    }
+
     // MARK: - Links
 
     /// A game whose outside links are recorded rather than opened. `widget` is the page it opens.
