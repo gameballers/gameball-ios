@@ -157,4 +157,24 @@ final class GameCampaignParserTests: XCTestCase {
             .first
         XCTAssertEqual(parsed?.repeatable, false)
     }
+
+    // MARK: - Conditions
+
+    /// "Any" conditions — `OR` on the wire — apply to a game exactly as to a message.
+    func testAGameOnAnyOfItsConditionsOpensWhenOneMatches() {
+        let parsed = campaigns(withTrigger("""
+            { "type": "event", "name": "add_to_cart", "repeatable": true,
+              "metadataLogicalOperator": "OR",
+              "metadataFilters": [
+                { "metadataId": 11, "name": "price", "value": "100", "operator": "GreaterThanOrEqual" },
+                { "metadataId": 12, "name": "category", "value": "shoes", "operator": "Equals" }
+              ] }
+            """)).first
+        guard let trigger = parsed?.trigger else { return XCTFail("the game was dropped") }
+
+        XCTAssertTrue(triggerMatches(trigger, .event(name: "add_to_cart",
+                                                     properties: ["price": 20, "category": "shoes"])))
+        XCTAssertFalse(triggerMatches(trigger, .event(name: "add_to_cart",
+                                                      properties: ["price": 20, "category": "hats"])))
+    }
 }

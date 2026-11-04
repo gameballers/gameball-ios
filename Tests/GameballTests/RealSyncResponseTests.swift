@@ -74,7 +74,7 @@ final class RealSyncResponseTests: XCTestCase {
         XCTAssertEqual(campaign.minInterval, 300)
 
         // Its trigger is an event, matched on name rather than the eventId also present.
-        guard case .event(let name, let filters) = campaign.trigger else {
+        guard case .event(let name, let filters, _) = campaign.trigger else {
             return XCTFail("expected an event trigger")
         }
         XCTAssertEqual(name, "place_order")

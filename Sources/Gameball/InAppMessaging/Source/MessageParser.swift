@@ -257,16 +257,25 @@ enum MessageParser {
             return nil
         }
 
-        // Only AND is supported. Treating OR as AND would narrow the campaign, and
-        // treating it as OR-by-accident would widen it; neither is acceptable.
-        if let op = stringValue(json["metadataLogicalOperator"]), op.lowercased() != "and" {
-            iamLog("campaign \(campaignId) uses metadataLogicalOperator '\(op)', which is "
-                 + "not supported; dropping")
+        // `OR` shows the campaign when any one filter matches; `AND`, or no operator at all, only
+        // when every one does. Anything else is dropped: read as `AND` it would narrow the
+        // campaign, read as `OR` it would widen it, and neither is acceptable.
+        let logical = stringValue(json["metadataLogicalOperator"])
+        let match: FilterMatch
+        switch logical?.lowercased() {
+        case nil, "and"?:
+            match = .all
+        case "or"?:
+            match = .any
+        default:
+            iamLog("campaign \(campaignId) uses metadataLogicalOperator '\(logical ?? "")', "
+                 + "which is not supported; dropping")
             return nil
         }
 
+        let declared = json["metadataFilters"] as? [[String: Any]] ?? []
         var filters: [PropertyFilter] = []
-        for raw in (json["metadataFilters"] as? [[String: Any]] ?? []) {
+        for raw in declared {
             guard let filterName = stringValue(raw["name"]) else {
                 // Dropping the filter would WIDEN the campaign. Dropping the campaign is
                 // the safe direction.
@@ -288,7 +297,17 @@ enum MessageParser {
             filters.append(PropertyFilter(name: filterName, op: op, value: value))
         }
 
-        return .event(name: name, filters: filters)
+        // Under `OR` a dropped filter only narrows the campaign — unless every filter was
+        // dropped, when "any of none" would read as no condition at all and show the campaign on
+        // every occurrence of its event.
+        if match == .any && filters.isEmpty && !declared.isEmpty {
+            iamLog("campaign \(campaignId) shows when any of its conditions match, and none of "
+                 + "them can be evaluated; dropping the campaign rather than showing it on every "
+                 + "'\(name)'")
+            return nil
+        }
+
+        return .event(name: name, filters: filters, match: match)
     }
 
     // MARK: - Artwork
