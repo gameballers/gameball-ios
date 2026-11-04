@@ -390,25 +390,45 @@ extension GameballApp {
     /// widget's own chrome would offer a way out of the thing the customer was just handed.
     static func inAppWidgetURL(openDetail: String) -> URL? {
         let app = GameballApp.getInstance()
-        let base = app.configuredWidgetUrlPrefix ?? NetworkManager.shared().widgetUrl
+        return inAppWidgetURL(base: app.configuredWidgetUrlPrefix ?? NetworkManager.shared().widgetUrl,
+                              customerId: app.currentCustomerId,
+                              language: LanguageHelper.resolveLanguage(),
+                              apiKey: NetworkManager.shared().APIKey,
+                              sessionToken: app.currentSessionToken,
+                              openDetail: openDetail)
+    }
+
+    /// The same URL from explicit values rather than SDK state, so the composition is testable.
+    static func inAppWidgetURL(base: String,
+                               customerId: String?,
+                               language: String,
+                               apiKey: String,
+                               sessionToken: String?,
+                               openDetail: String) -> URL? {
         guard var components = URLComponents(string: base) else {
             iamLog("could not compose a widget url from base '\(base)'")
             return nil
         }
 
         var items = [
-            URLQueryItem(name: "customerId", value: app.currentCustomerId),
-            URLQueryItem(name: "lang", value: LanguageHelper.resolveLanguage()),
-            URLQueryItem(name: "apiKey", value: NetworkManager.shared().APIKey),
+            URLQueryItem(name: "customerId", value: customerId),
+            URLQueryItem(name: "lang", value: language),
+            URLQueryItem(name: "apiKey", value: apiKey),
             URLQueryItem(name: "os", value: "iOS"),
             URLQueryItem(name: "sdk", value: SDKInfo.version),
             URLQueryItem(name: "openDetail", value: openDetail),
             URLQueryItem(name: "hideNavigation", value: "true")
         ]
-        if let token = app.currentSessionToken, !token.isEmpty {
+        if let token = sessionToken, !token.isEmpty {
             items.append(URLQueryItem(name: "sessionToken", value: token))
         }
-        components.queryItems = items
+        // Each value encoded once, leaving only the unreserved characters raw — what the profile
+        // widget has done since 3.3.2. `queryItems` leaves a `+` raw, and the widget reads that as
+        // a space, so a customer id such as `name+tag@example.com` reached it as someone else.
+        components.percentEncodedQueryItems = items.map {
+            URLQueryItem(name: $0.name,
+                         value: $0.value?.addingPercentEncoding(withAllowedCharacters: widgetQueryValueAllowed))
+        }
 
         let url = components.url
         // Logged because it is otherwise invisible: a campaign that opens on "this campaign is not
@@ -417,4 +437,9 @@ extension GameballApp {
         iamLog("opening widget \(url?.absoluteString ?? "(could not compose)")")
         return url
     }
+
+    /// The unreserved characters of RFC 3986, the only ones a widget query value carries raw. The
+    /// same set the profile widget encodes with.
+    private static let widgetQueryValueAllowed = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 }
