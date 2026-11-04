@@ -52,6 +52,29 @@ final class GameballWidgetViewTests: XCTestCase {
                                    didReceive: StubScriptMessage(name: name, body: body))
     }
 
+    private func hosted(_ view: GameballWidgetView) -> IAMLayoutHost {
+        let host = IAMLayoutHost(size: CGSize(width: 375, height: 667))
+        host.install(view)
+        return host
+    }
+
+    private func descendants(of view: UIView) -> [UIView] {
+        return view.subviews + view.subviews.flatMap { descendants(of: $0) }
+    }
+
+    private func closeButton(in view: UIView) -> MessageCloseButton? {
+        return descendants(of: view).compactMap { $0 as? MessageCloseButton }.first
+    }
+
+    private func webView(in view: UIView) -> WKWebView? {
+        return view.subviews.compactMap { $0 as? WKWebView }.first
+    }
+
+    /// The control behind a modal game that closes it — any control but the close button.
+    private func scrim(in view: UIView) -> UIControl? {
+        return view.subviews.compactMap { $0 as? UIControl }.first { !($0 is MessageCloseButton) }
+    }
+
     // MARK: - Closing
 
     /// The page's own close is the customer leaving the game: a dismissal, and never a click,
@@ -62,6 +85,96 @@ final class GameballWidgetViewTests: XCTestCase {
 
         XCTAssertTrue(coordinator.clicks.isEmpty, "closing a game reported a click")
         XCTAssertEqual(coordinator.didDismissCount, 1)
+    }
+
+    /// The widget draws no close or back control for a game on mobile, so the SDK draws its own
+    /// over every game: in the top-end corner, inside the safe area, at least 44pt, labelled.
+    func testEveryGameHasACloseButtonInItsTopEndCorner() {
+        for type in [GameballMessageType.modal, .fullscreen] {
+            let view = game(type)
+            let host = hosted(view)
+            guard let close = closeButton(in: view), let web = webView(in: view) else {
+                XCTFail("a \(type) game has no close button")
+                continue
+            }
+            let button = close.convert(close.bounds, to: view)
+            let content = web.convert(web.bounds, to: view)
+
+            XCTAssertEqual(close.accessibilityLabel, MessageCloseButton.accessibilityLabel())
+            XCTAssertGreaterThanOrEqual(button.width, 44, "\(type)")
+            XCTAssertGreaterThanOrEqual(button.height, 44, "\(type)")
+            XCTAssertTrue(view.bounds.inset(by: view.safeAreaInsets).contains(button),
+                          "\(type): \(button) is outside the safe area")
+            XCTAssertEqual(button.minY, content.minY, accuracy: 8, "\(type): not at the top")
+            XCTAssertEqual(button.maxX, content.maxX, accuracy: 8, "\(type): not at the end")
+            withExtendedLifetime(host) {}
+        }
+    }
+
+    /// Whatever the campaign says: without it a fullscreen game could only be left by leaving
+    /// the app.
+    func testAGameGetsACloseButtonEvenWhenTheCampaignAsksForNone() {
+        let message = makeMessage(widget: GameballWidgetContent(gameCampaignId: 9645,
+                                                                gameCampaignType: "wheel"),
+                                  type: .fullscreen, header: nil, body: nil,
+                                  showCloseButton: false)
+        let view = GameballWidgetView(message: message, attributes: .defaults,
+                                      url: URL(string: "https://m.gameball.app")!,
+                                      coordinator: coordinator, onFailed: nil)
+        XCTAssertNotNil(closeButton(in: view))
+    }
+
+    func testTheCloseButtonDismissesWithoutAClick() {
+        let view = game()
+        let host = hosted(view)
+        guard let close = closeButton(in: view) else { return XCTFail("no close button") }
+        simulateTap(close)
+
+        XCTAssertEqual(coordinator.didDismissCount, 1)
+        XCTAssertTrue(coordinator.clicks.isEmpty, "closing a game reported a click")
+        withExtendedLifetime(host) {}
+    }
+
+    /// The close button, the scrim, the page's own close and a failed load can each ask. A second
+    /// dismissal would reach the presenter after it had moved on to whatever shows next.
+    func testAGameIsDismissedOnceHoweverOftenItIsAsked() {
+        let view = game()
+        let host = hosted(view)
+        guard let close = closeButton(in: view) else { return XCTFail("no close button") }
+        simulateTap(close)
+        post("GBIamClose", "", to: view)
+
+        XCTAssertEqual(coordinator.didDismissCount, 1)
+        withExtendedLifetime(host) {}
+    }
+
+    // MARK: - The scrim
+
+    func testATapOnTheScrimClosesAModalGame() {
+        let view = game(.modal)
+        let host = hosted(view)
+        guard let scrim = scrim(in: view) else { return XCTFail("a modal game has no scrim") }
+        simulateTap(scrim)
+
+        XCTAssertEqual(coordinator.didDismissCount, 1)
+        XCTAssertTrue(coordinator.clicks.isEmpty)
+        withExtendedLifetime(host) {}
+    }
+
+    /// Behind the game, so a tap on the game itself never reaches it.
+    func testTheScrimSitsBehindTheGame() {
+        let view = game(.modal)
+        guard let scrim = scrim(in: view), let web = webView(in: view),
+              let scrimIndex = view.subviews.firstIndex(of: scrim),
+              let webIndex = view.subviews.firstIndex(of: web) else {
+            return XCTFail("a modal game has no scrim")
+        }
+        XCTAssertLessThan(scrimIndex, webIndex)
+    }
+
+    /// A fullscreen game fills the screen: there is no outside to tap.
+    func testAFullscreenGameHasNoScrim() {
+        XCTAssertNil(scrim(in: game(.fullscreen)))
     }
 
     // MARK: - The widget's own events

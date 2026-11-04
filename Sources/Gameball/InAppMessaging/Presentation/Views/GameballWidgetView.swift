@@ -34,8 +34,12 @@ final class GameballWidgetView: UIView, InAppMessageView {
     private let attributes: MessageViewAttributes
     private let url: URL
     private let webView: WKWebView
+    private let closeButton: MessageCloseButton
     private var timeoutWork: DispatchWorkItem?
     private var settled = false
+    /// Whether a dismissal has begun. The close button, the scrim, the page's own close and a
+    /// failed load can each ask, and the presenter must hear it once.
+    private var dismissing = false
     private var onReady: (() -> Void)?
     private var onFailed: (() -> Void)?
 
@@ -54,17 +58,47 @@ final class GameballWidgetView: UIView, InAppMessageView {
         configuration.allowsInlineMediaPlayback = true
         self.webView = WKWebView(frame: .zero, configuration: configuration)
 
+        // Over every game, whatever the campaign says: the widget draws no close or back control
+        // for a game on mobile, so without this a fullscreen game could only be left by leaving
+        // the app. The glyph sits on the page, which the SDK cannot see, so it is resolved against
+        // the surface the page is drawn on — white unless the campaign names one.
+        self.closeButton = MessageCloseButton(
+            tintColor: MessageTheme.closeGlyphColor(named: message.style.closeButtonColor,
+                                                    background: message.style.backgroundColor
+                                                        ?? .white))
+
         super.init(frame: .zero)
 
         backgroundColor = message.type == .fullscreen
             ? (message.style.backgroundColor ?? .white)
             : message.style.frameColor ?? UIColor.black.withAlphaComponent(0.6)
 
+        // Behind a modal game: a tap outside the game closes it. A control of its own rather than
+        // a recogniser on this view, which would also see every tap meant for the game — and could
+        // cancel it. Fullscreen has no outside to tap.
+        if message.type != .fullscreen && message.dismissOnScrimTap {
+            let scrim = UIControl()
+            scrim.translatesAutoresizingMaskIntoConstraints = false
+            // VoiceOver reaches the close button, which says what it does; the scrim would not.
+            scrim.isAccessibilityElement = false
+            scrim.addTarget(self, action: #selector(handleClose), for: .touchUpInside)
+            addSubview(scrim)
+            NSLayoutConstraint.activate([
+                scrim.topAnchor.constraint(equalTo: topAnchor),
+                scrim.bottomAnchor.constraint(equalTo: bottomAnchor),
+                scrim.leadingAnchor.constraint(equalTo: leadingAnchor),
+                scrim.trailingAnchor.constraint(equalTo: trailingAnchor)
+            ])
+        }
+
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
         addSubview(webView)
+
+        closeButton.addTarget(self, action: #selector(handleClose), for: .touchUpInside)
+        addSubview(closeButton)
 
         configuration.userContentController.add(GBScriptMessageProxy(target: self), name: "GBIamReady")
         configuration.userContentController.add(GBScriptMessageProxy(target: self), name: "GBIamClose")
@@ -121,6 +155,18 @@ final class GameballWidgetView: UIView, InAppMessageView {
             webView.layer.cornerRadius = attributes.modal.cornerRadius
             webView.clipsToBounds = true
         }
+
+        // The game's top-end corner, which is inside the safe area: a fullscreen game is inset
+        // into it and a modal one sits within its margins. Placed as each message composition
+        // places its own close button.
+        let inset: (top: CGFloat, end: CGFloat) = message.type == .fullscreen
+            ? (0, 8)
+            : (attributes.modal.closeInset, attributes.modal.closeInset)
+        NSLayoutConstraint.activate([
+            closeButton.topAnchor.constraint(equalTo: webView.topAnchor, constant: inset.top),
+            closeButton.trailingAnchor.constraint(equalTo: webView.trailingAnchor,
+                                                  constant: -inset.end)
+        ])
     }
 
     /// Width divided by height for a reward-campaign card. Measured, not chosen.
@@ -157,6 +203,12 @@ final class GameballWidgetView: UIView, InAppMessageView {
     }
 
     func dismiss(completion: (() -> Void)?) {
+        // Once, whoever asks: a second `didDismiss` would reach the presenter after it had moved
+        // on to whatever shows next.
+        guard !dismissing else { return }
+        dismissing = true
+        // Settled too, so a page that reports itself ready after it was closed cannot reveal it.
+        settled = true
         timeoutWork?.cancel()
         willDismiss()
 
@@ -174,6 +226,11 @@ final class GameballWidgetView: UIView, InAppMessageView {
         MessageMotion.animate(duration: MessageMotion.fadeDuration,
                               animations: { self.alpha = 0 },
                               completion: finish)
+    }
+
+    /// The close button and the scrim. Closing is a dismissal of the game, never a click.
+    @objc private func handleClose() {
+        dismiss(completion: nil)
     }
 
     // MARK: - Readiness
