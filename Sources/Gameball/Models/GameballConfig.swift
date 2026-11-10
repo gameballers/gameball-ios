@@ -13,6 +13,7 @@ public struct GameballConfig {
     public let shop: String?
     public let apiPrefix: String?
     public let sessionToken: String?
+    public let appGroup: String?
 
     /// The widget host to load, when it is not the production one.
     ///
@@ -31,10 +32,13 @@ public struct GameballConfig {
     ///   - shop: Shop identifier (optional)
     ///   - apiPrefix: Custom API base URL (optional)
     ///   - sessionToken: Session token for enhanced security (optional)
+    ///   - appGroup: App Group shared with your Notification Service Extension, the same one you pass to
+    ///     `GameballApp.handlePushReceived(_:appGroup:)` (optional; needed for influenced opens)
     public init(apiKey: String, lang: String, platform: String? = nil,
                 shop: String? = nil, apiPrefix: String? = nil,
                 sessionToken: String? = nil,
-                widgetUrlPrefix: String? = nil) {
+                widgetUrlPrefix: String? = nil,
+                appGroup: String? = nil) {
         self.apiKey = apiKey
         self.lang = lang
         self.platform = platform
@@ -42,5 +46,6 @@ public struct GameballConfig {
         self.apiPrefix = apiPrefix
         self.sessionToken = sessionToken
         self.widgetUrlPrefix = widgetUrlPrefix
+        self.appGroup = appGroup
     }
 }
