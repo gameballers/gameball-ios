@@ -72,6 +72,9 @@ public class GameballApp {
             // Mark as initialized immediately
             self.isInitialized = true
 
+            // App opens, push taps and influenced opens; safe on every init
+            Engagement.shared.start(appGroup: config.appGroup)
+
             // Fire bot settings request in background (fire-and-forget)
             self.loadBotSettings { _ in
                 // Settings loaded in background, no action needed
@@ -108,6 +111,11 @@ public class GameballApp {
 
             // Set session token if provided, otherwise set to nil
             self.sessionToken = sessionToken
+
+            // Another customer's pushes must never credit this customer's opens
+            if UserDefaults.standard.string(forKey: UserDefaultsKeys.customerId.rawValue) != request.customerId {
+                Engagement.shared.clearReceivedPushes()
+            }
 
             self.customerId = request.customerId
             UserDefaults.standard.set(request.customerId, forKey: UserDefaultsKeys.customerId.rawValue)
@@ -245,6 +253,10 @@ public class GameballApp {
     /// Returns `true` when the notification is a Gameball one. When it also carries a click token,
     /// the tap is reported to Gameball to count the campaign click; the optional `completion`
     /// receives that report's result.
+    ///
+    /// A tap is counted once per app process (by click token, else FCM's message id): calling this
+    /// again for the same tap returns `true` and reports nothing more. Neither the tapped push nor
+    /// the app open the tap causes ever counts as an influenced open.
     /// - Parameter payload: The notification's data payload.
     /// - Parameter completion: Optional callback receiving whether the report succeeded.
     /// - Parameter sessionToken: Optional session token for this request.
@@ -252,11 +264,9 @@ public class GameballApp {
     ///                           If not provided, nullifies the global sessionToken.
     @discardableResult
     public func handlePushClick(_ payload: [AnyHashable: Any], completion: ((Bool) -> Void)? = nil, sessionToken: String? = nil) -> Bool {
-        guard let isGB = payload["isGB"] as? String, isGB.caseInsensitiveCompare("true") == .orderedSame else {
+        guard let push = GameballPush(payload: payload) else {
             return false
         }
-
-        let token = payload["gbClickToken"] as? String
 
         // Set session token if provided, otherwise set to nil
         let isInitialized = queue.sync { () -> Bool in
@@ -269,11 +279,11 @@ public class GameballApp {
             return true
         }
 
-        guard let token = token, !token.isEmpty else {
-            return true
+        // Logged, and reported as clicked when it carries a click token. The same tap reaching the
+        // SDK twice counts once: a repeat reports nothing and succeeds.
+        if !Engagement.shared.onTap(push, sessionToken: sessionToken, completion: completion) {
+            completion?(true)
         }
-
-        networkManager.reportPushClick(clickToken: token, sessionToken: sessionToken, completion: completion)
         return true
     }
 
@@ -291,9 +301,6 @@ public class GameballApp {
     /// per-call prefix from, so it reads the configured one here.
     internal var configuredWidgetUrlPrefix: String? { config?.widgetUrlPrefix }
 
-    /// The session token currently in memory, for the same reason.
-    internal var currentSessionToken: String? { sessionToken }
-
     public var currentCustomerId: String? {
         return queue.sync {
             return customerId
@@ -303,6 +310,14 @@ public class GameballApp {
     public var initialized: Bool {
         return queue.sync {
             return isInitialized
+        }
+    }
+
+    /// The session token in use. Internal: in-app messaging's widget url and the reports the SDK
+    /// makes on its own (an influenced open) have no caller to take one from.
+    internal var currentSessionToken: String? {
+        return queue.sync {
+            return sessionToken
         }
     }
 
