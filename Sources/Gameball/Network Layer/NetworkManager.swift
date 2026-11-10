@@ -296,18 +296,22 @@ class NetworkManager:NSObject {
         task.resume()
     }
 
-    /// Reports a push notification tap so the campaign's click stats are incremented.
-    /// Fire-and-forget: only the 2xx/non-2xx distinction is surfaced via `completion`, no error body parsing.
-    func reportPushClick(clickToken: String, sessionToken: String?, completion: ((Bool) -> Void)? = nil) {
+    /// The push-engagement request, with the same headers as every other call.
+    func pushEngagementRequest(_ engagement: PushEngagement, sessionToken: String?) -> URLRequest {
+        var request = URLRequest(path: APIEndPoints.pushEngagement, method: .POST, params: engagement.body, sessionToken: sessionToken)
+        self.adaptRequest(urlRequest: &request, sessionToken: sessionToken)
+        return request
+    }
+
+    /// Reports a tap or an influenced open on a Gameball push. One attempt, no retry.
+    /// Fire-and-forget: only the 2xx/non-2xx distinction is surfaced via `completion` (the backend answers 202).
+    func reportPushEngagement(_ engagement: PushEngagement, sessionToken: String?, completion: ((Bool) -> Void)? = nil) {
         guard Reachability.isConnectedToNetwork() else {
             completion?(false)
             return
         }
 
-        var request = URLRequest(path: APIEndPoints.pushClick, method: .POST, params: ["clickToken": clickToken], sessionToken: sessionToken)
-        self.adaptRequest(urlRequest: &request, sessionToken: sessionToken)
-
-        let task = self.urlSession.dataTask(with: request) { _, response, _ in
+        let task = self.urlSession.dataTask(with: pushEngagementRequest(engagement, sessionToken: sessionToken)) { _, response, _ in
             let succeeded = (response as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false
             completion?(succeeded)
         }
