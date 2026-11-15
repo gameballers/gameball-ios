@@ -140,7 +140,7 @@ final class MessageParserTests: XCTestCase {
             XCTFail("expected a navigate button action")
         }
 
-        if case .event(let name, let filters) = parsed.trigger {
+        if case .event(let name, let filters, _) = parsed.trigger {
             XCTAssertEqual(name, "place_order")
             XCTAssertEqual(filters.count, 1)
         } else {
@@ -260,7 +260,7 @@ final class MessageParserTests: XCTestCase {
                 ["name": "sku", "operator": "Is", "value": "abc"]
             ]
         ]])
-        guard case .some(.event(_, let filters)) = parsed?.trigger else {
+        guard case .some(.event(_, let filters, _)) = parsed?.trigger else {
             return XCTFail("campaign should be kept with the usable filter")
         }
         XCTAssertEqual(filters.map { $0.name }, ["sku"])
@@ -275,26 +275,89 @@ final class MessageParserTests: XCTestCase {
                 ["name": "sku", "operator": "Is", "value": "abc"]
             ]
         ]])
-        guard case .some(.event(_, let filters)) = parsed?.trigger else {
+        guard case .some(.event(_, let filters, _)) = parsed?.trigger else {
             return XCTFail("campaign should be kept with the usable filter")
         }
         XCTAssertEqual(filters.map { $0.name }, ["sku"])
     }
 
-    func testOrLogicalOperatorDropsCampaign() {
-        XCTAssertNil(parseOne(["trigger": [
-            "type": "event",
-            "name": "place_order",
-            "metadataLogicalOperator": "Or",
-            "metadataFilters": [["name": "price", "operator": "Is", "value": 1]]
-        ]]))
-        // And, in either spelling, is supported.
-        XCTAssertNotNil(parseOne(["trigger": [
-            "type": "event", "name": "place_order", "metadataLogicalOperator": "and"
-        ]]))
-        XCTAssertNotNil(parseOne(["trigger": [
-            "type": "event", "name": "place_order", "metadataLogicalOperator": NSNull()
-        ]]))
+    /// A `place_order` trigger on `price > 100` and `currency is USD`, combined by `logical`.
+    private func orderTrigger(_ logical: Any?,
+                              filters: [[String: Any]] = [
+                                ["name": "price", "operator": "Greater", "value": 100],
+                                ["name": "currency", "operator": "Is", "value": "USD"]
+                              ]) -> [String: Any] {
+        var trigger: [String: Any] = ["type": "event", "name": "place_order",
+                                      "metadataFilters": filters]
+        if let logical = logical { trigger["metadataLogicalOperator"] = logical }
+        return trigger
+    }
+
+    private func order(price: Int, currency: String) -> TriggerOccurrence {
+        return .event(name: "place_order", properties: ["price": price, "currency": currency])
+    }
+
+    /// The dashboard's "Any": `OR` on the wire, in whatever case. The campaign shows when at least
+    /// one condition matches; it used to be dropped outright.
+    func testOrLogicalOperatorShowsWhenAnyConditionMatches() {
+        for spelling in ["OR", "Or", "or"] {
+            guard let trigger = parseOne(["trigger": orderTrigger(spelling)])?.trigger else {
+                XCTFail("'\(spelling)' dropped the campaign")
+                continue
+            }
+            XCTAssertTrue(triggerMatches(trigger, order(price: 50, currency: "USD")),
+                          "one matching condition is enough under '\(spelling)'")
+            XCTAssertTrue(triggerMatches(trigger, order(price: 150, currency: "EUR")))
+            XCTAssertFalse(triggerMatches(trigger, order(price: 50, currency: "EUR")),
+                           "no condition matched, yet '\(spelling)' showed the campaign")
+        }
+    }
+
+    /// `AND` in either case, a null operator and no operator at all: every condition must match.
+    func testAndOrNoLogicalOperatorRequiresEveryCondition() {
+        for logical: Any? in ["AND", "and", NSNull(), nil] {
+            guard let trigger = parseOne(["trigger": orderTrigger(logical)])?.trigger else {
+                XCTFail("'\(String(describing: logical))' dropped the campaign")
+                continue
+            }
+            XCTAssertTrue(triggerMatches(trigger, order(price: 150, currency: "USD")))
+            XCTAssertFalse(triggerMatches(trigger, order(price: 50, currency: "USD")),
+                           "'\(String(describing: logical))' let one condition stand for all")
+        }
+    }
+
+    /// Read as either known operator, an unknown one would narrow or widen the campaign.
+    func testAnUnknownLogicalOperatorDropsCampaign() {
+        XCTAssertNil(parseOne(["trigger": orderTrigger("Xor")]))
+    }
+
+    /// Under `OR` a dropped condition only narrows the campaign — unless every one is dropped,
+    /// when "any of none" would read as no condition and show it on every `place_order`.
+    func testAnyWithNoUsableConditionDropsCampaign() {
+        XCTAssertNil(parseOne(["trigger": orderTrigger("OR", filters: [
+            ["name": "price", "operator": "Regex", "value": 100],
+            ["name": "currency", "operator": "Is", "value": NSNull()]
+        ])]))
+    }
+
+    /// Under `OR`, an unusable condition costs that condition and not the others.
+    func testAnyKeepsItsUsableConditions() {
+        guard let trigger = parseOne(["trigger": orderTrigger("OR", filters: [
+            ["name": "price", "operator": "Regex", "value": 100],
+            ["name": "currency", "operator": "Is", "value": "USD"]
+        ])])?.trigger else {
+            return XCTFail("the campaign should be kept with its usable condition")
+        }
+        XCTAssertTrue(triggerMatches(trigger, order(price: 50, currency: "USD")))
+        XCTAssertFalse(triggerMatches(trigger, order(price: 150, currency: "EUR")))
+    }
+
+    /// With no conditions declared, `OR` is just the event.
+    func testAnyWithNoConditionsIsTheEventAlone() {
+        guard let trigger = parseOne(["trigger": orderTrigger("OR", filters: [])])?.trigger else {
+            return XCTFail("an OR with no conditions was dropped")
+        }
+        XCTAssertTrue(triggerMatches(trigger, order(price: 1, currency: "EUR")))
     }
 
     func testUnknownTriggerTypeDropsCampaign() {

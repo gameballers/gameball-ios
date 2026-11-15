@@ -9,12 +9,20 @@ import Foundation
 /// authored and matched exactly like any other event campaign.
 let gameballPurchaseEventName = "purchase"
 
+/// How an event trigger's metadata filters combine: `metadataLogicalOperator` on the wire.
+enum FilterMatch {
+    /// Every filter must match. `AND`, and what no operator at all means.
+    case all
+    /// At least one filter must match. `OR`, the dashboard's "Any".
+    case any
+}
+
 /// The condition that makes a campaign eligible to display.
 enum MessageTrigger {
     case sessionStart
     /// Matched on the event *name*. The wire also carries an `eventId`, but that is
     /// internal to the backend and cannot be resolved on a device.
-    case event(name: String, filters: [PropertyFilter])
+    case event(name: String, filters: [PropertyFilter], match: FilterMatch = .all)
 }
 
 /// Something that just happened and may satisfy a trigger.

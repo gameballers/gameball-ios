@@ -79,13 +79,17 @@ func triggerMatches(_ trigger: MessageTrigger, _ occurrence: TriggerOccurrence) 
     case (.sessionStart, .sessionStart):
         return true
 
-    case (.event(let triggerName, let filters), .event(let eventName, let properties)):
+    case (.event(let triggerName, let filters, let match), .event(let eventName, let properties)):
         guard triggerName.lowercased() == eventName.lowercased() else { return false }
-        // AND across every filter; a filter is a requirement, so one failure disqualifies.
-        for filter in filters where !filter.matches(properties: properties) {
-            return false
+        // No filter is no condition, however the filters would have combined.
+        guard !filters.isEmpty else { return true }
+        switch match {
+        case .all:
+            // A filter is a requirement, so one failure disqualifies.
+            return filters.allSatisfy { $0.matches(properties: properties) }
+        case .any:
+            return filters.contains { $0.matches(properties: properties) }
         }
-        return true
 
     default:
         return false

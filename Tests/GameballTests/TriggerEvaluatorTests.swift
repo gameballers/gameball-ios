@@ -59,6 +59,21 @@ final class TriggerEvaluatorTests: XCTestCase {
                                    properties: ["price": 150, "currency": "EUR"]), [campaign]))
     }
 
+    /// "Any": one matching filter is enough, and a missing property still matches nothing.
+    func testAnyFilterMatchingIsEnough() {
+        let campaign = makeCampaign(trigger: .event(name: "place_order", filters: [
+            PropertyFilter(name: "price", op: .greaterThan, value: 100),
+            PropertyFilter(name: "currency", op: .equals, value: "USD")
+        ], match: .any))
+        XCTAssertNotNil(select(.event(name: "place_order",
+                                      properties: ["price": 150, "currency": "EUR"]), [campaign]))
+        XCTAssertNotNil(select(.event(name: "place_order",
+                                      properties: ["price": 50, "currency": "USD"]), [campaign]))
+        XCTAssertNil(select(.event(name: "place_order",
+                                   properties: ["price": 50, "currency": "EUR"]), [campaign]))
+        XCTAssertNil(select(.event(name: "place_order", properties: [:]), [campaign]))
+    }
+
     func testMissingPropertyNeverMatches() {
         let campaign = makeCampaign(trigger: .event(name: "place_order", filters: [
             PropertyFilter(name: "price", op: .greaterThan, value: 100)
