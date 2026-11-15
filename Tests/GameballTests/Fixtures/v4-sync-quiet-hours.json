@@ -1,0 +1,696 @@
+{
+  "cooldownSeconds": 10,
+  "quietHours": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00"
+  },
+  "campaignOrdering": [
+    2052,
+    2053
+  ],
+  "messages": [
+    {
+      "campaignId": 2041,
+      "variationId": 4,
+      "dispatchId": "1a31da85-b49f-4c98-b0be-51ea9d46d8e1",
+      "name": "frozen but renameable",
+      "priority": 9,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": true,
+        "minIntervalSeconds": 0
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "top",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "New slideup A",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2046,
+      "variationId": 14,
+      "dispatchId": "c84b7c46-e291-4000-aa34-bd8d3dfac2ce",
+      "name": "frozen but renameable (1)",
+      "priority": 9,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "top",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "clone editable",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2055,
+      "variationId": 20,
+      "dispatchId": "cd84555a-fbe6-44b7-9973-e8786f673372",
+      "name": "QA Fullscreen - place_order",
+      "priority": 7,
+      "messageType": 3,
+      "trigger": {
+        "type": "event",
+        "eventId": 1382,
+        "name": "place_order",
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": true,
+        "minIntervalSeconds": 300
+      },
+      "content": {
+        "colors": {
+          "background": "#FFFFFF",
+          "text": "#1F2937",
+          "header": "#111827",
+          "closeButton": null,
+          "border": null,
+          "frame": null
+        },
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": "button",
+        "action": null,
+        "extras": null,
+        "slideFrom": null,
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": {
+          "type": "image",
+          "url": "https://i.ibb.co/G34R4MtM/83312799-summer-sale.jpg",
+          "autoplay": null,
+          "muted": null
+        },
+        "orientation": "portrait",
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": [
+          {
+            "id": "ok",
+            "action": {
+              "type": "navigate",
+              "url": null,
+              "external": null,
+              "route": "orders",
+              "arguments": null,
+              "eventName": null,
+              "eventMetadata": null,
+              "attributeKey": null,
+              "attributeValue": null
+            },
+            "colors": null
+          }
+        ],
+        "layout": null
+      },
+      "locale": {
+        "header": "Order placed!",
+        "message": "Thank you {player_name} - your points are on the way.",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": [
+          {
+            "id": "ok",
+            "text": "Track my order"
+          }
+        ]
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2052,
+      "variationId": 17,
+      "dispatchId": "976bfd86-17e4-4d5e-b423-3e7d0b1f8187",
+      "name": "Welcome popup on session start",
+      "priority": 5,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": {
+          "background": "#FFFFFF",
+          "text": "#1F2937",
+          "header": "#111827",
+          "closeButton": null,
+          "border": null,
+          "frame": null
+        },
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": "button",
+        "action": null,
+        "extras": null,
+        "slideFrom": null,
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": "https://i.ibb.co/G34R4MtM/83312799-summer-sale.jpg",
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": [
+          {
+            "id": "cta",
+            "action": {
+              "type": "dismiss",
+              "url": null,
+              "external": null,
+              "route": null,
+              "arguments": null,
+              "eventName": null,
+              "eventMetadata": null,
+              "attributeKey": null,
+              "attributeValue": null
+            },
+            "colors": null
+          }
+        ],
+        "layout": null
+      },
+      "locale": {
+        "header": "Welcome {player_name}!",
+        "message": "Great to see you back - check what is new today.",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": [
+          {
+            "id": "cta",
+            "text": "Got it"
+          }
+        ]
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2054,
+      "variationId": 19,
+      "dispatchId": "97c9736b-886a-4cf6-ac23-41ad438b78b1",
+      "name": "QA Slideup - view_product_page",
+      "priority": 5,
+      "messageType": 1,
+      "trigger": {
+        "type": "event",
+        "eventId": 1383,
+        "name": "view_product_page",
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": true,
+        "minIntervalSeconds": 0
+      },
+      "content": {
+        "colors": {
+          "background": "#111827",
+          "text": "#F9FAFB",
+          "header": null,
+          "closeButton": null,
+          "border": null,
+          "frame": null
+        },
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": "swipe",
+        "action": null,
+        "extras": null,
+        "slideFrom": "bottom",
+        "autoDismissSeconds": 8,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "Nice pick, {player_name} - it earns you points!",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2057,
+      "variationId": 22,
+      "dispatchId": "cca8f71a-3d2c-4614-ac52-a218ddf59353",
+      "name": "QA Conversion popup - place_order goal (updated)",
+      "priority": 4,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": true,
+        "minIntervalSeconds": 0
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": "button",
+        "action": null,
+        "extras": null,
+        "slideFrom": null,
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": "https://i.ibb.co/G34R4MtM/83312799-summer-sale.jpg",
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": "Convert!",
+        "message": "Place an order to convert.",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2042,
+      "variationId": 7,
+      "dispatchId": "eea37c33-a143-4b77-b3bf-17f2f413eea9",
+      "name": "route id wins",
+      "priority": 1,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "top",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "review replace",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2043,
+      "variationId": 9,
+      "dispatchId": "3c610dc0-44c3-4026-a2d2-4a46d2200ebe",
+      "name": "prerender test",
+      "priority": 0,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "bottom",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "Hi {player_name}, you have {points_balance} points",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2044,
+      "variationId": 10,
+      "dispatchId": "341591af-c05c-4833-8f35-f0f295606fb5",
+      "name": "audience upsert test",
+      "priority": 0,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "bottom",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "audience test",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2045,
+      "variationId": 11,
+      "dispatchId": "1b7ad17d-d0bd-4f56-ac7f-ba14053f02ad",
+      "name": "featurecode publish probe",
+      "priority": 0,
+      "messageType": 1,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": {
+        "colors": null,
+        "textAlignment": null,
+        "font": null,
+        "closeBehaviour": null,
+        "action": null,
+        "extras": null,
+        "slideFrom": "bottom",
+        "autoDismissSeconds": null,
+        "iconUrl": null,
+        "imageUrl": null,
+        "media": null,
+        "orientation": null,
+        "allowedAssetUrls": null,
+        "submitButtonColors": null,
+        "onSuccessAction": null,
+        "buttons": null,
+        "layout": null
+      },
+      "locale": {
+        "header": null,
+        "message": "probe",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2058,
+      "variationId": 23,
+      "dispatchId": "c6d08466-c5d6-464c-a89d-90dcd7b769a8",
+      "name": "PW E2E InApp 150320",
+      "priority": 0,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": null,
+      "locale": {
+        "header": null,
+        "message": "EN summer sale",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2059,
+      "variationId": 25,
+      "dispatchId": "8aa4818a-f8d1-427c-a549-dcf91145922b",
+      "name": "PW E2E InApp 122838",
+      "priority": 0,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": null,
+      "locale": {
+        "header": null,
+        "message": "EN summer sale",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2060,
+      "variationId": 26,
+      "dispatchId": "3debf23e-0709-4be5-b90f-aebeef31e913",
+      "name": "PW VERIFY 629273",
+      "priority": 0,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": null,
+      "locale": {
+        "header": null,
+        "message": "EN summer",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    },
+    {
+      "campaignId": 2061,
+      "variationId": 27,
+      "dispatchId": "340eb6ce-3a29-4359-a0ae-6c6f9bf07a34",
+      "name": "PW VERIFY 995811",
+      "priority": 0,
+      "messageType": 2,
+      "trigger": {
+        "type": "session_start",
+        "eventId": null,
+        "name": null,
+        "metadataLogicalOperator": null,
+        "metadataFilters": null,
+        "repeatable": false,
+        "minIntervalSeconds": null
+      },
+      "content": null,
+      "locale": {
+        "header": null,
+        "message": "EN summer",
+        "html": null,
+        "placeholder": null,
+        "submitText": null,
+        "successMessage": null,
+        "errorMessage": null,
+        "buttons": null
+      },
+      "localeCode": "en",
+      "expiresAt": null,
+      "isTest": false
+    }
+  ]
+}
