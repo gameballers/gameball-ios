@@ -116,7 +116,10 @@ enum TokenSubstitution {
                                     orientation: message.orientation,
                                     slidePosition: message.slidePosition,
                                     extras: message.extras,
-                                    style: message.style)
+                                    style: message.style,
+                                    // Carried through: personalisation rewrites text and has no
+                                    // business changing what the message opens.
+                                    widget: message.widget)
     }
 
     private static func blankTokens(in text: String) -> String {

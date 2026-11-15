@@ -15,13 +15,27 @@ enum MessageViewFactory {
     static func make(context: PresentationContext,
                      image: UIImage?,
                      icon: UIImage?,
-                     coordinator: MessageViewCoordinating?) -> InAppMessageView? {
+                     coordinator: MessageViewCoordinating?,
+                     widgetURL: ((GameballWidgetContent) -> URL?)? = nil,
+                     onWidgetFailed: (() -> Void)? = nil) -> InAppMessageView? {
         let message = context.message
         let attributes = context.attributes
 
         // `image_only` with no usable artwork would draw an empty card, so it falls back to the
         // copy composition. The parser has already guaranteed there is something to render.
         let imageOnly = message.layout == .imageOnly && image != nil
+
+        // A reward campaign is its own composition, before the artwork branches: it has no
+        // artwork, and its content arrives over the network at display time.
+        if let widget = message.widget {
+            guard let url = widgetURL?(widget) else {
+                iamLog("campaign opens game \(widget.gameCampaignId) but no widget url could be "
+                     + "composed; not presenting")
+                return nil
+            }
+            return GameballWidgetView(message: message, attributes: attributes, url: url,
+                                      coordinator: coordinator, onFailed: onWidgetFailed)
+        }
 
         switch message.type {
         case .slideup:

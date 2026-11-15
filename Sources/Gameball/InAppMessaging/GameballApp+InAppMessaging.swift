@@ -199,7 +199,12 @@ final class InAppMessagingCoordinator {
                 context: context,
                 image: message.imageURL.flatMap { prefetcher.image(for: $0) },
                 icon: message.iconURL.flatMap { prefetcher.image(for: $0) },
-                coordinator: presenter)
+                coordinator: presenter,
+                widgetURL: { widget in GameballApp.inAppWidgetURL(openDetail: widget.openDetail) },
+                // Takes the message away having never shown it: no impression is logged and the
+                // cap is untouched, so the campaign gets another go at its next trigger rather
+                // than being burned by a slow network.
+                onWidgetFailed: { presenter.dismiss() })
         })
 
         let router = MessageActionRouter(
@@ -365,4 +370,92 @@ public extension GameballApp {
         sendEvent(event, completion: { success, error in completion?(success, error) },
                   sessionToken: sessionToken)
     }
+}
+
+extension GameballApp {
+
+    /// Builds the widget URL for a campaign an in-app message opens.
+    ///
+    /// The campaign supplies only `openDetail`. Everything identifying — api key, customer,
+    /// locale, platform, session token — comes from SDK state, which is why the campaign payload
+    /// never carries a URL.
+    ///
+    /// The host is resolved as configured, then production. `showProfile` takes one per call and
+    /// still overrides it there; messaging has no caller to take one from, so without the
+    /// configured value a host aimed at a non-production environment would get production here —
+    /// which renders as "this campaign is not available" and is indistinguishable from a campaign
+    /// that does not exist.
+    ///
+    /// Navigation is hidden: the message is a card showing one campaign, not the profile, so the
+    /// widget's own chrome would offer a way out of the thing the customer was just handed.
+    static func inAppWidgetURL(openDetail: String) -> URL? {
+        let app = GameballApp.getInstance()
+        return inAppWidgetURL(base: app.configuredWidgetUrlPrefix ?? NetworkManager.shared().widgetUrl,
+                              customerId: app.currentCustomerId,
+                              language: LanguageHelper.resolveLanguage(),
+                              apiKey: NetworkManager.shared().APIKey,
+                              sessionToken: app.currentSessionToken,
+                              openDetail: openDetail)
+    }
+
+    /// The same URL from explicit values rather than SDK state, so the composition is testable.
+    static func inAppWidgetURL(base: String,
+                               customerId: String?,
+                               language: String,
+                               apiKey: String,
+                               sessionToken: String?,
+                               openDetail: String) -> URL? {
+        guard var components = URLComponents(string: base) else {
+            iamLog("could not compose a widget url from base '\(base)'")
+            return nil
+        }
+
+        var items = [
+            URLQueryItem(name: "customerId", value: customerId),
+            URLQueryItem(name: "lang", value: language),
+            URLQueryItem(name: "apiKey", value: apiKey),
+            URLQueryItem(name: "os", value: "iOS"),
+            URLQueryItem(name: "sdk", value: SDKInfo.version),
+            URLQueryItem(name: "openDetail", value: openDetail),
+            URLQueryItem(name: "hideNavigation", value: "true")
+        ]
+        if let token = sessionToken, !token.isEmpty {
+            items.append(URLQueryItem(name: "sessionToken", value: token))
+        }
+        // Each value encoded once, leaving only the unreserved characters raw — what the profile
+        // widget has done since 3.3.2. `queryItems` leaves a `+` raw, and the widget reads that as
+        // a space, so a customer id such as `name+tag@example.com` reached it as someone else.
+        components.percentEncodedQueryItems = items.map {
+            URLQueryItem(name: $0.name,
+                         value: $0.value?.addingPercentEncoding(withAllowedCharacters: widgetQueryValueAllowed))
+        }
+
+        let url = components.url
+        // Logged because it is otherwise invisible: a campaign that opens on "this campaign is not
+        // available" looks identical whether the id is wrong, the customer cannot play it, or the
+        // host is pointed at a different widget environment than its api key belongs to. Logged
+        // without the api key and the session token, which no console line should carry.
+        iamLog("opening widget \(url.map(redactedForLog) ?? "(could not compose)")")
+        return url
+    }
+
+    /// `url` as a log line, with the value of every credential in its query replaced.
+    static func redactedForLog(_ url: URL) -> String {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return "(a url that could not be read back)"
+        }
+        components.percentEncodedQueryItems = components.percentEncodedQueryItems?.map { item in
+            guard widgetQueryCredentials.contains(item.name), item.value != nil else { return item }
+            return URLQueryItem(name: item.name, value: "redacted")
+        }
+        return components.string ?? "(a url that could not be read back)"
+    }
+
+    /// Query items a log line never shows the value of.
+    private static let widgetQueryCredentials: Set<String> = ["apiKey", "sessionToken"]
+
+    /// The unreserved characters of RFC 3986, the only ones a widget query value carries raw. The
+    /// same set the profile widget encodes with.
+    private static let widgetQueryValueAllowed = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 }

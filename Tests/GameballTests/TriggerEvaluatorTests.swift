@@ -93,7 +93,7 @@ final class TriggerEvaluatorTests: XCTestCase {
         XCTAssertNotNil(select(.sessionStart, [campaign]))
 
         var capState = CapState.empty
-        capState.recordDisplay(campaignId: 1, at: now.addingTimeInterval(-100_000))
+        capState.recordDisplay(campaign: .message(1), at: now.addingTimeInterval(-100_000))
         XCTAssertNil(select(.sessionStart, [campaign], capState: capState),
                      "a once-ever campaign must stay suppressed however long ago it showed")
     }
@@ -101,7 +101,7 @@ final class TriggerEvaluatorTests: XCTestCase {
     func testRepeatableCampaignRespectsMinInterval() {
         let campaign = makeCampaign(repeatable: true, minInterval: 300)
         var capState = CapState.empty
-        capState.recordDisplay(campaignId: 1, at: now.addingTimeInterval(-100))
+        capState.recordDisplay(campaign: .message(1), at: now.addingTimeInterval(-100))
 
         // Inside its own interval, and outside the global floor so only the interval applies.
         XCTAssertNil(select(.sessionStart, [campaign], capState: capState, cooldown: 0))
@@ -112,7 +112,7 @@ final class TriggerEvaluatorTests: XCTestCase {
     func testRepeatableWithNilIntervalSelectsEveryOccurrence() {
         let campaign = makeCampaign(repeatable: true, minInterval: nil)
         var capState = CapState.empty
-        capState.recordDisplay(campaignId: 1, at: now.addingTimeInterval(-1))
+        capState.recordDisplay(campaign: .message(1), at: now.addingTimeInterval(-1))
         XCTAssertNotNil(select(.sessionStart, [campaign], capState: capState, cooldown: 0))
     }
 
@@ -122,7 +122,7 @@ final class TriggerEvaluatorTests: XCTestCase {
         let campaign = makeCampaign(campaignId: 42)
         var capState = CapState.empty
         // Something unrelated displayed 5 seconds ago.
-        capState.recordDisplay(campaignId: 7, at: now.addingTimeInterval(-5))
+        capState.recordDisplay(campaign: .message(7), at: now.addingTimeInterval(-5))
         XCTAssertNil(select(.sessionStart, [campaign], capState: capState, cooldown: 30),
                      "the floor is global, so even a never-shown campaign waits")
     }
@@ -130,7 +130,7 @@ final class TriggerEvaluatorTests: XCTestCase {
     func testOutsideGlobalFloorSelectionResumes() {
         let campaign = makeCampaign(campaignId: 42)
         var capState = CapState.empty
-        capState.recordDisplay(campaignId: 7, at: now.addingTimeInterval(-31))
+        capState.recordDisplay(campaign: .message(7), at: now.addingTimeInterval(-31))
         XCTAssertNotNil(select(.sessionStart, [campaign], capState: capState, cooldown: 30))
     }
 
@@ -141,7 +141,7 @@ final class TriggerEvaluatorTests: XCTestCase {
         let fresh = makeCampaign(campaignId: 2, priority: 1, responseIndex: 1)
 
         var capState = CapState.empty
-        capState.recordDisplay(campaignId: 1, at: now.addingTimeInterval(-10_000))
+        capState.recordDisplay(campaign: .message(1), at: now.addingTimeInterval(-10_000))
 
         XCTAssertEqual(select(.sessionStart, [spent, fresh], capState: capState)?.campaignId, 2)
     }

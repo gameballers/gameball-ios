@@ -48,6 +48,7 @@ final class MessageWindowPresenterTests: XCTestCase {
     private var dismissed = 0
     private var buttonsPressed: [String] = []
     private var surfacePresses = 0
+    private var gamesCompleted = 0
     private var builtViews: [StubMessageView] = []
 
     override func setUp() {
@@ -56,6 +57,7 @@ final class MessageWindowPresenterTests: XCTestCase {
         dismissed = 0
         buttonsPressed = []
         surfacePresses = 0
+        gamesCompleted = 0
         builtViews = []
     }
 
@@ -76,7 +78,8 @@ final class MessageWindowPresenterTests: XCTestCase {
         return PresentationHandlers(onShown: { self.shown += 1 },
                                     onButtonPressed: { self.buttonsPressed.append($0.id) },
                                     onMessagePressed: { self.surfacePresses += 1 },
-                                    onDismissed: { self.dismissed += 1 })
+                                    onDismissed: { self.dismissed += 1 },
+                                    onGameCompleted: { self.gamesCompleted += 1 })
     }
 
     private func context(type: GameballMessageType = .slideup,
@@ -301,6 +304,20 @@ final class MessageWindowPresenterTests: XCTestCase {
         builtViews.first?.process(action: .dismiss, buttonId: nil)
         XCTAssertFalse(presenter.isShowing)
         XCTAssertEqual(dismissed, 1)
+    }
+
+    /// A finished play reaches the service, and is neither a click nor a dismissal: the game
+    /// stays open on its result until the customer closes it.
+    func testAFinishedGameIsForwardedOnItsOwn() {
+        let presenter = makePresenter()
+        _ = presenter.present(context: context(type: .modal), handlers: handlers())
+
+        presenter.viewDidCompleteGame()
+
+        XCTAssertEqual(gamesCompleted, 1)
+        XCTAssertEqual(surfacePresses, 0)
+        XCTAssertEqual(dismissed, 0)
+        XCTAssertTrue(presenter.isShowing)
     }
 
     // MARK: - Orientation gating

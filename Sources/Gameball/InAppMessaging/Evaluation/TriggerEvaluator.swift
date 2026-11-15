@@ -26,7 +26,7 @@ func selectCampaign(occurrence: TriggerOccurrence,
         // fetched at 23:58 would otherwise fire all night, and keep firing after the
         // campaign was paused.
         if candidate.hasExpired(at: now) {
-            iamLog("campaign \(candidate.campaignId) skipped: expired")
+            iamLog("\(candidate.key) skipped: expired")
             continue
         }
         if !isRepeatEligible(campaign: candidate, capState: capState, now: now) { continue }
@@ -34,11 +34,11 @@ func selectCampaign(occurrence: TriggerOccurrence,
         // Filtered here rather than refused at display, so a usable lower-priority campaign
         // can still win instead of the occurrence being wasted.
         if candidate.message.type == .unsupported {
-            iamLog("campaign \(candidate.campaignId) skipped: unsupported message type")
+            iamLog("\(candidate.key) skipped: unsupported message type")
             continue
         }
         if !isArtworkReady(candidate) {
-            iamLog("campaign \(candidate.campaignId) skipped: artwork not ready")
+            iamLog("\(candidate.key) skipped: artwork not ready")
             continue
         }
         eligible.append(candidate)
@@ -95,16 +95,16 @@ func triggerMatches(_ trigger: MessageTrigger, _ occurrence: TriggerOccurrence) 
 func isRepeatEligible(campaign: InAppMessageCampaign,
                       capState: CapState,
                       now: Date) -> Bool {
-    guard let last = capState.lastDisplayByCampaign[campaign.campaignId] else {
+    guard let last = capState.lastDisplayByCampaign[campaign.key] else {
         return true
     }
     guard campaign.repeatable else {
-        iamLog("campaign \(campaign.campaignId) skipped: not repeatable and already shown")
+        iamLog("\(campaign.key) skipped: not repeatable and already shown")
         return false
     }
     guard let interval = campaign.minInterval else { return true }
     if now.timeIntervalSince(last) >= interval { return true }
-    iamLog("campaign \(campaign.campaignId) skipped: inside its \(Int(interval))s interval")
+    iamLog("\(campaign.key) skipped: inside its \(Int(interval))s interval")
     return false
 }
 

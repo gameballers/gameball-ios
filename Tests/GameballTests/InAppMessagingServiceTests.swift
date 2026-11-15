@@ -34,6 +34,7 @@ final class StubPresenter: MessagePresenting {
     func reportShown() { handlers?.onShown() }
     func tapButton(_ button: GameballMessageButton) { handlers?.onButtonPressed(button) }
     func tapSurface() { handlers?.onMessagePressed() }
+    func reportGameCompleted() { handlers?.onGameCompleted() }
     func reportDismissed() {
         isShowing = false
         handlers?.onDismissed()
@@ -335,7 +336,7 @@ final class InAppMessagingServiceTests: XCTestCase {
         let reloaded = FrequencyCap(store: store, customerId: "cust-1")
         reloaded.load()
         XCTAssertEqual(reloaded.state.lastDisplayAt, clock)
-        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[7], clock)
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.message(7)], clock)
     }
 
     func testMessageDismissedBeforePaintReportsNothing() {
@@ -1379,5 +1380,246 @@ final class InAppMessagingServiceTests: XCTestCase {
         service.onDisplayOpportunity()
         drain(service)
         XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["7"])
+    }
+
+    // MARK: - Game campaigns
+
+    /// A game's display is recorded under its own key and survives a new session, so a once-ever
+    /// game stays once-ever — the same history a message keeps.
+    func testANonRepeatableGameIsNotOfferedAgain() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []), repeatable: false)
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.game(9645)], clock)
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        service.onSessionStart(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a once-ever game was offered again")
+    }
+
+    /// Every game arrives with campaignId 0. Deduplicated on that, the second game to wait evicted
+    /// the first.
+    func testTwoWaitingGamesDoNotEvictEachOther() {
+        presenter.obstacle = .noSurface
+        let wheel = makeGameCampaign(gameCampaignId: 9645, responseIndex: 0)
+        let quiz = makeGameCampaign(gameCampaignId: 9702,
+                                    trigger: .event(name: "e", filters: []),
+                                    responseIndex: 1)
+        let (service, _) = startedService([wheel, quiz])
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        let logs = capturingIAMLog {
+            service.onCustomEvent(name: "e", properties: [:])
+            drain(service)
+        }
+
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645), .game(9702)])
+        XCTAssertTrue(logs.contains { $0.contains("deferring game 9702") },
+                      "the deferral was not logged by its key: \(logs)")
+    }
+
+    /// Two games on one trigger: the second is the runner-up. Filtering "everything but the
+    /// winner" on campaignId 0 filtered out every other game.
+    func testAGameRunnerUpWaitsBehindAWinningGame() {
+        let wheel = makeGameCampaign(gameCampaignId: 9645, responseIndex: 0)
+        let quiz = makeGameCampaign(gameCampaignId: 9702, responseIndex: 1)
+        let (service, _) = startedService([wheel, quiz])
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9702)])
+
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645", "game_9702"])
+    }
+
+    /// A game is not a message campaign: closing one reports nothing to the events endpoint,
+    /// where it would land as a dismissal of campaign 0. Its display history is still kept.
+    func testClosingAGameReportsNothing() {
+        let (service, _) = startedService([makeGameCampaign()])
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertNotNil(reloaded.state.lastDisplayByCampaign[.game(9645)])
+    }
+
+    func testATapOnAGameReportsNoClick() {
+        let (service, _) = startedService([makeGameCampaign()])
+        presenter.reportShown(); drain(service)
+        presenter.tapSurface(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertTrue(analytics.events.isEmpty, "a game reported \(analytics.types())")
+    }
+
+    /// A game whose page failed to load is taken away before it was ever revealed. That is not a
+    /// display: nothing is recorded, so it can open at its next trigger.
+    func testAGameTakenAwayUnseenRecordsNoDisplay() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []), repeatable: false)
+        let (service, _) = startedService([game])
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        let reloaded = FrequencyCap(store: store, customerId: "cust-1")
+        reloaded.load()
+        XCTAssertNil(reloaded.state.lastDisplayByCampaign[.game(9645)])
+        XCTAssertNil(reloaded.state.lastDisplayAt, "a game nobody saw started the display floor")
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 2, "a once-ever game was spent unseen")
+    }
+
+    /// A game entry as the sync sends it, for seeding the cache.
+    private func gameEntry(_ gameCampaignId: Int = 9645) -> [String: Any] {
+        return ["campaignType": 2, "campaignId": 0, "messageType": 2,
+                "trigger": ["type": "session_start", "repeatable": true],
+                "content": NSNull(), "locale": NSNull(),
+                "gameCampaignId": gameCampaignId, "gameCampaignType": "wheel"]
+    }
+
+    private func cache(_ entries: [[String: Any]]) {
+        let payload = try! JSONSerialization.data(withJSONObject: ["cooldownSeconds": 0,
+                                                                   "messages": entries])
+        CampaignCache(store: store).save(payload: payload, customerId: "cust-1")
+    }
+
+    /// The deferred stack survives a fresh sync, and a waiting game is a pointer the server may
+    /// have withdrawn since: one the latest sync no longer carries must not open.
+    func testAWaitingGameTheLatestSyncDroppedIsNotOpened() {
+        presenter.obstacle = .noSurface
+        let source = ScriptedMessageSource([.success(result([makeGameCampaign()])),
+                                            .success(result([]))])
+        let service = makeService(source: source)
+        service.start(); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        service.onSessionStart(); drain(service)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "a game the latest sync dropped opened")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    func testAWaitingGamePastItsExpiryIsNotOpened() {
+        presenter.obstacle = .noSurface
+        let (service, _) = startedService([makeGameCampaign(expiresAt: clock.addingTimeInterval(60))])
+        XCTAssertEqual(service.deferredMessages.count, 1)
+
+        clock = clock.addingTimeInterval(120)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "an expired game opened")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// A failed sync falls back to the cache, and a game is never opened from a cached set —
+    /// including one still waiting from an earlier, live sync.
+    func testAWaitingGameIsNotOpenedOnceTheSetComesFromTheCache() {
+        cache([gameEntry()])
+        presenter.obstacle = .noSurface
+        let source = ScriptedMessageSource([.success(result([makeGameCampaign()])),
+                                            .failure(IAMSyncError.permanent(status: 401))])
+        let service = makeService(source: source)
+        service.start(); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        service.onSessionStart(); drain(service)
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertTrue(presenter.presentedMessages.isEmpty, "a game opened from a cached set")
+    }
+
+    /// The runner-up comes from what the occurrence may open, not from everything held: a cached
+    /// game behind a cached message must not be queued to open after it.
+    func testARunnerUpIsNeverAGameFromACachedSet() {
+        cache([["campaignId": 7, "priority": 9, "messageType": 2,
+                "trigger": ["type": "session_start", "repeatable": true],
+                "locale": ["message": "From the cache"]],
+               gameEntry()])
+        let source = StubMessageSource(result: .failure(IAMSyncError.permanent(status: 401)))
+        let service = makeService(source: source)
+        service.start(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.body }, ["From the cache"])
+        XCTAssertTrue(service.deferredMessages.isEmpty, "a cached game is waiting to open")
+    }
+
+    /// The control: a waiting game the latest live sync still carries opens as before.
+    func testAWaitingGameTheLatestSyncStillCarriesOpens() {
+        presenter.obstacle = .noSurface
+        let (service, _) = startedService([makeGameCampaign()])
+        service.onSessionStart(); drain(service)
+
+        presenter.obstacle = nil
+        service.onDisplayOpportunity(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.map { $0.id }, ["game_9645"])
+    }
+
+    /// Once the customer finishes a game it is not offered again until the next successful sync,
+    /// which is where the server rechecks whether they can still play it. Repeatable or not, a
+    /// sync from before the play is no grounds to open it again.
+    func testAPlayedGameIsNotOfferedAgainUntilTheNextSync() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportGameCompleted(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a played game was offered again")
+
+        // A new session syncs, and that sync is what may offer it again.
+        service.onSessionStart(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(presenter.presentedMessages.count, 2)
+    }
+
+    /// The same game selected again while it was on screen waits behind itself. Once it has been
+    /// played, that wait is dropped rather than reopening the game the moment it closes.
+    func testAPlayedGameWaitingBehindItselfIsDropped() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        XCTAssertEqual(service.deferredMessages.map { $0.key }, [.game(9645)])
+
+        presenter.reportGameCompleted(); drain(service)
+        presenter.reportDismissed(); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 1, "a played game reopened as it closed")
+        XCTAssertTrue(service.deferredMessages.isEmpty)
+    }
+
+    /// The control: a game that was closed without being finished is held only by the ordinary
+    /// rules.
+    func testAGameClosedWithoutAPlayMayBeOfferedAgain() {
+        let game = makeGameCampaign(trigger: .event(name: "spin", filters: []))
+        let (service, _) = startedService([game])
+
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+        presenter.reportShown(); drain(service)
+        presenter.reportDismissed(); drain(service)
+        service.onCustomEvent(name: "spin", properties: [:]); drain(service)
+
+        XCTAssertEqual(presenter.presentedMessages.count, 2)
     }
 }
