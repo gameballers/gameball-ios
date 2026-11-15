@@ -517,6 +517,17 @@ final class MessageParserTests: XCTestCase {
         XCTAssertNil(parseOne(["expiresAt": NSNull()])?.expiresAt)
     }
 
+    /// A game's end date arrives without a zone designator. The backend's stamps are UTC, so it is
+    /// read as UTC, as Android reads it. Refused as unparseable, an ended game kept opening.
+    func testExpiresAtWithoutAZoneIsUTC() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let expected = calendar.date(from: DateComponents(year: 2026, month: 11, day: 4,
+                                                          hour: 13, minute: 42))
+        XCTAssertEqual(parseOne(["expiresAt": "2026-11-04T13:42:00"])?.expiresAt, expected)
+        XCTAssertEqual(parseOne(["expiresAt": "2026-11-04T13:42:00.000"])?.expiresAt, expected)
+    }
+
     // MARK: - Actions
 
     func testButtonWithNoUsableActionFallsBackToDismiss() {
