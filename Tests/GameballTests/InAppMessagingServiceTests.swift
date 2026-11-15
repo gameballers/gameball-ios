@@ -1199,11 +1199,13 @@ final class InAppMessagingServiceTests: XCTestCase {
     }
 
     /// Lets the retry's `asyncAfter` actually elapse. The delays under test are hundredths of a
-    /// second, so this costs nothing.
+    /// second, so this costs nothing. Waits on the main run loop rather than a global-queue timer:
+    /// a global queue adds no threads while its few are busy, so in a full run that timer could
+    /// fire seconds late and fail the wait.
     private func settleRetries(_ service: InAppMessagingService, for seconds: TimeInterval = 0.3) {
-        let deadline = expectation(description: "retries settled")
-        DispatchQueue.global().asyncAfter(deadline: .now() + seconds) { deadline.fulfill() }
-        wait(for: [deadline], timeout: seconds + 3)
+        let elapsed = expectation(description: "retries settled")
+        elapsed.isInverted = true
+        wait(for: [elapsed], timeout: seconds)
         drain(service)
     }
 
