@@ -15,12 +15,12 @@ final class FrequencyCapTests: XCTestCase {
 
         let cap = FrequencyCap(store: store, customerId: "cust-1")
         cap.load()
-        cap.recordDisplay(campaignId: 42, at: now)
+        cap.recordDisplay(campaign: .message(42), at: now)
 
         let reloaded = FrequencyCap(store: store, customerId: "cust-1")
         reloaded.load()
         XCTAssertEqual(reloaded.state.lastDisplayAt, now)
-        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[42], now)
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.message(42)], now)
     }
 
     func testStateForADifferentCustomerIsDiscarded() {
@@ -28,7 +28,7 @@ final class FrequencyCapTests: XCTestCase {
 
         let cap = FrequencyCap(store: store, customerId: "cust-1")
         cap.load()
-        cap.recordDisplay(campaignId: 42, at: now)
+        cap.recordDisplay(campaign: .message(42), at: now)
 
         let other = FrequencyCap(store: store, customerId: "cust-2")
         other.load()
@@ -50,7 +50,7 @@ final class FrequencyCapTests: XCTestCase {
         let store = InMemoryIAMStore()
         let cap = FrequencyCap(store: store, customerId: "cust-1")
         cap.load()
-        cap.recordDisplay(campaignId: 42, at: now)
+        cap.recordDisplay(campaign: .message(42), at: now)
 
         cap.reset()
         XCTAssertNil(cap.state.lastDisplayAt)
@@ -70,31 +70,31 @@ final class FrequencyCapTests: XCTestCase {
         cap.load()
 
         for id in 0..<200 {
-            cap.recordDisplay(campaignId: id, at: now.addingTimeInterval(TimeInterval(id)))
+            cap.recordDisplay(campaign: .message(id), at: now.addingTimeInterval(TimeInterval(id)))
         }
 
         let reloaded = FrequencyCap(store: store, customerId: "cust-1")
         reloaded.load()
         XCTAssertEqual(reloaded.state.lastDisplayByCampaign.count, 200)
-        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[0], now)
+        XCTAssertEqual(reloaded.state.lastDisplayByCampaign[.message(0)], now)
     }
 
     func testLastDisplayAtTracksTheMostRecentDisplay() {
         var state = CapState.empty
-        state.recordDisplay(campaignId: 1, at: now)
-        state.recordDisplay(campaignId: 2, at: now.addingTimeInterval(10))
+        state.recordDisplay(campaign: .message(1), at: now)
+        state.recordDisplay(campaign: .message(2), at: now.addingTimeInterval(10))
 
         XCTAssertEqual(state.lastDisplayAt, now.addingTimeInterval(10))
-        XCTAssertEqual(state.lastDisplayByCampaign[1], now)
-        XCTAssertEqual(state.lastDisplayByCampaign[2], now.addingTimeInterval(10))
+        XCTAssertEqual(state.lastDisplayByCampaign[.message(1)], now)
+        XCTAssertEqual(state.lastDisplayByCampaign[.message(2)], now.addingTimeInterval(10))
     }
 
     /// Clock changes and out-of-order replays must not make `lastDisplayAt` travel
     /// backwards, or the global floor would reopen early.
     func testLastDisplayAtDoesNotMoveBackwards() {
         var state = CapState.empty
-        state.recordDisplay(campaignId: 1, at: now)
-        state.recordDisplay(campaignId: 2, at: now.addingTimeInterval(-60))
+        state.recordDisplay(campaign: .message(1), at: now)
+        state.recordDisplay(campaign: .message(2), at: now.addingTimeInterval(-60))
 
         XCTAssertEqual(state.lastDisplayAt, now)
     }

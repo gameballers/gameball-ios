@@ -32,6 +32,25 @@ struct InAppMessageCampaign {
     /// a tie would rotate arbitrarily between runs.
     let responseIndex: Int
 
+    /// How this campaign is identified in display history.
+    ///
+    /// A game entry's `campaignId` is always 0, so its identity is the id of the game it opens.
+    /// Reading this rather than `campaignId` is what keeps the two kinds from sharing cap state —
+    /// challenge ids and message campaign ids are separate sequences that overlap numerically.
+    var key: CampaignKey {
+        guard let widget = message.widget else { return .message(campaignId) }
+        return .game(widget.gameCampaignId)
+    }
+
+    /// Whether impressions, clicks and dismissals of this campaign go to the events endpoint.
+    ///
+    /// Never for a test send, and never for a game: a game is not a message campaign, its
+    /// campaignId is always 0, and its engagement is recorded through the challenge flow when the
+    /// customer plays.
+    var reportsTelemetry: Bool {
+        return !isTest && !message.isWidget
+    }
+
     func hasExpired(at now: Date) -> Bool {
         guard let expiresAt = expiresAt else { return false }
         return expiresAt <= now

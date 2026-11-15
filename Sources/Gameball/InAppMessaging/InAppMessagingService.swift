@@ -52,8 +52,9 @@ final class InAppMessagingService {
     /// Whether a floor retry is already booked, so a burst of dismissals books one, not many.
     private var floorRetryScheduled = false
     /// The next-best campaign for the occurrence being presented, promoted to the deferred
-    /// stack only once its winner has actually taken the screen.
-    private var runnerUpBehindWinner: (winnerId: Int, campaign: InAppMessageCampaign)?
+    /// stack only once its winner has actually taken the screen. The winner is held by key: every
+    /// game carries campaignId 0, so an id would match any game.
+    private var runnerUpBehindWinner: (winner: CampaignKey, campaign: InAppMessageCampaign)?
     /// Retries taken for the current session. Reset when a session begins and when a sync lands.
     private var syncAttempt = 0
 
@@ -64,6 +65,19 @@ final class InAppMessagingService {
 
     private var started = false
     private var campaigns: [InAppMessageCampaign] = []
+
+    /// Whether the held campaigns came from the cache rather than a live sync.
+    ///
+    /// Only games care. A message carries its own content, so a cached one is still correct; a
+    /// game carries a pointer and fetches its content live, so a cached entry is a promise this
+    /// SDK cannot keep — the campaign may have ended, and the widget would answer "this campaign
+    /// is not available" to a customer who never asked for it.
+    private var campaignsFromCache = false
+    /// Games the customer finished since the last successful sync. Not offered again until the
+    /// next one, which is where the server rechecks whether they can still play: a sync from
+    /// before the play says nothing about that. Held in memory only, because every new session
+    /// starts with a sync anyway.
+    private var playedSinceSync: Set<CampaignKey> = []
     private var cooldown: TimeInterval = defaultDisplayCooldown
     /// The account's quiet window. `nil` until a sync says otherwise, which is also the
     /// value that means "never suppress on time of day".
@@ -152,6 +166,7 @@ final class InAppMessagingService {
             self.analytics.dispose()
             self.campaigns = []
             self.deferred = []
+            self.playedSinceSync = []
             self.runnerUpBehindWinner = nil
             self.showing = nil
             self.prefetcher.reset()
@@ -318,6 +333,9 @@ final class InAppMessagingService {
             // A successful sync always wins, including an empty one — a customer whose campaigns
             // were switched off must stop seeing them.
             campaigns = value.campaigns
+            campaignsFromCache = false
+            // The server has rechecked every game it sent: one it still sends may be played again.
+            playedSinceSync = []
             cooldown = value.cooldown
             quietHours = value.quietHours
             syncAttempt = 0
@@ -330,6 +348,7 @@ final class InAppMessagingService {
             // Applied only on failure. That is the backend's rule, and it also removes the race
             // where a slow cache read lands after a fast sync and clobbers fresher campaigns.
             if let cached = cache.load(customerId: customerId, now: now()) {
+                campaignsFromCache = true
                 campaigns = cached.campaigns
                 cooldown = cached.cooldown
                 quietHours = cached.quietHours
@@ -361,8 +380,17 @@ final class InAppMessagingService {
         // Judged after the winner's impression, the winner's own display would start the
         // floor that rules its runner-up out.
         let capBefore = cap.state
+
+        // Dropped rather than deferred: whatever keeps a game from opening now — a cached set,
+        // above all — is lifted only by a later live sync, never by waiting.
+        let eligible = campaigns.filter { candidate in
+            guard let reason = whyGameCannotOpen(candidate) else { return true }
+            iamLog("\(candidate.key) skipped: \(reason)")
+            return false
+        }
+
         guard let selected = selectCampaign(occurrence: occurrence,
-                                            campaigns: campaigns,
+                                            campaigns: eligible,
                                             capState: capBefore,
                                             now: now(),
                                             cooldown: cooldown,
@@ -386,8 +414,41 @@ final class InAppMessagingService {
             return
         }
 
-        stashRunnerUp(for: occurrence, behind: selected, capState: capBefore)
+        stashRunnerUp(for: occurrence, behind: selected, among: eligible, capState: capBefore)
         decideThenPresent(selected)
+    }
+
+    /// Why a game may not be opened now, or `nil` when it may. Always `nil` for a message.
+    ///
+    /// A message carries its own content, so a cached one is still correct; a game carries a
+    /// pointer and fetches its content live, so a cached entry is a promise this SDK cannot keep.
+    /// And a game the customer has finished waits for the next sync to say it may be played
+    /// again. Must run on `queue`.
+    private func whyGameCannotOpen(_ campaign: InAppMessageCampaign) -> String? {
+        guard campaign.message.isWidget else { return nil }
+        if campaignsFromCache {
+            return "the campaign set came from the cache, and a game must be confirmed live "
+                 + "before it is opened"
+        }
+        if playedSinceSync.contains(campaign.key) {
+            return "it was played, and only the next sync can offer it again"
+        }
+        return nil
+    }
+
+    /// Why a game that waited may no longer open, or `nil` when it still may. Always `nil` for a
+    /// message.
+    ///
+    /// A wait can outlast a sync — the deferred stack survives one — so the game is judged
+    /// against the campaigns held now, not the set it was selected from: the latest sync must
+    /// still carry it, and that entry must not have expired. Must run on `queue`.
+    private func whyWaitingGameCannotOpen(_ campaign: InAppMessageCampaign) -> String? {
+        guard campaign.message.isWidget else { return nil }
+        if let reason = whyGameCannotOpen(campaign) { return reason }
+        guard let current = campaigns.first(where: { $0.key == campaign.key }) else {
+            return "the latest sync no longer has it"
+        }
+        return current.hasExpired(at: now()) ? "it has expired" : nil
     }
 
     /// Picks the next-best campaign for this occurrence and holds it until the winner has
@@ -397,12 +458,15 @@ final class InAppMessagingService {
     /// that displayed earns a runner-up: a winner that was itself
     /// deferred or discarded must not be displaced or doubled by it. Whether the runner-up
     /// may still display when its turn comes is decided then, by the repeat, floor and
-    /// quiet-hours checks every retry goes through. Must run on `queue`.
+    /// quiet-hours checks every retry goes through. Chosen from `eligible`, what the occurrence
+    /// itself could open, so it can never be a game the winner's own selection ruled out.
+    /// Must run on `queue`.
     private func stashRunnerUp(for occurrence: TriggerOccurrence,
                                behind winner: InAppMessageCampaign,
+                               among eligible: [InAppMessageCampaign],
                                capState: CapState) {
         runnerUpBehindWinner = nil
-        let others = campaigns.filter { $0.campaignId != winner.campaignId }
+        let others = eligible.filter { $0.key != winner.key }
         guard let runnerUp = selectCampaign(occurrence: occurrence,
                                             campaigns: others,
                                             capState: capState,
@@ -412,14 +476,14 @@ final class InAppMessagingService {
                                             isArtworkReady: { [weak self] campaign in
                                                 self?.prefetcher.isReady(campaign) ?? false
                                             }) else { return }
-        runnerUpBehindWinner = (winner.campaignId, runnerUp)
+        runnerUpBehindWinner = (winner.key, runnerUp)
     }
 
     /// Must run on `queue`, once `winner` is on screen.
     private func promoteRunnerUp(behind winner: InAppMessageCampaign) {
-        guard let stash = runnerUpBehindWinner, stash.winnerId == winner.campaignId else { return }
+        guard let stash = runnerUpBehindWinner, stash.winner == winner.key else { return }
         runnerUpBehindWinner = nil
-        deferCampaign(stash.campaign, because: "campaign \(winner.campaignId) took this trigger first")
+        deferCampaign(stash.campaign, because: "\(winner.key) took this trigger first")
     }
 
     /// Consults the host, then acts on the answer.
@@ -442,7 +506,7 @@ final class InAppMessagingService {
                 self.runnerUpBehindWinner = nil
                 // Spent, not held: nothing retries, and because the cap is only recorded at
                 // impression it is eligible again next session with no manual reset.
-                iamLog("campaign \(campaign.campaignId) discarded by the host")
+                iamLog("\(campaign.key) discarded by the host")
             }
         }
     }
@@ -507,7 +571,8 @@ final class InAppMessagingService {
             onMessagePressed: { [weak self] in
                 self?.handleClick(campaign, message: message, button: nil)
             },
-            onDismissed: { [weak self] in self?.handleDismissed(campaign) }
+            onDismissed: { [weak self] in self?.handleDismissed(campaign) },
+            onGameCompleted: { [weak self] in self?.handleGameCompleted(campaign) }
         )
 
         // Set *before* presenting, not after: a view that honours reduce motion reports
@@ -546,20 +611,30 @@ final class InAppMessagingService {
     // MARK: - Deferral
 
     /// Must run on `queue`. Deduplicated and moved to the top, so a repeat deferral of the same
-    /// campaign does not grow the stack.
+    /// campaign does not grow the stack. Deduplicated by key, not by campaignId: every game
+    /// carries campaignId 0, so the second game to wait would evict the first.
     private func deferCampaign(_ campaign: InAppMessageCampaign, because reason: String) {
-        deferred.removeAll { $0.campaignId == campaign.campaignId }
+        deferred.removeAll { $0.key == campaign.key }
         deferred.append(campaign)
-        iamLog("deferring campaign \(campaign.campaignId): \(reason)")
+        iamLog("deferring \(campaign.key): \(reason)")
     }
 
     /// Must run on `queue`.
     private func retryDeferred() {
-        guard started, let candidate = deferred.last else { return }
+        guard started else { return }
+
+        // A waiting game is rechecked before anything else, and every stale one on top is
+        // dropped rather than only the first: the opportunity is still unused, so the next
+        // candidate is entitled to it.
+        while let top = deferred.last, let reason = whyWaitingGameCannotOpen(top) {
+            iamLog("dropping deferred \(top.key): \(reason)")
+            deferred.removeLast()
+        }
+        guard let candidate = deferred.last else { return }
 
         // Re-validated, because the world moved while it waited.
         guard isRepeatEligible(campaign: candidate, capState: cap.state, now: now()) else {
-            iamLog("dropping deferred campaign \(candidate.campaignId): it has since been shown")
+            iamLog("dropping deferred \(candidate.key): it has since been shown")
             deferred.removeLast()
             return
         }
@@ -569,7 +644,7 @@ final class InAppMessagingService {
             // opportunity is booked for the moment the floor lapses, not left to the next
             // dismissal, which for a runner-up behind a quickly dismissed winner could be
             // the rest of the session.
-            iamLog("holding deferred campaign \(candidate.campaignId): inside the display floor")
+            iamLog("holding deferred \(candidate.key): inside the display floor")
             scheduleFloorRetry()
             return
         }
@@ -579,7 +654,7 @@ final class InAppMessagingService {
         // deferring: a quiet window is hours long, and a message released at 08:00 would
         // arrive as a non sequitur to whatever it was answering the night before.
         if let quietHours = quietHours, quietHours.contains(now()) {
-            iamLog("dropping deferred campaign \(candidate.campaignId): it is now inside quiet hours")
+            iamLog("dropping deferred \(candidate.key): it is now inside quiet hours")
             deferred.removeLast()
             return
         }
@@ -587,12 +662,12 @@ final class InAppMessagingService {
         // The same rule as the first evaluation: do not consult the host about a slot that is
         // already taken. Held rather than removed, so the campaign keeps its place in the stack.
         guard showing == nil else {
-            iamLog("holding deferred campaign \(candidate.campaignId): another message is showing")
+            iamLog("holding deferred \(candidate.key): another message is showing")
             return
         }
 
         // Removed before the decision, which is asynchronous: the removal is the claim on this
-        // candidate, and `deferCampaign` de-duplicates by campaign id if the host says `.later`
+        // candidate, and `deferCampaign` de-duplicates by campaign key if the host says `.later`
         // again and it goes back on the stack.
         deferred.removeLast()
         decideThenPresent(candidate)
@@ -616,15 +691,25 @@ final class InAppMessagingService {
 
     private func handleShown(_ campaign: InAppMessageCampaign) {
         perform {
-            guard self.showing?.campaignId == campaign.campaignId else { return }
+            guard self.showing?.key == campaign.key else { return }
             self.didReportImpression = true
 
             // Recorded here, not at selection: a message deferred or discarded must not burn its
             // slot, and `impressions = clicks + dismissals` only holds if this is the anchor.
-            self.cap.recordDisplay(campaignId: campaign.campaignId, at: self.now())
+            self.cap.recordDisplay(campaign: campaign.key, at: self.now())
 
             guard !campaign.isTest else {
-                iamLog("campaign \(campaign.campaignId) is a test send; reporting nothing")
+                iamLog("\(campaign.key) is a test send; reporting nothing")
+                return
+            }
+
+            // A game campaign is not a message campaign. Engagement is recorded through the
+            // challenge flow when the customer plays it, and an event sent here would attribute
+            // against a campaign id that is not a message — campaignId is 0 on every game entry.
+            // The display history above is still recorded; only the reporting stops.
+            guard !campaign.message.isWidget else {
+                iamLog("\(campaign.key) displayed; reporting nothing, as engagement is recorded "
+                     + "through the challenge flow")
                 return
             }
             self.analytics.log(MessageEvent(campaignId: campaign.campaignId,
@@ -665,7 +750,7 @@ final class InAppMessagingService {
 
     /// Must run on `queue`.
     private func logClick(_ campaign: InAppMessageCampaign, buttonId: String?, url: String?) {
-        guard !campaign.isTest else { return }
+        guard campaign.reportsTelemetry else { return }
         analytics.log(MessageEvent(campaignId: campaign.campaignId,
                                    variationId: campaign.variationId,
                                    dispatchId: campaign.dispatchId,
@@ -691,6 +776,16 @@ final class InAppMessagingService {
         }
     }
 
+    /// The open game reports that the customer finished it. It stays on screen, on its result,
+    /// until they close it; what changes is that it is not offered again before the next sync.
+    private func handleGameCompleted(_ campaign: InAppMessageCampaign) {
+        perform {
+            guard campaign.message.isWidget else { return }
+            self.playedSinceSync.insert(campaign.key)
+            iamLog("\(campaign.key) was played; it is not offered again until the next sync")
+        }
+    }
+
     private func handleDismissed(_ campaign: InAppMessageCampaign) {
         perform {
             let reportDismissal = self.didReportImpression && !self.didEngage
@@ -699,7 +794,7 @@ final class InAppMessagingService {
             self.didReportImpression = false
             self.didEngage = false
 
-            if reportDismissal && !campaign.isTest {
+            if reportDismissal && campaign.reportsTelemetry {
                 // Only when shown and not engaged, so the dismissal that follows a tap is not
                 // also counted as "shown and ignored".
                 self.analytics.log(MessageEvent(campaignId: campaign.campaignId,

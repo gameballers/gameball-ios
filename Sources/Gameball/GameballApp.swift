@@ -285,6 +285,15 @@ public class GameballApp {
         }
     }
 
+    /// The widget host the host app configured, if any.
+    ///
+    /// Internal: in-app messaging composes its own widget url and has no caller to take a
+    /// per-call prefix from, so it reads the configured one here.
+    internal var configuredWidgetUrlPrefix: String? { config?.widgetUrlPrefix }
+
+    /// The session token currently in memory, for the same reason.
+    internal var currentSessionToken: String? { sessionToken }
+
     public var currentCustomerId: String? {
         return queue.sync {
             return customerId

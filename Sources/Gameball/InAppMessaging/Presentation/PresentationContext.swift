@@ -37,6 +37,8 @@ struct PresentationHandlers {
     let onButtonPressed: (GameballMessageButton) -> Void
     let onMessagePressed: () -> Void
     let onDismissed: () -> Void
+    /// The open game reports a finished play.
+    let onGameCompleted: () -> Void
 }
 
 /// Why a presentation could not happen now.
