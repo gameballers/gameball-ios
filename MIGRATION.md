@@ -4,12 +4,89 @@ This guide helps you migrate between versions of the Gameball iOS SDK.
 
 ---
 
-## v3.x → v4.0.0 (Breaking)
+## Table of Contents
 
-### Overview
+- [v4.0.x → v4.1.0](#migration-guide-v40x--v410)
+- [v3.x → v4.0.0](#migration-guide-v3x--v400)
+- [v3.2.x → v3.3.0](#migration-guide-v32x--v330)
+- [v3.1.1 → v3.2.0](#migration-guide-v311--v320)
+- [v3.1.0 → v3.1.1](#migration-guide-v310--v311)
+- [v3.0.0 → v3.1.0](#migration-guide-v300--v310)
+- [v2.x → v3.0.0](#migration-guide-v2x--v300)
+
+---
+
+## Migration Guide: v4.0.x → v4.1.0
+
+Version 4.1.0 adds game campaigns to in-app messaging, any-condition event triggers, and influenced opens of Gameball pushes. This is a **minor update** with no breaking changes — all v4.0.x code continues to work.
+
+### Overview of Changes
+
+#### ✨ What's New
+- **Game campaigns** - games the merchant set to open over your app arrive with in-app messaging; if you already call `startInAppMessaging()`, there is nothing extra to integrate
+- **Any of the conditions** - a campaign set to match any of its event conditions shows when one of them matches
+- **Influenced opens** - `GameballApp.handlePushReceived(_:appGroup:)`, called from a Notification Service Extension, with the same App Group passed to `GameballConfig(appGroup:)`
+- **Push taps counted once** - `handlePushClick` reports to `push-engagement` and counts each tap once; keep calling it from your notification-tap handler
+- **Widget host on the configuration** - `GameballConfig(widgetUrlPrefix:)` for the profile widget and game campaigns
+
+### Update Dependencies
+
+**Before (v4.0.x):**
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.0.0")
+```
+
+**After (v4.1.0):**
+```swift
+.package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.1.0")
+```
+
+### Action Required
+
+None. To adopt influenced opens:
+
+### 1. Report Influenced Opens (Optional)
+
+**Before (v4.0.x):** not available.
+
+**After (v4.1.0):** enable the same App Group for your app target and your Notification Service Extension target, then pass it to the SDK:
+
+```swift
+let config = GameballConfig(apiKey: "your_api_key", lang: "en", appGroup: "group.com.example.app")
+```
+
+and record each push in the extension before handing the notification back:
+
+```swift
+override func didReceive(_ request: UNNotificationRequest,
+                         withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+    GameballApp.handlePushReceived(request.content.userInfo, appGroup: "group.com.example.app")
+    contentHandler(request.content)
+}
+```
+
+The extension only runs for pushes sent with `mutable-content: 1`. Swipe-aways aren't reported on iOS.
+
+### Migration Checklist
+
+#### During Migration
+- [ ] Update `gameball-ios` to `4.1.0`
+- [ ] (Optional) Enable one App Group for the app and its Notification Service Extension
+- [ ] (Optional) Pass it to `GameballConfig(appGroup:)`
+- [ ] (Optional) Call `GameballApp.handlePushReceived(_:appGroup:)` in the extension
+
+#### Post-Migration
+- [ ] Tap a Gameball push; the console shows `GameballApp engagement push_click` once
+- [ ] If influenced opens are adopted, receive a Gameball push, open the app without tapping it, and look for `GameballApp engagement influenced_open`
+
+---
+
+## Migration Guide: v3.x → v4.0.0
+
+### Overview of Changes
 v4.0.0 adds in-app messaging: campaigns authored in the Gameball dashboard, displayed inside your app. It is a **major release** because it raises the minimum supported iOS version to **15.0**. Every v3.x API keeps its signature and behaviour, so no Swift code changes are required.
 
-### What's New
+#### ✨ What's New
 - 📬 **In-App Messaging**: `startInAppMessaging(customerId:)` displays dashboard campaigns; `stopInAppMessaging()` stops it and clears state on logout
 - 🖼️ **Three Message Types**: slideup, modal and fullscreen, chosen per campaign in the dashboard rather than in code
 - 🎯 **Triggers**: session start, and custom events matched by name and optionally filtered on their properties
@@ -17,7 +94,7 @@ v4.0.0 adds in-app messaging: campaigns authored in the Gameball dashboard, disp
 - 🖐️ **Delegate**: `inAppMessagingDelegate` lets you postpone a message, handle a tap, observe selections and route `navigate` actions
 - 📊 **Automatic Message Analytics**: impressions, clicks and dismissals, batched and kept on the device until sent
 
-### ⚠️ Breaking Changes
+#### ⚠️ Breaking Changes
 - **Minimum iOS version raised to 15.0** (was 11.0 in `Package.swift` and the podspec; earlier docs listed 12.0)
 - No changes to the public API. In-app messaging is opt-in: until you call `startInAppMessaging`, it makes no requests, starts no timers, stores nothing and draws nothing.
 
@@ -127,12 +204,12 @@ In-app messaging needs the in-app messaging endpoints enabled for your account. 
 
 ---
 
-## v3.2.x → v3.3.0 (Non-Breaking)
+## Migration Guide: v3.2.x → v3.3.0
 
-### Overview
+### Overview of Changes
 v3.3.0 adds per-call and global language control, and push notification click tracking. **All v3.2.x and v3.1.x code continues to work without changes** — every addition is optional.
 
-### What's New
+#### ✨ What's New
 - 🌐 **Per-Call Widget Language**: pass optional `lang` (2-letter code, e.g. `"en"`, `"ar"`) to `ShowProfileRequest` to present that one widget in a specific language
 - 🌐 **Global Language Switch**: `GameballApp.getInstance().setLanguage("ar")` changes the SDK's global language on demand, without re-calling `init`
 - 📣 **Push Click Tracking**: call `GameballApp.getInstance().handlePushClick(payload)` from your notification-tap handler to report Gameball push notification taps for campaign click counting
@@ -151,12 +228,12 @@ GameballApp.getInstance().handlePushClick(response.notification.request.content.
 
 ---
 
-## v3.1.1 → v3.2.0 (Non-Breaking)
+## Migration Guide: v3.1.1 → v3.2.0
 
-### Overview
+### Overview of Changes
 v3.2.0 adds a widget event channel, widget dismissal controls, and external-link handling. **All v3.1.x and v3.0.0 code continues to work without changes** — every addition is optional.
 
-### What's New
+#### ✨ What's New
 - 🎯 **Widget Event Channel**: pass `widgetEventCallback` to `ShowProfileRequest` to receive widget events as a `[String: Any]` `{type, metadata}`; `gameCompleted` includes `hasWon`, `rewardType`, `discountType`, `rewardName`, `campaignId`, `campaignType`
 - 🔚 **Widget Dismissal**: the widget can close itself via `window.GameballWidget.closeWidget()`; the host can dismiss it via `GameballApp.getInstance().hideProfile()`
 - 🔗 **External Links**: pass `externalLinkCallback` to intercept links the widget flags with `gbExternalBrowser=true`
@@ -177,12 +254,12 @@ GameballApp.getInstance().showProfile(request)
 
 ---
 
-## v3.1.0 → v3.1.1 (Non-Breaking)
+## Migration Guide: v3.1.0 → v3.1.1
 
-### Overview
+### Overview of Changes
 v3.1.1 fixes the profile widget to support guest mode. **All v3.1.0 and v3.0.0 code continues to work without changes.**
 
-### What's Fixed
+#### 🐛 What's Fixed
 - 🎁 **Guest Mode Support**: Profile widget now works without customer authentication
 - ⚡ **Simplified API**: `ShowProfileRequest` initializer is now non-throwing (no `try` keyword needed)
 - 🔓 **Optional Customer ID**: `customerId` is now optional, defaulting to `nil` for guest mode
@@ -320,12 +397,12 @@ func afterRegistration(customerId: String) {
 
 ---
 
-## v3.0.0 → v3.1.0 (Non-Breaking)
+## Migration Guide: v3.0.0 → v3.1.0
 
-### Overview
+### Overview of Changes
 v3.1.0 adds optional session token authentication and improves SDK initialization. **All v3.0.0 code continues to work without changes.**
 
-### What's New
+#### ✨ What's New
 - ✨ **Session Token Authentication**: Optional token-based security layer
 - ⚡ **Non-Blocking Initialization**: SDK init no longer waits for bot settings
 - 🔧 **Optional Completion Handler**: Init completion is now optional
@@ -406,7 +483,7 @@ GameballApp.getInstance().showProfile(
 
 ---
 
-## v2.x → v3.0.0 (Breaking Changes)
+## Migration Guide: v2.x → v3.0.0
 
 This guide helps you migrate from v2.x to v3.0.0 with modern iOS architecture, throwing initializers, and enhanced type safety.
 

@@ -9,6 +9,7 @@
 
 import UIKit
 import Gameball
+import UserNotifications
 
 class ViewController: UIViewController {
 
@@ -532,6 +533,7 @@ extension ViewController {
 
     // EXAMPLE 16: Report a Push Notification Tap (v3.3.0+)
     // Call from your notification handler, e.g. userNotificationCenter(_:didReceive:withCompletionHandler:)
+    // As of v4.1.0 a tap counts once: calling this again for the same tap returns true and reports nothing.
     func example_handlePushClick(_ userInfo: [AnyHashable: Any]) {
         let isGameball = GameballApp.getInstance().handlePushClick(userInfo) { reported in
             print(reported ? "✅ Push click reported" : "❌ Push click report failed")
@@ -559,6 +561,9 @@ extension ViewController {
 
         // Or name the customer explicitly:
         // gameball.startInAppMessaging(customerId: "customer_123")
+
+        // Game campaigns (v4.1.0+) open over the app on their own trigger through the same
+        // call: nothing more to integrate.
 
         print("In-app messaging started: \(gameball.isInAppMessagingStarted)")
     }
@@ -589,6 +594,17 @@ extension ViewController {
     func example_stopInAppMessaging() {
         // Dismisses any message on screen, sends pending analytics and clears state.
         GameballApp.getInstance().stopInAppMessaging()
+    }
+
+    // EXAMPLE 20: Record Arriving Pushes for Influenced Opens (v4.1.0+)
+    // Belongs in a Notification Service Extension's didReceive(_:withContentHandler:), not in the app.
+    // Enable the same App Group for the app and the extension, and pass it to GameballConfig(appGroup:).
+    // The extension only runs for pushes sent with mutable-content: 1.
+    func example_handlePushReceived(_ request: UNNotificationRequest,
+                                    contentHandler: @escaping (UNNotificationContent) -> Void) {
+        GameballApp.handlePushReceived(request.content.userInfo, appGroup: "group.com.example.app")
+        // Never changes or delays the notification: hand it back as usual.
+        contentHandler(request.content)
     }
 }
 

@@ -30,6 +30,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         FirebaseApp.configure()
 
         // Initialize Gameball SDK v3.1.1+
+        // Optional (v4.1.0+): add `widgetUrlPrefix:` for a non-production widget host, and
+        // `appGroup:` (shared with your Notification Service Extension) for influenced opens.
+        // See EXAMPLE 20 in ViewController.swift.
         let config = GameballConfig(
             apiKey: "API_KEY_HERE",
             lang: "en"
