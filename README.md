@@ -1,6 +1,6 @@
 # Gameball iOS SDK
 
-[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](https://github.com/gameballers/gameball-ios)
+[![Version](https://img.shields.io/badge/version-4.1.0-blue.svg)](https://github.com/gameballers/gameball-ios)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![iOS](https://img.shields.io/badge/iOS-15.0%2B-blue.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.7%2B-orange.svg)](https://swift.org)
@@ -12,7 +12,8 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 - 🎯 **Customer Management** - Initialize and manage customer profiles
 - 📊 **Event Tracking** - Track user actions and behaviors with flexible metadata
 - 🎁 **Profile Widget** - Display customer loyalty information in customizable UI
-- 📬 **In-App Messaging** - Opt-in slideup, modal and fullscreen campaigns evaluated on-device
+- 📬 **In-App Messaging** - Opt-in slideup, modal and fullscreen campaigns and games, evaluated on-device
+- 📣 **Push Engagement** - Taps and influenced opens of Gameball pushes
 - 🔧 **Modern Architecture** - Built with iOS best practices and Swift concurrency
 - 🛡️ **Type Safety** - Compile-time validation with Swift's type system
 - ⚡ **Async-Ready** - Modern async architecture with proper callback handling
@@ -32,14 +33,14 @@ Gameball iOS SDK allows you to integrate customer engagement and loyalty feature
 **Via Package.swift:**
 ```swift
 dependencies: [
-    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.0.0")
+    .package(url: "https://github.com/gameballers/gameball-ios.git", from: "4.1.0")
 ]
 ```
 
 **Via Xcode:**
 1. File > Add Packages
 2. Enter repository URL: `https://github.com/gameballers/gameball-ios.git`
-3. Select version: `4.0.0` or later
+3. Select version: `4.1.0` or later
 
 ## Quick Start
 
@@ -315,6 +316,50 @@ func userNotificationCenter(_ center: UNUserNotificationCenter,
 
 An optional `sessionToken` parameter overrides the global session token for this request.
 
+As of v4.1.0, a tap is counted once per app process (by its click token, else FCM's message id): calling `handlePushClick` again for the same tap returns `true` and reports nothing more.
+
+### Influenced Opens (v4.1.0+)
+
+An influenced open is an app open that no tap caused, within 30 minutes of an untapped Gameball push arriving. To report them, let the SDK see Gameball pushes as they arrive, from a Notification Service Extension, and share them with the app through an App Group.
+
+**1. Enable the same App Group** for the app target and the Notification Service Extension target (Signing & Capabilities → App Groups).
+
+**2. Pass it to the SDK** in the app:
+
+```swift
+let config = GameballConfig(
+    apiKey: "your_api_key",
+    lang: "en",
+    appGroup: "group.com.example.app"
+)
+```
+
+**3. Record each push** in the extension, then hand the notification back as usual:
+
+```swift
+import UserNotifications
+import Gameball
+
+class NotificationService: UNNotificationServiceExtension {
+
+    override func didReceive(_ request: UNNotificationRequest,
+                             withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+        GameballApp.handlePushReceived(request.content.userInfo, appGroup: "group.com.example.app")
+        contentHandler(request.content)
+    }
+}
+```
+
+| | |
+|---|---|
+| **The notification** | `handlePushReceived` never changes or delays it, and returns `true` only for a Gameball push |
+| **Which pushes** | The extension only runs for pushes sent with `mutable-content: 1` |
+| **App opens** | From `init` on, the SDK watches for app opens: a cold start, or a return after more than 30 seconds in the background. Moving between screens, rotating and opening another scene aren't opens |
+| **Counting** | The most recent untapped push that arrived within 30 minutes of an open is credited. A tapped push, and the open its tap causes, never count. Every open, and a switch to another customer in `initializeCustomer`, clears the saved pushes |
+| **Reporting** | Taps and influenced opens are each sent once, with no retry, to the v4.0 endpoint even when a session token is set. A push without a click token can't be reported |
+| **Swipe-aways** | Not reported on iOS |
+| **Diagnostics** | Each signal is logged to the console as `GameballApp engagement push_received`, `push_click`, `app_open` or `influenced_open` |
+
 ## In-App Messaging (v4.0.0+)
 
 Campaigns authored in the Gameball dashboard, drawn above your app. The module is **opt-in** and
@@ -329,6 +374,43 @@ let gameball = GameballApp.getInstance()
 // After initializeCustomer, or before it — ordering does not matter.
 gameball.startInAppMessaging()
 ```
+
+### Game campaigns (v4.1.0+)
+
+A campaign the merchant set to open itself over your app — a spin the wheel, a quiz, a scratch and
+win. It arrives in the same sync as in-app messages and displays through the same window, so
+**there is nothing extra to integrate**: if you already call `startInAppMessaging()`, game
+campaigns work.
+
+The campaign *is* the content. There is no headline or button to style — the SDK opens the game
+itself in a card over your app, and shows the card only once the game has finished drawing, so your
+customer never sees a loading state.
+
+A game campaign can be authored as a modal or fullscreen. Fullscreen insets its content into the
+safe area, so the campaign's own controls stay clear of the notch and the home indicator, while the
+surface behind runs edge to edge.
+
+**Closing.** The widget shows no close or back control for a game on mobile, so the SDK draws its
+own close button in the game's top-end corner — inside the safe area, a 48pt target, read by
+VoiceOver as "Close". A modal game also closes on a tap outside it. Closing is a dismissal. Links
+inside a game open in the device browser, as they do in the profile widget.
+
+**How often.** A game follows exactly the rules a message does: `repeatable` and the minimum
+interval set on the campaign, your account's display cooldown, and quiet hours. There is no
+game-specific interval, delay or dismissal limit. Once the customer finishes a game, it is not
+offered again until the next successful sync, where Gameball rechecks whether they can still play
+it. A game is never opened from cached campaigns, and one waiting behind another message is
+rechecked against the latest sync and its end date before it opens.
+
+**Conditions.** A game triggered by a custom event can filter on the event's properties like any
+campaign, matching all of its conditions or any one of them.
+
+One limit in this release: **screen triggers do not fire on mobile.** Use a session-start or
+custom-event trigger instead. A screen-triggered campaign is skipped with a `[GameballIAM]` log
+naming it, so one that does not appear can be diagnosed from the console.
+
+Game campaigns report no in-app messaging telemetry — engagement is recorded through the normal
+challenge flow when the customer plays.
 
 `startInAppMessaging()` uses the customer already identified with the SDK. Call it before
 `initializeCustomer` and the module starts as soon as a customer is identified. Pass an id
@@ -421,7 +503,8 @@ dismissal are reported whatever a hook returns.
 
 - **Three message types** — slideup (a non-blocking band that passes touches through), modal (a
   card over a scrim) and fullscreen, each in a text-with-artwork and an artwork-only composition.
-- **On-device triggers** — `session_start` and named events, with metadata filters.
+- **On-device triggers** — `session_start` and named events, with metadata filters that must all
+  match or, when the campaign says so, any one of them.
 - **Frequency control** — a global display floor set from the dashboard, plus per-campaign repeat
   rules. Both survive a restart.
 - **Accessibility** — Dynamic Type throughout, a 48pt close target, VoiceOver focus moved to the
@@ -453,7 +536,8 @@ The SDK provides the following public methods:
 - `showProfile(_:presentationStyle:sessionToken:)` - Show profile widget with optional token override
 - `hideProfile()` - Dismiss the currently shown profile widget (no-op when nothing is shown)
 - `setLanguage(_:)` - Change the SDK's global language on demand without re-calling `init`
-- `handlePushClick(_:completion:sessionToken:)` - Report a tap on a Gameball push notification for click tracking
+- `handlePushClick(_:completion:sessionToken:)` - Report a tap on a Gameball push notification for click tracking; a tap counts once (v4.1.0+)
+- `GameballApp.handlePushReceived(_:appGroup:)` - Record a Gameball push as it arrives, from a Notification Service Extension, for influenced opens (v4.1.0+)
 - `startInAppMessaging(customerId:)` - Opt in to in-app messaging (v4.0.0+)
 - `stopInAppMessaging()` - Stop in-app messaging and clear state; call on logout (v4.0.0+)
 - `logPurchase(customerId:productId:price:currency:quantity:properties:completion:sessionToken:)` - Send a purchase event that in-app messaging campaigns can target (v4.0.0+)
@@ -663,7 +747,7 @@ GameballApp.getInstance().showProfile(
 
 #### How It Works
 - **Without token**: Requests use `/api/v4.0/integrations/*` endpoints
-- **With token**: Requests automatically route to `/api/v4.1/integrations/*` with `X-GB-TOKEN` header
+- **With token**: Requests automatically route to `/api/v4.1/integrations/*` with `X-GB-TOKEN` header. Push engagement (taps and influenced opens) stays on v4.0 (v4.1.0+)
 - **In-memory storage**: Tokens are not persisted and cleared on app restart
 - **Thread-safe**: All token operations are synchronized for multi-threaded access
 
@@ -735,6 +819,8 @@ do {
 }
 ```
 
+To count taps on Gameball pushes, see [Push Click Tracking](#push-click-tracking-v330); to report influenced opens, see [Influenced Opens](#influenced-opens-v410).
+
 ### Error Handling
 ```swift
 do {
@@ -791,6 +877,8 @@ Configuration object for initializing the Gameball SDK.
 | `platform` | String | ❌ | Platform identifier |
 | `shop` | String | ❌ | Shop identifier |
 | `apiPrefix` | String | ❌ | Custom API base URL |
+| `widgetUrlPrefix` | String | ❌ | Widget host, for a non-production environment. Applies to the profile widget and to any campaign an in-app message opens (v4.1.0+) |
+| `appGroup` | String | ❌ | App Group shared with your Notification Service Extension, the same one you pass to `GameballApp.handlePushReceived(_:appGroup:)`; needed for influenced opens (v4.1.0+) |
 
 **Validation Rules:**
 - `apiKey` cannot be empty
@@ -1038,6 +1126,8 @@ Error: SDK not initialized
 
 ### Debug Logging
 The SDK provides console logging for debugging. Check Xcode's console for detailed logs when debugging integration issues.
+
+Push engagement signals are logged to the console as `GameballApp engagement <name> key=value ...` (v4.1.0+).
 
 In-app messaging logs why a campaign was shown or skipped, prefixed with `[GameballIAM]`. These logs are on in `DEBUG` builds and off in release builds; to turn them on in a release build while reproducing an issue:
 ```swift
