@@ -31,7 +31,10 @@ let package = Package(
         ),
         .testTarget(
             name: "GameballTests",
-            dependencies: ["Gameball"]),
+            dependencies: ["Gameball"],
+            resources: [
+                .copy("Fixtures")
+            ]),
     ],
     swiftLanguageVersions: [
         .v4_2 // Specify the desired Swift version here
