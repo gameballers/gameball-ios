@@ -23,7 +23,7 @@ class APIEndPoints {
 }
 
 enum SDKInfo {
-    static let version = "4.0.0"
+    static let version = "4.1.0"
     static let platform = "iOS"
 
     static var userAgent: String {
